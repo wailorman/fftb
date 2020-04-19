@@ -41,3 +41,10 @@ func (f *File) DirPath() string {
 func (f *File) SetChTime(timeObj time.Time) error {
 	return os.Chtimes(f.FullPath(), timeObj, timeObj)
 }
+
+// EnsureParentDirExists _
+func (f *File) EnsureParentDirExists() error {
+	path := NewPathBuilder(f.DirPath()).NewPath(".")
+
+	return path.Create()
+}

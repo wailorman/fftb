@@ -20,6 +20,20 @@ type Path struct {
 	path        string
 }
 
+// FullPath _
+func (p *Path) FullPath() string {
+	return p.path
+}
+
+// Create _
+func (p *Path) Create() error {
+	if _, err := os.Stat(p.FullPath()); os.IsNotExist(err) {
+		return os.Mkdir(p.FullPath(), os.FileMode.Perm(755))
+	}
+
+	return nil
+}
+
 // Files _
 func (p *Path) Files() ([]*File, error) {
 	files := make([]*File, 0)
