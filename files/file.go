@@ -48,3 +48,8 @@ func (f *File) EnsureParentDirExists() error {
 
 	return path.Create()
 }
+
+// Remove _
+func (f *File) Remove() error {
+	return os.Remove(f.FullPath())
+}
