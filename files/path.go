@@ -28,7 +28,7 @@ func (p *Path) FullPath() string {
 // Create _
 func (p *Path) Create() error {
 	if _, err := os.Stat(p.FullPath()); os.IsNotExist(err) {
-		return os.Mkdir(p.FullPath(), os.FileMode.Perm(755))
+		return os.Mkdir(p.FullPath(), os.FileMode.Perm(0755))
 	}
 
 	return nil

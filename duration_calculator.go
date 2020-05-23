@@ -14,6 +14,11 @@ import (
 type DurationCalculator struct {
 }
 
+// VideoDurationCalculator _
+type VideoDurationCalculator interface {
+	Calculate(file files.Filer) (float64, error)
+}
+
 // NewDurationCalculator _
 func NewDurationCalculator() *DurationCalculator {
 	return &DurationCalculator{}
