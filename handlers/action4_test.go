@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test__GeforceFull__Extract(t *testing.T) {
+func Test__Action4__Extract(t *testing.T) {
 	assert := assert.New(t)
 
 	testTable := []struct {
@@ -14,13 +14,13 @@ func Test__GeforceFull__Extract(t *testing.T) {
 		expectedTime string
 	}{
 		{
-			filename:     "Far Cry® New Dawn 2020.02.12 - 23.03.10.00_some_hevc.mp4",
-			expectedTime: "2020-02-12T23:03:10",
+			filename:     "NMS 22-05-2020 22-03-32.webcam.mp4",
+			expectedTime: "2020-05-22T22:03:32",
 		},
 	}
 
 	for _, testItem := range testTable {
-		timeObj, err := NewGeforceFull().Extract(newFilerStub("", testItem.filename))
+		timeObj, err := NewAction4().Extract(newFilerStub("", testItem.filename))
 
 		assert.Nil(err)
 

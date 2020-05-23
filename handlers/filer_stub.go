@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"os"
 	"path/filepath"
 	"time"
 )
@@ -36,4 +37,14 @@ func (f *filerStub) DirPath() string {
 // SetChTime _
 func (f *filerStub) SetChTime(timeObj time.Time) error {
 	return nil
+}
+
+// EnsureParentDirExists
+func (f *filerStub) EnsureParentDirExists() error {
+	return nil
+}
+
+// Remove
+func (f *filerStub) Remove() error {
+	return os.Remove(f.FullPath())
 }

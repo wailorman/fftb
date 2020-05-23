@@ -23,6 +23,9 @@ func ExtractTime(file files.Filer) (time.Time, string, error) {
 	patterns := []ExtractTimeHandler{
 		handlers.NewGeforceDVR(NewDurationCalculator()),
 		handlers.NewGeforceFull(),
+		handlers.NewAverMedia(),
+		handlers.NewPlaysTv(),
+		handlers.NewAction4(),
 	}
 
 	for _, pattern := range patterns {

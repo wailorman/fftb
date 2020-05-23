@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test__GeforceFull__Extract(t *testing.T) {
+func Test__AverMedia__Extract(t *testing.T) {
 	assert := assert.New(t)
 
 	testTable := []struct {
