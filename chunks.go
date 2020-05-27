@@ -75,8 +75,6 @@ func (c *Chunker) Start() error {
 	for i := 0; c.currentDuration < c.totalDuration; i++ {
 		resultFile := files.NewPathBuilder(c.resultPath.FullPath()).NewFile("./abc_" + strconv.Itoa(i) + ".mp4")
 
-		// fmt.Printf("resultFile.FullPath(): %#v\n", resultFile.FullPath())
-
 		chunkLog := log.WithFields(logrus.Fields{
 			"chunk_file_path": resultFile.FullPath(),
 			"chunk_number":    i,
@@ -90,9 +88,7 @@ func (c *Chunker) Start() error {
 			return errors.Wrap(err, fmt.Sprintf("Creating parent directory for chunk #%d", i))
 		}
 
-		chunkLog.Info(
-			fmt.Sprintf("Processing chunk #%d", i),
-		)
+		chunkLog.Info("Processing chunk")
 
 		chunk, err := c.videoCutter.CutVideo(
 			c.mainFile,
@@ -119,8 +115,6 @@ func (c *Chunker) Start() error {
 
 		chunkLog = chunkLog.WithField("duration", chunkDuration)
 		chunkLog.Info("Cutted chunk")
-
-		// fmt.Printf("chunkDuration: %#v\n", chunkDuration)
 
 		c.chunks = append(c.chunks, chunk)
 
