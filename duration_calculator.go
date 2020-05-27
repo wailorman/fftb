@@ -1,13 +1,10 @@
 package ffchunker
 
 import (
-	"fmt"
-	"os/exec"
-	"strconv"
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/wailorman/ffchunker/files"
+
+	"github.com/wailorman/goffmpeg/transcoder"
 )
 
 // DurationCalculator _
@@ -26,22 +23,23 @@ func NewDurationCalculator() *DurationCalculator {
 
 // Calculate _
 func (d *DurationCalculator) Calculate(file files.Filer) (float64, error) {
-	cmdStr := fmt.Sprintf("ffprobe -i \"%s\" -show_entries format=duration -v quiet -of default=noprint_wrappers=1:nokey=1", file.FullPath())
+	trans := &transcoder.Transcoder{}
 
-	out, err := exec.Command("bash", "-c", cmdStr).Output()
-
-	if err != nil {
-		return 0, errors.Wrap(err, "ffprobe executing problem")
-	}
-
-	floatValue, err := strconv.ParseFloat(
-		strings.ReplaceAll(string(out), "\n", ""),
-		64,
-	)
+	err := trans.InitializeEmptyTranscoder()
 
 	if err != nil {
-		return 0, errors.Wrap(err, "Converting duration to float")
+		return 0, errors.Wrap(err, "Initializing ffprobe instance")
 	}
 
-	return floatValue, nil
+	metadata, err := trans.GetFileMetadata(file.FullPath())
+
+	if err != nil {
+		return 0, errors.Wrap(err, "Getting file metadata from ffprobe")
+	}
+
+	if len(metadata.Streams) == 0 {
+		return 0, errors.New("No streams in media file")
+	}
+
+	return metadata.Streams[0].DurationFloat, nil
 }

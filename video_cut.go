@@ -2,11 +2,13 @@ package ffchunker
 
 import (
 	"fmt"
-	"os/exec"
+	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/wailorman/ffchunker/ctxlog"
 	"github.com/wailorman/ffchunker/files"
+	"github.com/wailorman/goffmpeg/transcoder"
 )
 
 // VideoCutterInstance _
@@ -33,24 +35,44 @@ func (ci *VideoCutterInstance) CutVideo(
 
 	log := ctxlog.New(ctxlog.DefaultContext + ".cutter")
 
-	cmdStr := fmt.Sprintf(
-		"ffmpeg -ss %f -i \"%s\" -fs %d -c:v copy -avoid_negative_ts make_zero -c:a copy \"%s\"",
-		offset,
+	trans := new(transcoder.Transcoder)
+
+	err := trans.Initialize(
 		inFile.FullPath(),
-		maxFileSize,
 		outFile.FullPath(),
 	)
 
-	// fmt.Printf("cmdStr: %#v\n", cmdStr)
-
-	log.WithField("command", cmdStr).
-		Info("Running ffmpeg command...")
-
-	output, err := exec.Command("bash", "-c", cmdStr).Output()
-
 	if err != nil {
-		return nil, errors.Wrap(err, "ffmpeg executing problem: "+string(output))
+		return nil, errors.Wrap(err, "Initializing ffmpeg transcoder")
 	}
 
-	return outFile, nil
+	trans.MediaFile().SetVideoCodec("copy")
+	trans.MediaFile().SetAudioCodec("copy")
+	trans.MediaFile().SetFileSizeLimit(strconv.Itoa(maxFileSize))
+	trans.MediaFile().SetSeekTimeInput(fmt.Sprintf("%f", offset))
+
+	done := trans.Run(true)
+
+	progressChan := trans.Output()
+
+	for {
+		select {
+		case progress := <-progressChan:
+			log.WithFields(logrus.Fields{
+				"frames_processed": progress.FramesProcessed,
+				"current_time":     progress.CurrentTime,
+				"current_bitrate":  progress.CurrentBitrate,
+				"progress":         progress.Progress,
+				"speed":            progress.Speed,
+				"fps":              progress.FPS,
+			}).Info("ffmpeg progress")
+
+		case err := <-done:
+			if err != nil {
+				return nil, errors.Wrap(err, "ffmpeg cutting error")
+			}
+
+			return outFile, nil
+		}
+	}
 }
