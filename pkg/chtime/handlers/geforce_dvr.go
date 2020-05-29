@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/files"
+	"github.com/wailorman/ffchunker/pkg/files"
 )
 
 // GeforceDVRRegexpFull _

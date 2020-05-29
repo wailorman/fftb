@@ -1,4 +1,4 @@
-package ffchunker
+package media
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/wailorman/ffchunker/ctxlog"
-	"github.com/wailorman/ffchunker/files"
+	"github.com/wailorman/ffchunker/pkg/ctxlog"
+	"github.com/wailorman/ffchunker/pkg/files"
 	"github.com/wailorman/goffmpeg/transcoder"
 )
 

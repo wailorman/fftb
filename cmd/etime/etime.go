@@ -7,9 +7,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"github.com/wailorman/ffchunker"
-	"github.com/wailorman/ffchunker/ctxlog"
-	"github.com/wailorman/ffchunker/files"
+
+	"github.com/wailorman/ffchunker/pkg/chtime"
+	"github.com/wailorman/ffchunker/pkg/ctxlog"
+	"github.com/wailorman/ffchunker/pkg/files"
 )
 
 // CliConfig _
@@ -48,7 +49,7 @@ func CliConfig() *cli.Command {
 func setTimes(pwd, path string, recursively bool) error {
 	if recursively {
 		path := files.NewPathBuilder(pwd).NewPath(path)
-		resChan, done := ffchunker.NewRecursiveChTimer(path).Perform()
+		resChan, done := chtime.NewRecursiveChTimer(path).Perform()
 
 		for {
 			select {
@@ -60,7 +61,7 @@ func setTimes(pwd, path string, recursively bool) error {
 		}
 	} else {
 		file := files.NewPathBuilder(pwd).NewFile(path)
-		res := ffchunker.NewChTimer(file).Perform()
+		res := chtime.NewChTimer(file).Perform()
 
 		logResults(res)
 	}
@@ -68,7 +69,7 @@ func setTimes(pwd, path string, recursively bool) error {
 	return nil
 }
 
-func logResults(result ffchunker.ChTimerResult) {
+func logResults(result chtime.ChTimerResult) {
 	log := ctxlog.New(ctxlog.DefaultContext)
 
 	if result.Ok {

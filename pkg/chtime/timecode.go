@@ -1,11 +1,12 @@
-package ffchunker
+package chtime
 
 import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/files"
-	"github.com/wailorman/ffchunker/handlers"
+	"github.com/wailorman/ffchunker/pkg/chtime/handlers"
+	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/ffchunker/pkg/media"
 )
 
 // ErrNoTimeMatches _
@@ -21,7 +22,7 @@ type ExtractTimeHandler interface {
 // ExtractTime _
 func ExtractTime(file files.Filer) (time.Time, string, error) {
 	patterns := []ExtractTimeHandler{
-		handlers.NewGeforceDVR(NewDurationCalculator()),
+		handlers.NewGeforceDVR(media.NewDurationCalculator()),
 		handlers.NewGeforceFull(),
 		handlers.NewAverMedia(),
 		handlers.NewPlaysTv(),

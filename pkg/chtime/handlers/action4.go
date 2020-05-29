@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/wailorman/ffchunker/files"
+	"github.com/wailorman/ffchunker/pkg/files"
 )
 
 // Action4Regexp _

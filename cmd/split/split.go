@@ -6,9 +6,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"github.com/wailorman/ffchunker"
-	"github.com/wailorman/ffchunker/ctxlog"
-	"github.com/wailorman/ffchunker/files"
+
+	"github.com/wailorman/ffchunker/pkg/ctxlog"
+	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/ffchunker/pkg/media"
 )
 
 const bytesInMegabyte = 1000000
@@ -66,10 +67,10 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 	log.Info("Splitting to chunks...")
 
 	// (file files.Filer, videoCutter ffchunker.VideoCutter, durationCalculator ffchunker.VideoDurationCalculator, resultPath files.Pather, maxFileSize int) (*ffchunker.Chunker, error)
-	chunker, err := ffchunker.NewChunker(
+	chunker, err := media.NewChunker(
 		mainFile,
-		ffchunker.NewVideoCutter(),
-		ffchunker.NewDurationCalculator(),
+		media.NewVideoCutter(),
+		media.NewDurationCalculator(),
 		outPath,
 		chunkSize*bytesInMegabyte,
 	)

@@ -1,8 +1,8 @@
-package ffchunker
+package media
 
 import (
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/files"
+	"github.com/wailorman/ffchunker/pkg/files"
 
 	"github.com/wailorman/goffmpeg/transcoder"
 )

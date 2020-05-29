@@ -1,14 +1,13 @@
-package ffchunker
+package media
 
 import (
 	"fmt"
 	"strconv"
 
-	"github.com/sirupsen/logrus"
-	"github.com/wailorman/ffchunker/ctxlog"
-
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/files"
+	"github.com/sirupsen/logrus"
+	"github.com/wailorman/ffchunker/pkg/ctxlog"
+	"github.com/wailorman/ffchunker/pkg/files"
 )
 
 // Chunker _

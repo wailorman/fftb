@@ -1,10 +1,10 @@
-package ffchunker
+package chtime
 
 import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/files"
+	"github.com/wailorman/ffchunker/pkg/files"
 )
 
 // ChTimer _
