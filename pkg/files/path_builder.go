@@ -2,37 +2,23 @@ package files
 
 import "path/filepath"
 
-// PathBuilder _
-type PathBuilder struct {
-	pwd string
-}
-
-// NewPathBuilder _
-func NewPathBuilder(pwd string) *PathBuilder {
-	return &PathBuilder{
-		pwd: pwd,
-	}
-}
-
 // NewFile _
-func (pb *PathBuilder) NewFile(relativePath string) *File {
-	fullPath := filepath.Join(pb.pwd, relativePath)
+func NewFile(relativePath string) *File {
+	fullPath, _ := filepath.Abs(relativePath)
 
 	dirPath, fileName := filepath.Split(fullPath)
 
 	return &File{
-		pathBuilder: pb,
-		fileName:    fileName,
-		dirPath:     dirPath,
+		fileName: fileName,
+		dirPath:  dirPath,
 	}
 }
 
 // NewPath _
-func (pb *PathBuilder) NewPath(relativePath string) *Path {
-	fullPath := filepath.Join(pb.pwd, relativePath)
+func NewPath(relativePath string) *Path {
+	fullPath, _ := filepath.Abs(relativePath)
 
 	return &Path{
-		pathBuilder: pb,
-		path:        fullPath,
+		path: fullPath,
 	}
 }

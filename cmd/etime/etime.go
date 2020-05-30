@@ -48,7 +48,7 @@ func CliConfig() *cli.Command {
 
 func setTimes(pwd, path string, recursively bool) error {
 	if recursively {
-		path := files.NewPathBuilder(pwd).NewPath(path)
+		path := files.NewPath(path)
 		resChan, done := chtime.NewRecursiveChTimer(path).Perform()
 
 		for {
@@ -60,7 +60,7 @@ func setTimes(pwd, path string, recursively bool) error {
 			}
 		}
 	} else {
-		file := files.NewPathBuilder(pwd).NewFile(path)
+		file := files.NewFile(path)
 		res := chtime.NewChTimer(file).Perform()
 
 		logResults(res)

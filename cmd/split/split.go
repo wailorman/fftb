@@ -55,8 +55,8 @@ func CliConfig() *cli.Command {
 }
 
 func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) error {
-	mainFile := files.NewPathBuilder(pwd).NewFile(path)
-	outPath := files.NewPathBuilder(mainFile.DirPath()).NewPath(relativeChunksPath)
+	mainFile := files.NewFile(path)
+	outPath := files.NewPath(relativeChunksPath)
 
 	log := ctxlog.New(ctxlog.DefaultContext).
 		WithFields(logrus.Fields{
@@ -66,11 +66,12 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 
 	log.Info("Splitting to chunks...")
 
-	// (file files.Filer, videoCutter ffchunker.VideoCutter, durationCalculator ffchunker.VideoDurationCalculator, resultPath files.Pather, maxFileSize int) (*ffchunker.Chunker, error)
+	mediaInfoGetter := media.NewInfoGetter()
+
 	chunker, err := media.NewChunker(
 		mainFile,
 		media.NewVideoCutter(),
-		media.NewDurationCalculator(),
+		media.NewDurationCalculator(mediaInfoGetter),
 		outPath,
 		chunkSize*bytesInMegabyte,
 	)

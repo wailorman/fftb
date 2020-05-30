@@ -8,6 +8,7 @@ import (
 // New _
 func New(contextName string) *logrus.Entry {
 	log := logrus.New()
+	log.SetLevel(logrus.DebugLevel)
 	log.Formatter = new(prefixed.TextFormatter)
 
 	return log.

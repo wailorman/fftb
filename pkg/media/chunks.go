@@ -72,7 +72,7 @@ func (c *Chunker) Start() error {
 	}).Info("Start processing file...")
 
 	for i := 0; c.currentDuration < c.totalDuration; i++ {
-		resultFile := files.NewPathBuilder(c.resultPath.FullPath()).NewFile("./abc_" + strconv.Itoa(i) + ".mp4")
+		resultFile := files.NewFile("./abc_" + strconv.Itoa(i) + ".mp4")
 
 		chunkLog := log.WithFields(logrus.Fields{
 			"chunk_file_path": resultFile.FullPath(),

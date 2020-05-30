@@ -1,6 +1,12 @@
 package convert
 
 import (
+	"github.com/sirupsen/logrus"
+	"github.com/wailorman/ffchunker/pkg/ctxlog"
+	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/ffchunker/pkg/media"
+
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
 
@@ -10,12 +16,11 @@ func CliConfig() *cli.Command {
 		Name:    "convert",
 		Aliases: []string{"conv"},
 		Usage:   "Convert video",
-
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "video_codec",
 				Aliases: []string{"vc"},
-				Usage:   "Video codec. Possible values: h264, hevc. Default: h264",
+				Usage:   "Video codec. Possible values: h264, hevc",
 				Value:   "h264",
 			},
 			&cli.StringFlag{
@@ -28,24 +33,96 @@ func CliConfig() *cli.Command {
 				Aliases: []string{"vb"},
 				Usage:   "Video bitrate. By default delegates choise to ffmpeg",
 			},
+			&cli.BoolFlag{
+				Name:    "recursively",
+				Aliases: []string{"R"},
+				Usage:   "Go through all files recursively",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
-			// pwd, err := os.Getwd()
+			log := ctxlog.New(ctxlog.DefaultContext)
 
-			// if err != nil {
-			// 	return errors.Wrap(err, "Getting current working directory")
-			// }
+			inputPath := c.Args().First()
 
-			// path := c.Args().First()
+			if inputPath == "" {
+				return errors.New("Missing path argument")
+			}
 
-			// if path == "" {
-			// 	return errors.New("Missing path argument")
-			// }
+			mediaInfoGetter := media.NewInfoGetter()
 
-			// return splitToChunks(pwd, path, c.Int("chunk-size"), c.String("path"))
+			log.Info("Converting started")
 
-			return nil
+			var progressChan chan media.ConvertProgress
+			var doneChan chan bool
+			var errChan chan error
+
+			if c.Bool("recursively") {
+				inputPath := files.NewPath(inputPath)
+				outputPath := inputPath
+
+				progressChan, doneChan, errChan = media.NewConverter(mediaInfoGetter).
+					RecursiveConvert(
+						media.RecursiveConverterTask{
+							InPath:               inputPath,
+							OutPath:              outputPath,
+							HardwareAcceleration: c.String("hwaccel"),
+							VideoCodec:           c.String("video_codec"),
+							VideoBitRate:         c.String("video_bitrate"),
+						},
+					)
+			} else {
+				inputFile := files.NewFile(inputPath)
+				outputFile := inputFile.NewWithSuffix("_out")
+
+				progressChan, doneChan, errChan = media.NewConverter(mediaInfoGetter).
+					Convert(
+						media.ConverterTask{
+							InFile:               inputFile,
+							OutFile:              outputFile,
+							HardwareAcceleration: c.String("hwaccel"),
+							VideoCodec:           c.String("video_codec"),
+							VideoBitRate:         c.String("video_bitrate"),
+						},
+					)
+			}
+
+			for {
+				select {
+				case progress, ok := <-progressChan:
+					if !ok {
+						log.Warn("Error receiving progress message")
+						return nil
+					}
+
+					log.WithFields(logrus.Fields{
+						"frames_processed": progress.FramesProcessed,
+						"current_time":     progress.CurrentTime,
+						"current_bitrate":  progress.CurrentBitrate,
+						"progress":         progress.Progress,
+						"speed":            progress.Speed,
+						"fps":              progress.FPS,
+						"file_path":        progress.File.FullPath(),
+					}).Info("Converting progress")
+
+				case err, ok := <-errChan:
+					if !ok {
+						log.Warn("Error receiving error message")
+						return nil
+					}
+
+					if err != nil {
+						return err
+					}
+
+					log.Warn("Empty error message received")
+					return nil
+
+				case <-doneChan:
+					log.Info("Converting done")
+					return nil
+				}
+			}
 		},
 	}
 }

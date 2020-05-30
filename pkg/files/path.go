@@ -16,8 +16,7 @@ type Pather interface {
 
 // Path _
 type Path struct {
-	pathBuilder *PathBuilder
-	path        string
+	path string
 }
 
 // FullPath _
@@ -34,6 +33,13 @@ func (p *Path) Create() error {
 	return nil
 }
 
+// Clone _
+func (p *Path) Clone() *Path {
+	newPath := &Path{}
+	*newPath = *p
+	return newPath
+}
+
 // Files _
 func (p *Path) Files() ([]*File, error) {
 	files := make([]*File, 0)
@@ -47,9 +53,7 @@ func (p *Path) Files() ([]*File, error) {
 			return nil
 		}
 
-		dir, name := filepath.Split(path)
-
-		files = append(files, NewPathBuilder(dir).NewFile(name))
+		files = append(files, NewFile(path))
 
 		return nil
 	})

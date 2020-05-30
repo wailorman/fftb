@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/wailorman/ffchunker/cmd/convert"
 	"github.com/wailorman/ffchunker/cmd/etime"
 	"github.com/wailorman/ffchunker/cmd/split"
 
@@ -18,10 +19,13 @@ func main() {
 
 func cliApp() {
 	app := &cli.App{
+		Name:    "chunky",
+		Version: "v0.1.0",
 
 		Commands: []*cli.Command{
 			etime.CliConfig(),
 			split.CliConfig(),
+			convert.CliConfig(),
 		},
 	}
 
