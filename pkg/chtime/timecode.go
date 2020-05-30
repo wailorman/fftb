@@ -21,8 +21,10 @@ type ExtractTimeHandler interface {
 
 // ExtractTime _
 func ExtractTime(file files.Filer) (time.Time, string, error) {
+	mediaInfoGetter := media.NewInfoGetter()
+
 	patterns := []ExtractTimeHandler{
-		handlers.NewGeforceDVR(media.NewDurationCalculator()),
+		handlers.NewGeforceDVR(media.NewDurationCalculator(mediaInfoGetter)),
 		handlers.NewGeforceFull(),
 		handlers.NewAverMedia(),
 		handlers.NewPlaysTv(),

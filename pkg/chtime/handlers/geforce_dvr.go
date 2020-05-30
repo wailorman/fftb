@@ -17,18 +17,18 @@ var GeforceDVRRegexp = regexp.MustCompile("(\\d{4}\\.\\d{2}\\.\\d{2} - \\d{2}\\.
 // GeforceDVRTimeLayout _
 const GeforceDVRTimeLayout = "2006.01.02 - 15.04.05.99"
 
-// VideoDurationCalculator interface _
-type VideoDurationCalculator interface {
+// DurationCalculator interface _
+type DurationCalculator interface {
 	Calculate(file files.Filer) (float64, error)
 }
 
 // GeforceDVR _
 type GeforceDVR struct {
-	durationCalculator VideoDurationCalculator
+	durationCalculator DurationCalculator
 }
 
 // NewGeforceDVR _
-func NewGeforceDVR(durationCalculator VideoDurationCalculator) *GeforceDVR {
+func NewGeforceDVR(durationCalculator DurationCalculator) *GeforceDVR {
 	return &GeforceDVR{
 		durationCalculator: durationCalculator,
 	}

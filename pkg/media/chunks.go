@@ -15,7 +15,7 @@ type Chunker struct {
 	mainFile           files.Filer
 	totalDuration      float64
 	videoCutter        VideoCutter
-	durationCalculator VideoDurationCalculator
+	durationCalculator DurationCalculator
 	resultPath         files.Pather
 	maxFileSize        int
 
@@ -32,7 +32,7 @@ type ChunkerResult struct {
 func NewChunker(
 	file files.Filer,
 	videoCutter VideoCutter,
-	durationCalculator VideoDurationCalculator,
+	durationCalculator DurationCalculator,
 	resultPath files.Pather,
 	maxFileSize int,
 ) (*Chunker, error) {

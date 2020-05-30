@@ -3,38 +3,31 @@ package media
 import (
 	"github.com/pkg/errors"
 	"github.com/wailorman/ffchunker/pkg/files"
-
-	"github.com/wailorman/goffmpeg/transcoder"
 )
 
-// DurationCalculator _
-type DurationCalculator struct {
+// DurationCalculatorInstance _
+type DurationCalculatorInstance struct {
+	mediaInfoGetter InfoGetter
 }
 
-// VideoDurationCalculator _
-type VideoDurationCalculator interface {
+// DurationCalculator _
+type DurationCalculator interface {
 	Calculate(file files.Filer) (float64, error)
 }
 
 // NewDurationCalculator _
-func NewDurationCalculator() *DurationCalculator {
-	return &DurationCalculator{}
+func NewDurationCalculator(mediaInfoGetter InfoGetter) *DurationCalculatorInstance {
+	return &DurationCalculatorInstance{
+		mediaInfoGetter: mediaInfoGetter,
+	}
 }
 
 // Calculate _
-func (d *DurationCalculator) Calculate(file files.Filer) (float64, error) {
-	trans := &transcoder.Transcoder{}
-
-	err := trans.InitializeEmptyTranscoder()
+func (dc *DurationCalculatorInstance) Calculate(file files.Filer) (float64, error) {
+	metadata, err := dc.mediaInfoGetter.GetMediaInfo(file)
 
 	if err != nil {
-		return 0, errors.Wrap(err, "Initializing ffprobe instance")
-	}
-
-	metadata, err := trans.GetFileMetadata(file.FullPath())
-
-	if err != nil {
-		return 0, errors.Wrap(err, "Getting file metadata from ffprobe")
+		return 0, errors.Wrap(err, "Getting Media info error")
 	}
 
 	if len(metadata.Streams) == 0 {
