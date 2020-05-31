@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/wailorman/ffchunker/pkg/files"
 )
 
 // filerStub _
@@ -47,4 +51,39 @@ func (f *filerStub) EnsureParentDirExists() error {
 // Remove
 func (f *filerStub) Remove() error {
 	return os.Remove(f.FullPath())
+}
+
+// SetFileName _
+func (f *filerStub) SetFileName(fileName string) {
+	f.fileName = fileName
+}
+
+// SetDirPath _`
+func (f *filerStub) SetDirPath(path files.Pather) {
+	f.dirPath = path.FullPath()
+}
+
+/// Clone _
+func (f *filerStub) Clone() files.Filer {
+	newFile := &filerStub{}
+	*newFile = *f
+	return newFile
+}
+
+// NewWithSuffix _
+func (f *filerStub) NewWithSuffix(suffix string) files.Filer {
+	newFile := f.Clone()
+
+	nameWithoutExt := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
+
+	newFile.SetFileName(
+		fmt.Sprintf(
+			"%s%s%s",
+			nameWithoutExt,
+			suffix,
+			filepath.Ext(f.Name()),
+		),
+	)
+
+	return newFile
 }

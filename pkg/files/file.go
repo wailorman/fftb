@@ -15,9 +15,10 @@ type Filer interface {
 	SetChTime(timeObj time.Time) error
 	EnsureParentDirExists() error
 	Remove() error
-	SetDirPath(path Path)
-	Clone() *File
-	NewWithSuffix(suffix string) *File
+	SetDirPath(path Pather)
+	SetFileName(fileName string)
+	Clone() Filer
+	NewWithSuffix(suffix string) Filer
 }
 
 // File _
@@ -42,24 +43,36 @@ func (f *File) DirPath() string {
 }
 
 // SetDirPath _
-func (f *File) SetDirPath(path Path) {
+func (f *File) SetDirPath(path Pather) {
 	f.dirPath = path.FullPath()
 }
 
+// SetFileName _
+func (f *File) SetFileName(fileName string) {
+	f.fileName = fileName
+}
+
 // Clone _
-func (f *File) Clone() *File {
+func (f *File) Clone() Filer {
 	newFile := &File{}
 	*newFile = *f
 	return newFile
 }
 
 // NewWithSuffix _
-func (f *File) NewWithSuffix(suffix string) *File {
+func (f *File) NewWithSuffix(suffix string) Filer {
 	newFile := f.Clone()
 
 	nameWithoutExt := strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
 
-	newFile.fileName = fmt.Sprintf("%s%s%s", nameWithoutExt, suffix, filepath.Ext(f.Name()))
+	newFile.SetFileName(
+		fmt.Sprintf(
+			"%s%s%s",
+			nameWithoutExt,
+			suffix,
+			filepath.Ext(f.Name()),
+		),
+	)
 
 	return newFile
 }
