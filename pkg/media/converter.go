@@ -276,6 +276,7 @@ func (c *Converter) Convert(task ConverterTask) (
 			trans.MediaFile().SetVideoCodec(codec)
 		}
 
+		trans.MediaFile().SetHideBanner(true)
 		trans.MediaFile().SetVsync(true)
 		trans.MediaFile().SetVideoBitRate(task.VideoBitRate)
 		trans.MediaFile().SetAudioCodec("aac")
