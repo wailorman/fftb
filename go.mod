@@ -7,6 +7,6 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli/v2 v2.2.0
-	github.com/wailorman/goffmpeg v0.0.0-20200530120147-9de696277a7c
+	github.com/wailorman/goffmpeg v0.0.0-20200531100237-3e2473f68349
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 )
