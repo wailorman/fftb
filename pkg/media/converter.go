@@ -109,7 +109,7 @@ func (c *Converter) RecursiveConvert(task RecursiveConverterTask) (
 				continue
 			}
 
-			if IsVideo(mediaInfo) {
+			if isVideo(mediaInfo) {
 				videoFiles = append(videoFiles, file)
 
 				fileLog.Debug("Found video file")
@@ -210,7 +210,7 @@ func (c *Converter) Convert(task ConverterTask) (
 			},
 		).Debug("Received converter task")
 
-		if !IsVideo(metadata) {
+		if !isVideo(metadata) {
 			errChan <- errors.Wrap(err, "Input file is not video")
 			return
 		}
@@ -280,12 +280,10 @@ func (c *Converter) Convert(task ConverterTask) (
 		trans.MediaFile().SetVideoBitRate(task.VideoBitRate)
 		trans.MediaFile().SetAudioCodec("aac")
 
-		// Start transcoder process to check progress
 		done := trans.Run(true)
 
 		log.Debug("Converting started")
 
-		// Returns a channel to get the transcoding progress
 		progress := trans.Output()
 
 		for {
@@ -315,9 +313,8 @@ func (c *Converter) Convert(task ConverterTask) (
 	return progressChan, doneChan, errChan
 }
 
-// nvencDecoder _
 func (c *Converter) nvencDecoder(metadata ffmpegModels.Metadata) string {
-	if !IsVideo(metadata) {
+	if !isVideo(metadata) {
 		return ""
 	}
 
@@ -335,9 +332,8 @@ func (c *Converter) nvencDecoder(metadata ffmpegModels.Metadata) string {
 	}
 }
 
-// videoToolboxDecoder _
 func (c *Converter) videoToolboxDecoder(metadata ffmpegModels.Metadata) string {
-	if !IsVideo(metadata) {
+	if !isVideo(metadata) {
 		return ""
 	}
 
@@ -355,7 +351,6 @@ func (c *Converter) videoToolboxDecoder(metadata ffmpegModels.Metadata) string {
 	}
 }
 
-// nvencEncoder _
 func (c *Converter) nvencEncoder(codec string) string {
 	switch codec {
 	case HevcCodecType:
@@ -367,7 +362,6 @@ func (c *Converter) nvencEncoder(codec string) string {
 	}
 }
 
-// videoToolboxEncoder _
 func (c *Converter) videoToolboxEncoder(codec string) string {
 	switch codec {
 	case HevcCodecType:
@@ -379,8 +373,7 @@ func (c *Converter) videoToolboxEncoder(codec string) string {
 	}
 }
 
-// IsVideo _
-func IsVideo(metadata ffmpegModels.Metadata) bool {
+func isVideo(metadata ffmpegModels.Metadata) bool {
 	if len(metadata.Streams) == 0 {
 		return false
 	}
@@ -393,7 +386,7 @@ func IsVideo(metadata ffmpegModels.Metadata) bool {
 }
 
 func getVideoCodec(metadata ffmpegModels.Metadata) string {
-	if !IsVideo(metadata) {
+	if !isVideo(metadata) {
 		return ""
 	}
 
