@@ -285,7 +285,7 @@ func (c *Converter) Convert(task ConverterTask) (
 		trans.MediaFile().SetVideoBitRate(task.VideoBitRate)
 		trans.MediaFile().SetAudioCodec("aac")
 
-		if task.VideoCodec == HevcCodecType {
+		if task.VideoCodec == HevcCodecType && task.HardwareAcceleration != VideoToolboxHardwareAccelerationType {
 			trans.MediaFile().SetVideoTag("hvc1")
 		}
 
