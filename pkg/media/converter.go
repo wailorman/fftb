@@ -276,6 +276,10 @@ func (c *Converter) Convert(task ConverterTask) (
 			trans.MediaFile().SetVideoCodec(codec)
 		}
 
+		if task.HardwareAcceleration != VideoToolboxHardwareAccelerationType {
+			trans.MediaFile().SetPreset("slow")
+		}
+
 		trans.MediaFile().SetHideBanner(true)
 		trans.MediaFile().SetVsync(true)
 		trans.MediaFile().SetVideoBitRate(task.VideoBitRate)
