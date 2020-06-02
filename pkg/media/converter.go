@@ -1,8 +1,6 @@
 package media
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wailorman/ffchunker/pkg/ctxlog"
@@ -13,7 +11,10 @@ import (
 
 // Converter _
 type Converter struct {
-	infoGetter InfoGetter
+	infoGetter                  InfoGetter
+	ConversionStartedChan       chan bool
+	MetadataReceivedChan        chan ffmpegModels.Metadata
+	InputVideoCodecDetectedChan chan string
 }
 
 // NewConverter _
@@ -24,10 +25,10 @@ func NewConverter(infoGetter InfoGetter) *Converter {
 }
 
 const (
-	// NvencHardwareAccelerationType _
-	NvencHardwareAccelerationType = "nvenc"
-	// VideoToolboxHardwareAccelerationType _
-	VideoToolboxHardwareAccelerationType = "videotoolbox"
+	// NvencHWAccelType _
+	NvencHWAccelType = "nvenc"
+	// VTBHWAccelType _
+	VTBHWAccelType = "videotoolbox"
 )
 
 const (
@@ -50,21 +51,37 @@ type ConvertProgress struct {
 
 // ConverterTask _
 type ConverterTask struct {
-	InFile               files.Filer
-	OutFile              files.Filer
-	VideoCodec           string
-	HardwareAcceleration string
-	VideoBitRate         string
+	InFile       files.Filer
+	OutFile      files.Filer
+	VideoCodec   string
+	HWAccel      string
+	VideoBitRate string
+	Preset       string
+	Scale        ProxyScaleType
 }
 
 // RecursiveConverterTask _
 type RecursiveConverterTask struct {
-	InPath               files.Pather
-	OutPath              files.Pather
-	VideoCodec           string
-	HardwareAcceleration string
-	VideoBitRate         string
+	InPath       files.Pather
+	OutPath      files.Pather
+	VideoCodec   string
+	HWAccel      string
+	VideoBitRate string
+	Preset       string
+	Scale        ProxyScaleType
 }
+
+// ErrFileIsNotVideo _
+var ErrFileIsNotVideo = errors.New("File is not a video")
+
+// ErrNoStreamsInFile _
+var ErrNoStreamsInFile = errors.New("No streams in file")
+
+// ErrCodecIsNotSupportedByEncoder _
+var ErrCodecIsNotSupportedByEncoder = errors.New("Codec is not supported by encoder")
+
+// ErrUnsupportedHWAccelType _
+var ErrUnsupportedHWAccelType = errors.New("Unsupported hardware acceleration type")
 
 // RecursiveConvert _
 func (c *Converter) RecursiveConvert(task RecursiveConverterTask) (
@@ -142,11 +159,13 @@ func (c *Converter) RecursiveConvert(task RecursiveConverterTask) (
 
 func (c *Converter) proceedRecursiveConvert(file files.Filer, task RecursiveConverterTask, progressChan chan ConvertProgress) error {
 	_progressChan, _doneChan, _errChan := c.Convert(ConverterTask{
-		InFile:               file,
-		OutFile:              file.NewWithSuffix("_out"),
-		VideoCodec:           task.VideoCodec,
-		HardwareAcceleration: task.HardwareAcceleration,
-		VideoBitRate:         task.VideoBitRate,
+		InFile:       file,
+		OutFile:      file.NewWithSuffix("_out"),
+		VideoCodec:   task.VideoCodec,
+		HWAccel:      task.HWAccel,
+		VideoBitRate: task.VideoBitRate,
+		Preset:       task.Preset,
+		Scale:        task.Scale,
 	})
 
 	for {
@@ -171,19 +190,24 @@ func (c *Converter) Convert(task ConverterTask) (
 	doneChan = make(chan bool)
 	errChan = make(chan error)
 
-	log := ctxlog.New(ctxlog.DefaultContext + ".converter")
+	c.ConversionStartedChan = make(chan bool, 1)
+	c.MetadataReceivedChan = make(chan ffmpegModels.Metadata, 1)
+	c.InputVideoCodecDetectedChan = make(chan string, 1)
 
 	go func() {
+		var err error
 
 		defer close(progressChan)
 		defer close(doneChan)
 		defer close(errChan)
 
-		// Create new instance of transcoder
+		defer close(c.ConversionStartedChan)
+		defer close(c.MetadataReceivedChan)
+		defer close(c.InputVideoCodecDetectedChan)
+
 		trans := new(transcoder.Transcoder)
 
-		// Initialize transcoder passing the input file path and output file path
-		err := trans.Initialize(
+		err = trans.Initialize(
 			task.InFile.FullPath(),
 			task.OutFile.FullPath(),
 		)
@@ -200,98 +224,32 @@ func (c *Converter) Convert(task ConverterTask) (
 			return
 		}
 
-		log.WithFields(
-			logrus.Fields{
-				"input_file":            task.InFile.FullPath(),
-				"output_file":           task.InFile.FullPath(),
-				"video_codec":           task.VideoCodec,
-				"hardware_acceleration": task.HardwareAcceleration,
-				"bit_rate":              task.VideoBitRate,
-			},
-		).Debug("Received converter task")
+		c.MetadataReceivedChan <- metadata
 
 		if !isVideo(metadata) {
 			errChan <- errors.Wrap(err, "Input file is not video")
 			return
 		}
 
-		log.WithField("input_video_codec", getVideoCodec(metadata)).
-			Debug("Detected input video codec")
+		c.InputVideoCodecDetectedChan <- getVideoCodec(metadata)
 
-		if task.VideoCodec != HevcCodecType && task.VideoCodec != H264CodecType {
-			errChan <- fmt.Errorf("Unsupported video codec passed: `%s`. Only hevc & h264 is supported", task.VideoCodec)
+		codec, err := chooseCodec(task, metadata)
+
+		if err != nil {
+			errChan <- errors.Wrap(err, "Choosing codec")
 			return
 		}
 
-		switch task.HardwareAcceleration {
-		case NvencHardwareAccelerationType:
-			nvencDecoder := c.nvencDecoder(metadata)
+		err = codec.configure(trans.MediaFile())
 
-			if nvencDecoder != "" {
-				trans.MediaFile().SetInputVideoCodec(nvencDecoder)
-			} else {
-				log.Debug("Input video codec is not supported by NVENC. Using CPU as decoder")
-			}
-
-			nvencEncoder := c.nvencEncoder(task.VideoCodec)
-
-			if nvencEncoder != "" {
-				trans.MediaFile().SetHardwareAcceleration("cuvid")
-				trans.MediaFile().SetVideoCodec(nvencEncoder)
-			} else {
-				log.Warn("Encoding codec is not supported by NVENC. Using CPU as encoder")
-			}
-
-			log.WithFields(logrus.Fields{
-				"decoder": nvencDecoder,
-				"encoder": nvencEncoder,
-			}).Debug("Using HW acceleration options")
-
-		case VideoToolboxHardwareAccelerationType:
-			vtbEncoder := c.videoToolboxEncoder(task.VideoCodec)
-
-			if vtbEncoder != "" {
-				trans.MediaFile().SetHardwareAcceleration("videotoolbox")
-				trans.MediaFile().SetVideoCodec(vtbEncoder)
-			} else {
-				log.Warn("Encoding codec is not supported by VideoToolbox. Using CPU as encoder")
-			}
-
-			log.WithFields(logrus.Fields{
-				"encoder": vtbEncoder,
-			}).Debug("Using HW acceleration options")
-
-		default:
-			var codec string
-
-			if task.VideoCodec == HevcCodecType {
-				codec = "libx265"
-			} else if task.VideoCodec == H264CodecType {
-				codec = "libx264"
-			}
-
-			log.WithField("encoder", codec).
-				Debug("Hardware acceleration not passed or unknown. Using CPU as encoder & decoder")
-
-			trans.MediaFile().SetVideoCodec(codec)
-		}
-
-		if task.HardwareAcceleration != VideoToolboxHardwareAccelerationType {
-			trans.MediaFile().SetPreset("slow")
-		}
-
-		trans.MediaFile().SetHideBanner(true)
-		trans.MediaFile().SetVsync(true)
-		trans.MediaFile().SetVideoBitRate(task.VideoBitRate)
-		trans.MediaFile().SetAudioCodec("aac")
-
-		if task.VideoCodec == HevcCodecType && task.HardwareAcceleration != VideoToolboxHardwareAccelerationType {
-			trans.MediaFile().SetVideoTag("hvc1")
+		if err != nil {
+			errChan <- errors.Wrap(err, "Configuring codec")
+			return
 		}
 
 		done := trans.Run(true)
 
-		log.Debug("Converting started")
+		c.ConversionStartedChan <- true
 
 		progress := trans.Output()
 
@@ -320,66 +278,6 @@ func (c *Converter) Convert(task ConverterTask) (
 	}()
 
 	return progressChan, doneChan, errChan
-}
-
-func (c *Converter) nvencDecoder(metadata ffmpegModels.Metadata) string {
-	if !isVideo(metadata) {
-		return ""
-	}
-
-	if len(metadata.Streams) == 0 {
-		return ""
-	}
-
-	switch metadata.Streams[0].CodecName {
-	case "hevc":
-		return "hevc_cuvid"
-	case "h264":
-		return "h264_cuvid"
-	default:
-		return ""
-	}
-}
-
-func (c *Converter) videoToolboxDecoder(metadata ffmpegModels.Metadata) string {
-	if !isVideo(metadata) {
-		return ""
-	}
-
-	if len(metadata.Streams) == 0 {
-		return ""
-	}
-
-	switch metadata.Streams[0].CodecName {
-	case "hevc":
-		return "hevc_videotoolbox"
-	case "h264":
-		return "h264_videotoolbox"
-	default:
-		return ""
-	}
-}
-
-func (c *Converter) nvencEncoder(codec string) string {
-	switch codec {
-	case HevcCodecType:
-		return "hevc_nvenc"
-	case H264CodecType:
-		return "h264_nvenc"
-	default:
-		return ""
-	}
-}
-
-func (c *Converter) videoToolboxEncoder(codec string) string {
-	switch codec {
-	case HevcCodecType:
-		return "h264_videotoolbox"
-	case H264CodecType:
-		return "hevc_videotoolbox"
-	default:
-		return ""
-	}
 }
 
 func isVideo(metadata ffmpegModels.Metadata) bool {

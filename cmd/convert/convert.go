@@ -33,6 +33,12 @@ func CliConfig() *cli.Command {
 				Aliases: []string{"vb"},
 				Usage:   "Video bitrate. By default delegates choise to ffmpeg",
 			},
+			&cli.StringFlag{
+				Name:    "preset",
+				Aliases: []string{"p"},
+				Usage:   "Encoding preset",
+				Value:   "slow",
+			},
 			&cli.BoolFlag{
 				Name:    "recursively",
 				Aliases: []string{"R"},
@@ -57,34 +63,36 @@ func CliConfig() *cli.Command {
 			var doneChan chan bool
 			var errChan chan error
 
+			converter := media.NewConverter(mediaInfoGetter)
+
 			if c.Bool("recursively") {
 				inputPath := files.NewPath(inputPath)
 				outputPath := inputPath
 
-				progressChan, doneChan, errChan = media.NewConverter(mediaInfoGetter).
-					RecursiveConvert(
-						media.RecursiveConverterTask{
-							InPath:               inputPath,
-							OutPath:              outputPath,
-							HardwareAcceleration: c.String("hwaccel"),
-							VideoCodec:           c.String("video_codec"),
-							VideoBitRate:         c.String("video_bitrate"),
-						},
-					)
+				progressChan, doneChan, errChan = converter.RecursiveConvert(
+					media.RecursiveConverterTask{
+						InPath:       inputPath,
+						OutPath:      outputPath,
+						HWAccel:      c.String("hwaccel"),
+						VideoCodec:   c.String("video_codec"),
+						Preset:       c.String("preset"),
+						VideoBitRate: c.String("video_bitrate"),
+					},
+				)
 			} else {
 				inputFile := files.NewFile(inputPath)
 				outputFile := inputFile.NewWithSuffix("_out")
 
-				progressChan, doneChan, errChan = media.NewConverter(mediaInfoGetter).
-					Convert(
-						media.ConverterTask{
-							InFile:               inputFile,
-							OutFile:              outputFile,
-							HardwareAcceleration: c.String("hwaccel"),
-							VideoCodec:           c.String("video_codec"),
-							VideoBitRate:         c.String("video_bitrate"),
-						},
-					)
+				progressChan, doneChan, errChan = converter.Convert(
+					media.ConverterTask{
+						InFile:       inputFile,
+						OutFile:      outputFile,
+						HWAccel:      c.String("hwaccel"),
+						VideoCodec:   c.String("video_codec"),
+						Preset:       c.String("preset"),
+						VideoBitRate: c.String("video_bitrate"),
+					},
+				)
 			}
 
 			for {
@@ -119,8 +127,15 @@ func CliConfig() *cli.Command {
 					return nil
 
 				case <-doneChan:
-					log.Info("Converting done")
+					log.Info("Conversion done")
 					return nil
+
+				case <-converter.ConversionStartedChan:
+					log.Info("Conversion started")
+
+				case inputVideoCodec := <-converter.InputVideoCodecDetectedChan:
+					log.WithField("input_video_codec", inputVideoCodec).
+						Debug("Input video codec detected")
 				}
 			}
 		},
