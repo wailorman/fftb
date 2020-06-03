@@ -34,10 +34,13 @@ func CliConfig() *cli.Command {
 				Usage:   "Video bitrate. By default delegates choise to ffmpeg",
 			},
 			&cli.StringFlag{
-				Name:    "preset",
-				Aliases: []string{"p"},
-				Usage:   "Encoding preset",
-				Value:   "slow",
+				Name:  "preset",
+				Usage: "Encoding preset",
+				Value: "slow",
+			},
+			&cli.StringFlag{
+				Name:  "scale",
+				Usage: "Scaling. Possible values: 1/2 (half resolution), 1/4 (quarter resolution)",
 			},
 			&cli.BoolFlag{
 				Name:    "recursively",
@@ -77,6 +80,7 @@ func CliConfig() *cli.Command {
 						VideoCodec:   c.String("video_codec"),
 						Preset:       c.String("preset"),
 						VideoBitRate: c.String("video_bitrate"),
+						Scale:        c.String("scale"),
 					},
 				)
 			} else {
@@ -91,6 +95,7 @@ func CliConfig() *cli.Command {
 						VideoCodec:   c.String("video_codec"),
 						Preset:       c.String("preset"),
 						VideoBitRate: c.String("video_bitrate"),
+						Scale:        c.String("scale"),
 					},
 				)
 			}

@@ -57,7 +57,7 @@ type ConverterTask struct {
 	HWAccel      string
 	VideoBitRate string
 	Preset       string
-	Scale        ProxyScaleType
+	Scale        string
 }
 
 // RecursiveConverterTask _
@@ -68,7 +68,7 @@ type RecursiveConverterTask struct {
 	HWAccel      string
 	VideoBitRate string
 	Preset       string
-	Scale        ProxyScaleType
+	Scale        string
 }
 
 // ErrFileIsNotVideo _
@@ -82,6 +82,12 @@ var ErrCodecIsNotSupportedByEncoder = errors.New("Codec is not supported by enco
 
 // ErrUnsupportedHWAccelType _
 var ErrUnsupportedHWAccelType = errors.New("Unsupported hardware acceleration type")
+
+// ErrUnsupportedScale _
+var ErrUnsupportedScale = errors.New("Unsupported scale")
+
+// ErrResolutionNotSupportScaling _
+var ErrResolutionNotSupportScaling = errors.New("Resolution not support scaling")
 
 // RecursiveConvert _
 func (c *Converter) RecursiveConvert(task RecursiveConverterTask) (
@@ -247,6 +253,13 @@ func (c *Converter) Convert(task ConverterTask) (
 			return
 		}
 
+		err = newVideoScale(task, metadata).configure(trans.MediaFile())
+
+		if err != nil {
+			errChan <- errors.Wrap(err, "Configuring video scale")
+			return
+		}
+
 		done := trans.Run(true)
 
 		c.ConversionStartedChan <- true
@@ -256,14 +269,16 @@ func (c *Converter) Convert(task ConverterTask) (
 		for {
 			select {
 			case progressMessage := <-progress:
-				progressChan <- ConvertProgress{
-					FramesProcessed: progressMessage.FramesProcessed,
-					CurrentTime:     progressMessage.CurrentTime,
-					CurrentBitrate:  progressMessage.CurrentBitrate,
-					Progress:        progressMessage.Progress,
-					Speed:           progressMessage.Speed,
-					FPS:             progressMessage.FPS,
-					File:            task.InFile,
+				if progressMessage.FramesProcessed != "" {
+					progressChan <- ConvertProgress{
+						FramesProcessed: progressMessage.FramesProcessed,
+						CurrentTime:     progressMessage.CurrentTime,
+						CurrentBitrate:  progressMessage.CurrentBitrate,
+						Progress:        progressMessage.Progress,
+						Speed:           progressMessage.Speed,
+						FPS:             progressMessage.FPS,
+						File:            task.InFile,
+					}
 				}
 			case err := <-done:
 				if err != nil {
