@@ -42,6 +42,11 @@ func CliConfig() *cli.Command {
 				Name:  "scale",
 				Usage: "Scaling. Possible values: 1/2 (half resolution), 1/4 (quarter resolution)",
 			},
+			&cli.IntFlag{
+				Name:    "parallelism",
+				Aliases: []string{"P"},
+				Value:   1,
+			},
 			&cli.BoolFlag{
 				Name:    "recursively",
 				Aliases: []string{"R"},
@@ -62,53 +67,73 @@ func CliConfig() *cli.Command {
 
 			log.Info("Converting started")
 
-			var progressChan chan media.ConvertProgress
+			var progressChan chan media.BatchProgressMessage
 			var doneChan chan bool
 			var errChan chan error
 
-			converter := media.NewConverter(mediaInfoGetter)
+			var conversionStarted chan bool
+			var inputVideoCodecDetected chan media.InputVideoCodecDetectedBatchMessage
 
 			if c.Bool("recursively") {
 				inputPath := files.NewPath(inputPath)
 				outputPath := inputPath
 
-				progressChan, doneChan, errChan = converter.RecursiveConvert(
-					media.RecursiveConverterTask{
-						InPath:       inputPath,
-						OutPath:      outputPath,
-						HWAccel:      c.String("hwaccel"),
-						VideoCodec:   c.String("video_codec"),
-						Preset:       c.String("preset"),
-						VideoBitRate: c.String("video_bitrate"),
-						Scale:        c.String("scale"),
-					},
-				)
+				converter := media.NewRecursiveConverter(mediaInfoGetter)
+
+				recursiveTask := media.RecursiveConverterTask{
+					Parallelism:  c.Int("parallelism"),
+					InPath:       inputPath,
+					OutPath:      outputPath,
+					HWAccel:      c.String("hwaccel"),
+					VideoCodec:   c.String("video_codec"),
+					Preset:       c.String("preset"),
+					VideoBitRate: c.String("video_bitrate"),
+					Scale:        c.String("scale"),
+				}
+
+				progressChan, doneChan, errChan = converter.Convert(recursiveTask)
+
+				conversionStarted = converter.ConversionStarted
+				inputVideoCodecDetected = converter.InputVideoCodecDetected
 			} else {
 				inputFile := files.NewFile(inputPath)
 				outputFile := inputFile.NewWithSuffix("_out")
 
-				progressChan, doneChan, errChan = converter.Convert(
-					media.ConverterTask{
-						InFile:       inputFile,
-						OutFile:      outputFile,
-						HWAccel:      c.String("hwaccel"),
-						VideoCodec:   c.String("video_codec"),
-						Preset:       c.String("preset"),
-						VideoBitRate: c.String("video_bitrate"),
-						Scale:        c.String("scale"),
+				batchTask := media.BatchConverterTask{
+					Parallelism: c.Int("parallelism"),
+					Tasks: []media.ConverterTask{
+						media.ConverterTask{
+							InFile:       inputFile,
+							OutFile:      outputFile,
+							HWAccel:      c.String("hwaccel"),
+							VideoCodec:   c.String("video_codec"),
+							Preset:       c.String("preset"),
+							VideoBitRate: c.String("video_bitrate"),
+							Scale:        c.String("scale"),
+						},
 					},
-				)
+				}
+
+				converter := media.NewBatchConverter(mediaInfoGetter)
+
+				progressChan, doneChan, errChan = converter.Convert(batchTask)
+
+				conversionStarted = converter.ConversionStarted
+				inputVideoCodecDetected = converter.InputVideoCodecDetected
 			}
 
 			for {
 				select {
-				case progress, ok := <-progressChan:
+				case progressMessage, ok := <-progressChan:
 					if !ok {
 						log.Warn("Error receiving progress message")
 						return nil
 					}
 
+					progress := progressMessage.Progress
+
 					log.WithFields(logrus.Fields{
+						"id":               progressMessage.Task.ID,
 						"frames_processed": progress.FramesProcessed,
 						"current_time":     progress.CurrentTime,
 						"current_bitrate":  progress.CurrentBitrate,
@@ -121,25 +146,22 @@ func CliConfig() *cli.Command {
 				case err, ok := <-errChan:
 					if !ok {
 						log.Warn("Error receiving error message")
-						return nil
+						break
 					}
 
 					if err != nil {
-						return err
+						log.Warn(err)
 					}
-
-					log.Warn("Empty error message received")
-					return nil
 
 				case <-doneChan:
 					log.Info("Conversion done")
 					return nil
 
-				case <-converter.ConversionStartedChan:
+				case <-conversionStarted:
 					log.Info("Conversion started")
 
-				case inputVideoCodec := <-converter.InputVideoCodecDetectedChan:
-					log.WithField("input_video_codec", inputVideoCodec).
+				case inputVideoCodec := <-inputVideoCodecDetected:
+					log.WithField("input_video_codec", inputVideoCodec.Codec).
 						Debug("Input video codec detected")
 				}
 			}

@@ -20,7 +20,7 @@ func main() {
 func cliApp() {
 	app := &cli.App{
 		Name:    "chunky",
-		Version: "v0.3.0",
+		Version: "v0.4.0-rc1",
 
 		Commands: []*cli.Command{
 			etime.CliConfig(),
