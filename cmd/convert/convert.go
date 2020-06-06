@@ -1,7 +1,6 @@
 package convert
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/wailorman/ffchunker/pkg/ctxlog"
 	"github.com/wailorman/ffchunker/pkg/files"
 	"github.com/wailorman/ffchunker/pkg/media"
@@ -18,18 +17,18 @@ func CliConfig() *cli.Command {
 		Usage:   "Convert video",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:    "video_codec",
+				Name:    "video-codec",
 				Aliases: []string{"vc"},
 				Usage:   "Video codec. Possible values: h264, hevc",
 				Value:   "h264",
 			},
 			&cli.StringFlag{
-				Name:    "hwaccel",
+				Name:    "hardware-acceleration",
 				Aliases: []string{"hwa"},
 				Usage:   "Used hardware acceleration type. Possible values: videotoolbox, nvenc",
 			},
 			&cli.StringFlag{
-				Name:    "video_bitrate",
+				Name:    "video-bitrate",
 				Aliases: []string{"vb"},
 				Usage:   "Video bitrate. By default delegates choise to ffmpeg",
 			},
@@ -45,6 +44,7 @@ func CliConfig() *cli.Command {
 			&cli.IntFlag{
 				Name:    "parallelism",
 				Aliases: []string{"P"},
+				Usage:   "Number of parallel ffmpeg workers",
 				Value:   1,
 			},
 			&cli.BoolFlag{
@@ -55,114 +55,90 @@ func CliConfig() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+			var err error
+
 			log := ctxlog.New(ctxlog.DefaultContext)
 
-			inputPath := c.Args().First()
+			inputPath, outputPath, err := pullInputPaths(c)
 
-			if inputPath == "" {
-				return errors.New("Missing path argument")
+			if err != nil {
+				return errors.Wrap(err, "Getting input & output paths error")
 			}
 
 			mediaInfoGetter := media.NewInfoGetter()
 
-			log.Info("Converting started")
-
 			var progressChan chan media.BatchProgressMessage
 			var doneChan chan bool
-			var errChan chan error
+			var errChan chan media.BatchErrorMessage
 
 			var conversionStarted chan bool
 			var inputVideoCodecDetected chan media.InputVideoCodecDetectedBatchMessage
 
-			if c.Bool("recursively") {
-				inputPath := files.NewPath(inputPath)
-				outputPath := inputPath
+			inFile := files.NewFile(inputPath)
+			outFile := inFile.Clone()
+			outFile.SetDirPath(files.NewPath(outputPath))
 
-				converter := media.NewRecursiveConverter(mediaInfoGetter)
-
-				recursiveTask := media.RecursiveConverterTask{
-					Parallelism:  c.Int("parallelism"),
-					InPath:       inputPath,
-					OutPath:      outputPath,
-					HWAccel:      c.String("hwaccel"),
-					VideoCodec:   c.String("video_codec"),
-					Preset:       c.String("preset"),
-					VideoBitRate: c.String("video_bitrate"),
-					Scale:        c.String("scale"),
-				}
-
-				progressChan, doneChan, errChan = converter.Convert(recursiveTask)
-
-				conversionStarted = converter.ConversionStarted
-				inputVideoCodecDetected = converter.InputVideoCodecDetected
-			} else {
-				inputFile := files.NewFile(inputPath)
-				outputFile := inputFile.NewWithSuffix("_out")
-
-				batchTask := media.BatchConverterTask{
-					Parallelism: c.Int("parallelism"),
-					Tasks: []media.ConverterTask{
-						media.ConverterTask{
-							InFile:       inputFile,
-							OutFile:      outputFile,
-							HWAccel:      c.String("hwaccel"),
-							VideoCodec:   c.String("video_codec"),
-							Preset:       c.String("preset"),
-							VideoBitRate: c.String("video_bitrate"),
-							Scale:        c.String("scale"),
-						},
+			batchTask := media.BatchConverterTask{
+				Parallelism: c.Int("parallelism"),
+				Tasks: []media.ConverterTask{
+					media.ConverterTask{
+						InFile:       inFile,
+						OutFile:      outFile,
+						HWAccel:      c.String("hwaccel"),
+						VideoCodec:   c.String("video-codec"),
+						Preset:       c.String("preset"),
+						VideoBitRate: c.String("video-bitrate"),
+						Scale:        c.String("scale"),
 					},
-				}
-
-				converter := media.NewBatchConverter(mediaInfoGetter)
-
-				progressChan, doneChan, errChan = converter.Convert(batchTask)
-
-				conversionStarted = converter.ConversionStarted
-				inputVideoCodecDetected = converter.InputVideoCodecDetected
+				},
 			}
+
+			if c.Bool("recursively") {
+				outputPath := c.Args().Get(1)
+
+				batchTask, err = media.BuildBatchTaskFromRecursive(media.RecursiveConverterTask{
+					Parallelism:  c.Int("parallelism"),
+					InPath:       files.NewPath(inputPath),
+					OutPath:      files.NewPath(outputPath),
+					HWAccel:      c.String("hwaccel"),
+					VideoCodec:   c.String("video-codec"),
+					Preset:       c.String("preset"),
+					VideoBitRate: c.String("video-bitrate"),
+					Scale:        c.String("scale"),
+				}, mediaInfoGetter)
+
+				if err != nil {
+					return errors.Wrap(err, "Building recursive task")
+				}
+			}
+
+			converter := media.NewBatchConverter(mediaInfoGetter)
+
+			progressChan, doneChan, errChan = converter.Convert(batchTask)
+
+			conversionStarted = converter.ConversionStarted
+			inputVideoCodecDetected = converter.InputVideoCodecDetected
 
 			for {
 				select {
-				case progressMessage, ok := <-progressChan:
-					if !ok {
-						log.Warn("Error receiving progress message")
-						return nil
-					}
+				case progressMessage := <-progressChan:
+					logProgress(log, progressMessage)
 
-					progress := progressMessage.Progress
-
-					log.WithFields(logrus.Fields{
-						"id":               progressMessage.Task.ID,
-						"frames_processed": progress.FramesProcessed,
-						"current_time":     progress.CurrentTime,
-						"current_bitrate":  progress.CurrentBitrate,
-						"progress":         progress.Progress,
-						"speed":            progress.Speed,
-						"fps":              progress.FPS,
-						"file_path":        progress.File.FullPath(),
-					}).Info("Converting progress")
-
-				case err, ok := <-errChan:
-					if !ok {
-						log.Warn("Error receiving error message")
-						break
-					}
-
-					if err != nil {
-						log.Warn(err)
-					}
+				case errorMessage := <-errChan:
+					logError(log, errorMessage)
 
 				case <-doneChan:
-					log.Info("Conversion done")
+					logDone(log)
 					return nil
 
 				case <-conversionStarted:
-					log.Info("Conversion started")
+					logConversionStarted(log)
+
+				case msg := <-converter.TaskConversionStarted:
+					logTaskConversionStarted(log, msg)
 
 				case inputVideoCodec := <-inputVideoCodecDetected:
-					log.WithField("input_video_codec", inputVideoCodec.Codec).
-						Debug("Input video codec detected")
+					logInputVideoCodec(log, inputVideoCodec)
 				}
 			}
 		},

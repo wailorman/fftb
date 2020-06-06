@@ -25,3 +25,9 @@ type BatchVideoFilteringMessage struct {
 	Message VideoFileFilteringMessage
 	Task    ConverterTask
 }
+
+// BatchErrorMessage _
+type BatchErrorMessage struct {
+	Err  error
+	Task ConverterTask
+}

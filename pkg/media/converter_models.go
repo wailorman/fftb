@@ -73,3 +73,6 @@ var ErrUnsupportedScale = errors.New("Unsupported scale")
 
 // ErrResolutionNotSupportScaling _
 var ErrResolutionNotSupportScaling = errors.New("Resolution not support scaling")
+
+// ErrOutputFileExistsOrIsDirectory _
+var ErrOutputFileExistsOrIsDirectory = errors.New("Output file exists or is directory")

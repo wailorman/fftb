@@ -63,6 +63,16 @@ func (f *filerStub) SetDirPath(path files.Pather) {
 	f.dirPath = path.FullPath()
 }
 
+// BuildPath _
+func (f *filerStub) BuildPath() files.Pather {
+	return files.NewPath(f.DirPath())
+}
+
+// IsExist _
+func (f *filerStub) IsExist() bool {
+	return false
+}
+
 /// Clone _
 func (f *filerStub) Clone() files.Filer {
 	newFile := &filerStub{}

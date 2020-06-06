@@ -1,11 +1,8 @@
 package media
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 // BatchConverter _
@@ -60,13 +57,13 @@ func (bc *BatchConverter) closeChannels() {
 func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 	progress chan BatchProgressMessage,
 	finished chan bool,
-	failed chan error,
+	failed chan BatchErrorMessage,
 ) {
 	taskCount := len(batchTask.Tasks)
 
 	progress = make(chan BatchProgressMessage)
 	finished = make(chan bool)
-	failed = make(chan error)
+	failed = make(chan BatchErrorMessage)
 	taskQueue := make(chan ConverterTask, taskCount)
 	bc.initChannels(taskCount)
 
@@ -81,19 +78,18 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 				for task := range taskQueue {
 					err := bc.convertOne(task, progress)
 
-					wg.Done()
-
 					if err != nil {
-						failed <- errors.Wrap(
-							err,
-							fmt.Sprintf("Processing task #%s error", task.ID),
-						)
+						failed <- BatchErrorMessage{
+							Task: task,
+							Err:  err,
+						}
 
 						if batchTask.StopConversionOnError {
 							bc.StopConversion()
-							return
 						}
 					}
+
+					wg.Done()
 				}
 			}()
 		}
@@ -101,7 +97,10 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 
 	go func() {
 		for i, task := range batchTask.Tasks {
-			task.ID = strconv.Itoa(i)
+			if task.ID == "" {
+				task.ID = strconv.Itoa(i)
+			}
+
 			taskQueue <- task
 		}
 	}()
@@ -157,8 +156,8 @@ func (bc *BatchConverter) convertOne(task ConverterTask, progress chan BatchProg
 				Progress: progressMessage,
 				Task:     task,
 			}
-		case err := <-_failed:
-			return err
+		case errorMessage := <-_failed:
+			return errorMessage
 		case <-_finished:
 			return nil
 		}

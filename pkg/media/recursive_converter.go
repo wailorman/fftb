@@ -31,40 +31,15 @@ type RecursiveConverterTask struct {
 	Scale        string
 }
 
-// NewRecursiveConverter _
-func NewRecursiveConverter(infoGetter InfoGetter) *RecursiveConverter {
-	return &RecursiveConverter{
-		infoGetter:     infoGetter,
-		stopConversion: make(chan struct{}),
-	}
-}
-
-// StopConversion _
-func (rc *RecursiveConverter) StopConversion() {
-	// broadcast to all channel receivers
-	close(rc.stopConversion)
-}
-
-// Convert _
-func (rc *RecursiveConverter) Convert(task RecursiveConverterTask) (
-	progress chan BatchProgressMessage,
-	finished chan bool,
-	failed chan error,
-) {
-	progress = make(chan BatchProgressMessage)
-	finished = make(chan bool)
-	failed = make(chan error)
-
+// BuildBatchTaskFromRecursive _
+func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter InfoGetter) (BatchConverterTask, error) {
 	allFiles, err := task.InPath.Files()
 
 	if err != nil {
-		failed <- errors.Wrap(err, "Getting filed from path")
-		return
+		return BatchConverterTask{}, errors.Wrap(err, "Getting files from path")
 	}
 
-	videoFiles := filterVideos(allFiles, rc.infoGetter)
-
-	converter := NewBatchConverter(rc.infoGetter)
+	videoFiles := filterVideos(allFiles, infoGetter)
 
 	batchTask := BatchConverterTask{
 		Parallelism: task.Parallelism,
@@ -72,9 +47,12 @@ func (rc *RecursiveConverter) Convert(task RecursiveConverterTask) (
 	}
 
 	for _, file := range videoFiles {
+		outFile := file.Clone()
+		outFile.SetDirPath(task.OutPath)
+
 		batchTask.Tasks = append(batchTask.Tasks, ConverterTask{
 			InFile:       file,
-			OutFile:      file.NewWithSuffix("_out"),
+			OutFile:      outFile,
 			VideoCodec:   task.VideoCodec,
 			HWAccel:      task.HWAccel,
 			VideoBitRate: task.VideoBitRate,
@@ -83,14 +61,5 @@ func (rc *RecursiveConverter) Convert(task RecursiveConverterTask) (
 		})
 	}
 
-	progress, finished, failed = converter.Convert(batchTask)
-
-	rc.ConversionStarted = converter.ConversionStarted
-	rc.TaskConversionStarted = converter.TaskConversionStarted
-	rc.MetadataReceived = converter.MetadataReceived
-	rc.InputVideoCodecDetected = converter.InputVideoCodecDetected
-	rc.ConversionStopping = converter.ConversionStopping
-	rc.ConversionStopped = converter.ConversionStopped
-
-	return progress, finished, failed
+	return batchTask, nil
 }

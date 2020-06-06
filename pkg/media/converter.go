@@ -134,6 +134,18 @@ func (c *Converter) Convert(task ConverterTask) (
 			return
 		}
 
+		err = task.OutFile.BuildPath().Create()
+
+		if err != nil {
+			failed <- errors.Wrap(err, "Creating output dir")
+			return
+		}
+
+		if task.OutFile.IsExist() {
+			failed <- ErrOutputFileExistsOrIsDirectory
+			return
+		}
+
 		done := trans.Run(true)
 
 		c.ConversionStarted <- true
@@ -157,7 +169,6 @@ func (c *Converter) Convert(task ConverterTask) (
 			case err := <-done:
 				if err != nil {
 					failed <- err
-					return
 				}
 
 				finished <- true

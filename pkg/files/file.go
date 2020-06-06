@@ -19,6 +19,8 @@ type Filer interface {
 	SetFileName(fileName string)
 	Clone() Filer
 	NewWithSuffix(suffix string) Filer
+	BuildPath() Pather
+	IsExist() bool
 }
 
 // File _
@@ -40,6 +42,20 @@ func (f *File) Name() string {
 // DirPath _
 func (f *File) DirPath() string {
 	return f.dirPath
+}
+
+// BuildPath _
+func (f *File) BuildPath() Pather {
+	return NewPath(f.DirPath())
+}
+
+// IsExist _
+func (f *File) IsExist() bool {
+	info, err := os.Stat(f.FullPath())
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
 
 // SetDirPath _
