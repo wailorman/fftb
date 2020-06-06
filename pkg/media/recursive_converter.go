@@ -1,6 +1,8 @@
 package media
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
 	"github.com/wailorman/ffchunker/pkg/files"
 )
@@ -46,11 +48,12 @@ func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter InfoGet
 		Tasks:       make([]ConverterTask, 0),
 	}
 
-	for _, file := range videoFiles {
+	for i, file := range videoFiles {
 		outFile := file.Clone()
 		outFile.SetDirPath(task.OutPath)
 
 		batchTask.Tasks = append(batchTask.Tasks, ConverterTask{
+			ID:           strconv.Itoa(i),
 			InFile:       file,
 			OutFile:      outFile,
 			VideoCodec:   task.VideoCodec,
