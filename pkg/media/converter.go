@@ -141,11 +141,6 @@ func (c *Converter) Convert(task ConverterTask) (
 			return
 		}
 
-		if task.OutFile.IsExist() {
-			failed <- ErrOutputFileExistsOrIsDirectory
-			return
-		}
-
 		done := trans.Run(true)
 
 		c.ConversionStarted <- true
