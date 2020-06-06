@@ -7,13 +7,22 @@ import (
 
 // New _
 func New(contextName string) *logrus.Entry {
-	log := logrus.New()
-	log.SetLevel(logrus.DebugLevel)
-	log.Formatter = new(prefixed.TextFormatter)
+	loggerInstance.SetLevel(logrus.DebugLevel)
+	loggerInstance.Formatter = new(prefixed.TextFormatter)
 
-	return log.
+	return loggerInstance.
 		WithField("prefix", contextName)
 }
 
 // DefaultContext _
 const DefaultContext = "chunky"
+
+// Logger _
+var Logger = New(DefaultContext)
+
+var loggerInstance = logrus.New()
+
+// SetLevel _
+func SetLevel(lvl logrus.Level) {
+	loggerInstance.SetLevel(lvl)
+}

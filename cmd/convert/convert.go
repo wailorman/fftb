@@ -1,7 +1,6 @@
 package convert
 
 import (
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
 	"github.com/wailorman/ffchunker/pkg/files"
 	"github.com/wailorman/ffchunker/pkg/media"
 
@@ -56,8 +55,6 @@ func CliConfig() *cli.Command {
 
 		Action: func(c *cli.Context) error {
 			var err error
-
-			log := ctxlog.New(ctxlog.DefaultContext)
 
 			inputPath, outputPath, err := pullInputPaths(c)
 
@@ -122,23 +119,23 @@ func CliConfig() *cli.Command {
 			for {
 				select {
 				case progressMessage := <-progressChan:
-					logProgress(log, progressMessage)
+					logProgress(progressMessage)
 
 				case errorMessage := <-errChan:
-					logError(log, errorMessage)
+					logError(errorMessage)
 
 				case <-doneChan:
-					logDone(log)
+					logDone()
 					return nil
 
 				case <-conversionStarted:
-					logConversionStarted(log)
+					logConversionStarted()
 
 				case msg := <-converter.TaskConversionStarted:
-					logTaskConversionStarted(log, msg)
+					logTaskConversionStarted(msg)
 
 				case inputVideoCodec := <-inputVideoCodecDetected:
-					logInputVideoCodec(log, inputVideoCodec)
+					logInputVideoCodec(inputVideoCodec)
 				}
 			}
 		},

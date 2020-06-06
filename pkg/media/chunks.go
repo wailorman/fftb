@@ -56,7 +56,7 @@ func NewChunker(
 
 // Start _
 func (c *Chunker) Start() error {
-	log := ctxlog.New(ctxlog.DefaultContext + ".chunker")
+	log := ctxlog.Logger
 
 	totalDuration, err := c.durationCalculator.Calculate(c.mainFile)
 

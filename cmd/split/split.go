@@ -58,7 +58,7 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 	mainFile := files.NewFile(path)
 	outPath := files.NewPath(relativeChunksPath)
 
-	log := ctxlog.New(ctxlog.DefaultContext).
+	log := ctxlog.Logger.
 		WithFields(logrus.Fields{
 			"main_file_path": mainFile.FullPath(),
 			"out_path":       outPath.FullPath(),

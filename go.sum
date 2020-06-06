@@ -33,11 +33,11 @@ github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H4=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/urfave/cli v1.22.4 h1:u7tSpNPPswAFymm8IehJhy4uJMlUuU/GmqSkvJ1InXA=
+github.com/urfave/cli v1.22.4/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
 github.com/urfave/cli/v2 v2.2.0 h1:JTTnM6wKzdA0Jqodd966MVj4vWbbquZykeX1sKbe2C4=
 github.com/urfave/cli/v2 v2.2.0/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
-github.com/wailorman/goffmpeg v0.0.0-20200602192341-e3afbaf9d219 h1:1ECkG0H5Mk154JfCkPlP2DGG/zcOvAsUzTYEV9441L8=
-github.com/wailorman/goffmpeg v0.0.0-20200602192341-e3afbaf9d219/go.mod h1:4txMpslbfZ9moxKcs55TYvYGoMfcPaXlo55AdZWnoMc=
-github.com/wailorman/goffmpeg v0.0.0-20200603071304-88a5f4c85f1b h1:r02359h9rD5pLW7u6NFqIRCqMngoQa4lNSvhG5+SHsI=
+github.com/wailorman/goffmpeg v0.0.0-20200606101649-f567abdebe14 h1:wsWJJ5Ci7S91lJJs16Wje2ySFn9VjCSoxX7CKNHWs8A=
+github.com/wailorman/goffmpeg v0.0.0-20200606101649-f567abdebe14/go.mod h1:4txMpslbfZ9moxKcs55TYvYGoMfcPaXlo55AdZWnoMc=
 github.com/x-cray/logrus-prefixed-formatter v0.5.2 h1:00txxvfBM9muc0jiLIEAkAcIMJzfthRT6usrui8uGmg=
 github.com/x-cray/logrus-prefixed-formatter v0.5.2/go.mod h1:2duySbKsL6M18s5GU7VPsoEPHyzalCE06qoARUCeBBE=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

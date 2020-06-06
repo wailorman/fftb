@@ -33,7 +33,7 @@ func (ci *VideoCutterInstance) CutVideo(
 	maxFileSize int,
 ) (files.Filer, error) {
 
-	log := ctxlog.New(ctxlog.DefaultContext + ".cutter")
+	log := ctxlog.Logger
 
 	trans := new(transcoder.Transcoder)
 

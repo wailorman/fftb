@@ -70,7 +70,7 @@ func setTimes(pwd, path string, recursively bool) error {
 }
 
 func logResults(result chtime.ChTimerResult) {
-	log := ctxlog.New(ctxlog.DefaultContext)
+	log := ctxlog.Logger
 
 	if result.Ok {
 		log = log.WithField("time", result.Time.Format(time.RFC3339))
