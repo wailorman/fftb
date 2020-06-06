@@ -84,19 +84,6 @@ func (c *Converter) Convert(task ConverterTask) (
 			return
 		}
 
-		go func() {
-			for {
-				select {
-				case <-c.stopConversion:
-					c.ConversionStopping <- true
-					trans.Stop()
-					c.ConversionStopped <- true
-					finished <- true
-					return
-				}
-			}
-		}()
-
 		metadata, err := c.infoGetter.GetMediaInfo(task.InFile)
 
 		if err != nil {
@@ -149,6 +136,13 @@ func (c *Converter) Convert(task ConverterTask) (
 
 		for {
 			select {
+			case <-c.stopConversion:
+				c.ConversionStopping <- true
+				trans.Stop()
+				c.ConversionStopped <- true
+				finished <- true
+				return
+
 			case progressMessage := <-_progress:
 				if progressMessage.FramesProcessed != "" {
 					progress <- ConvertProgress{
@@ -161,6 +155,7 @@ func (c *Converter) Convert(task ConverterTask) (
 						File:            task.InFile,
 					}
 				}
+
 			case err := <-done:
 				if err != nil {
 					failed <- err

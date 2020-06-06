@@ -123,43 +123,44 @@ func (bc *BatchConverter) convertOne(task ConverterTask, progress chan BatchProg
 	singleConverter := NewConverter(bc.infoGetter)
 	_progress, _finished, _failed := singleConverter.Convert(task)
 
-	go func() {
-		for {
-			select {
-			case <-bc.stopConversion:
-				singleConverter.StopConversion()
-				return
-			}
-		}
-	}()
-
 	for {
 		select {
+		case <-bc.stopConversion:
+			singleConverter.StopConversion()
+
 		case <-singleConverter.ConversionStarted:
 			bc.TaskConversionStarted <- task
+
 		case metadata := <-singleConverter.MetadataReceived:
 			bc.MetadataReceived <- MetadataReceivedBatchMessage{
 				Metadata: metadata,
 				Task:     task,
 			}
+
 		case videoCodec := <-singleConverter.InputVideoCodecDetected:
 			bc.InputVideoCodecDetected <- InputVideoCodecDetectedBatchMessage{
 				Codec: videoCodec,
 				Task:  task,
 			}
+
 		case <-singleConverter.ConversionStopping:
 			bc.ConversionStopping <- task
+
 		case <-singleConverter.ConversionStopped:
 			bc.ConversionStopped <- task
+
 		case progressMessage := <-_progress:
 			progress <- BatchProgressMessage{
 				Progress: progressMessage,
 				Task:     task,
 			}
+
 		case errorMessage := <-_failed:
 			return errorMessage
+
 		case <-_finished:
 			return nil
+
 		}
 	}
 }
