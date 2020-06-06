@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/wailorman/ffchunker/cmd/convert"
 	"github.com/wailorman/ffchunker/cmd/etime"
@@ -20,6 +21,14 @@ func cliApp() {
 	app := &cli.App{
 		Name:    "chunky",
 		Version: "v0.4.0",
+
+		Compiled: time.Now(),
+		Authors: []*cli.Author{
+			&cli.Author{
+				Name:  "Sergey Popov",
+				Email: "wailorman@gmail.com",
+			},
+		},
 
 		Flags: []cli.Flag{
 			&cli.IntFlag{
