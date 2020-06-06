@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,4 +97,24 @@ func (f *filerStub) NewWithSuffix(suffix string) files.Filer {
 	)
 
 	return newFile
+}
+
+// ReadContent _
+func (f *filerStub) ReadContent() (string, error) {
+	file, err := os.Open(f.FullPath())
+
+	if err != nil {
+		return "", err
+	}
+
+	defer file.Close()
+
+	b, err := ioutil.ReadAll(file)
+
+	return string(b), nil
+}
+
+// MarshalYAML is YAML Marshaller interface implementation
+func (f *filerStub) MarshalYAML() (interface{}, error) {
+	return f.FullPath(), nil
 }

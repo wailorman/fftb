@@ -1,8 +1,11 @@
 package convert
 
 import (
+	"fmt"
+
 	"github.com/wailorman/ffchunker/pkg/files"
 	"github.com/wailorman/ffchunker/pkg/media"
+	"gopkg.in/yaml.v2"
 
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
@@ -40,6 +43,10 @@ func CliConfig() *cli.Command {
 				Name:  "scale",
 				Usage: "Scaling. Possible values: 1/2 (half resolution), 1/4 (quarter resolution)",
 			},
+			&cli.StringFlag{
+				Name:  "config",
+				Usage: "Config file path",
+			},
 			&cli.IntFlag{
 				Name:    "parallelism",
 				Aliases: []string{"P"},
@@ -51,17 +58,13 @@ func CliConfig() *cli.Command {
 				Aliases: []string{"R"},
 				Usage:   "Go through all files recursively",
 			},
+			&cli.BoolFlag{
+				Name:  "dry-run",
+				Usage: "Print YAML task file",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
-			var err error
-
-			inputPath, outputPath, err := pullInputPaths(c)
-
-			if err != nil {
-				return errors.Wrap(err, "Getting input & output paths error")
-			}
-
 			mediaInfoGetter := media.NewInfoGetter()
 
 			var progressChan chan media.BatchProgressMessage
@@ -71,42 +74,75 @@ func CliConfig() *cli.Command {
 			var conversionStarted chan bool
 			var inputVideoCodecDetected chan media.InputVideoCodecDetectedBatchMessage
 
-			inFile := files.NewFile(inputPath)
-			outFile := inFile.Clone()
-			outFile.SetDirPath(files.NewPath(outputPath))
+			var batchTask media.BatchConverterTask
 
-			batchTask := media.BatchConverterTask{
-				Parallelism: c.Int("parallelism"),
-				Tasks: []media.ConverterTask{
-					media.ConverterTask{
-						InFile:       inFile,
-						OutFile:      outFile,
+			if c.String("config") != "" {
+				configFile := files.NewFile(c.String("config"))
+				config, err := configFile.ReadContent()
+
+				if err != nil {
+					return errors.Wrap(err, "Reading config content")
+				}
+
+				err = yaml.Unmarshal([]byte(config), &batchTask)
+
+				if err != nil {
+					return errors.Wrap(err, "Parsing config")
+				}
+			} else {
+				inputPath, outputPath, err := pullInputPaths(c)
+
+				if err != nil {
+					return errors.Wrap(err, "Getting input & output paths error")
+				}
+
+				inFile := files.NewFile(inputPath)
+				outFile := inFile.Clone()
+				outFile.SetDirPath(files.NewPath(outputPath))
+
+				batchTask = media.BatchConverterTask{
+					Parallelism: c.Int("parallelism"),
+					Tasks: []media.ConverterTask{
+						media.ConverterTask{
+							InFile:       inFile,
+							OutFile:      outFile,
+							HWAccel:      c.String("hwaccel"),
+							VideoCodec:   c.String("video-codec"),
+							Preset:       c.String("preset"),
+							VideoBitRate: c.String("video-bitrate"),
+							Scale:        c.String("scale"),
+						},
+					},
+				}
+
+				if c.Bool("recursively") {
+					outputPath := c.Args().Get(1)
+
+					batchTask, err = media.BuildBatchTaskFromRecursive(media.RecursiveConverterTask{
+						Parallelism:  c.Int("parallelism"),
+						InPath:       files.NewPath(inputPath),
+						OutPath:      files.NewPath(outputPath),
 						HWAccel:      c.String("hwaccel"),
 						VideoCodec:   c.String("video-codec"),
 						Preset:       c.String("preset"),
 						VideoBitRate: c.String("video-bitrate"),
 						Scale:        c.String("scale"),
-					},
-				},
+					}, mediaInfoGetter)
+
+					if err != nil {
+						return errors.Wrap(err, "Building recursive task")
+					}
+				}
 			}
 
-			if c.Bool("recursively") {
-				outputPath := c.Args().Get(1)
-
-				batchTask, err = media.BuildBatchTaskFromRecursive(media.RecursiveConverterTask{
-					Parallelism:  c.Int("parallelism"),
-					InPath:       files.NewPath(inputPath),
-					OutPath:      files.NewPath(outputPath),
-					HWAccel:      c.String("hwaccel"),
-					VideoCodec:   c.String("video-codec"),
-					Preset:       c.String("preset"),
-					VideoBitRate: c.String("video-bitrate"),
-					Scale:        c.String("scale"),
-				}, mediaInfoGetter)
-
+			if c.Bool("dry-run") {
+				d, err := yaml.Marshal(&batchTask)
 				if err != nil {
-					return errors.Wrap(err, "Building recursive task")
+					return errors.Wrap(err, "Exporting to YAML")
 				}
+
+				fmt.Println(string(d))
+				return nil
 			}
 
 			converter := media.NewBatchConverter(mediaInfoGetter)

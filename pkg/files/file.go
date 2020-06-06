@@ -2,6 +2,7 @@ package files
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +22,8 @@ type Filer interface {
 	NewWithSuffix(suffix string) Filer
 	BuildPath() Pather
 	IsExist() bool
+	ReadContent() (string, error)
+	MarshalYAML() (interface{}, error)
 }
 
 // File _
@@ -108,4 +111,24 @@ func (f *File) EnsureParentDirExists() error {
 // Remove _
 func (f *File) Remove() error {
 	return os.Remove(f.FullPath())
+}
+
+// ReadContent _
+func (f *File) ReadContent() (string, error) {
+	file, err := os.Open(f.FullPath())
+
+	if err != nil {
+		return "", err
+	}
+
+	defer file.Close()
+
+	b, err := ioutil.ReadAll(file)
+
+	return string(b), nil
+}
+
+// MarshalYAML is YAML Marshaller interface implementation
+func (f *File) MarshalYAML() (interface{}, error) {
+	return f.FullPath(), nil
 }

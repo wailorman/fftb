@@ -42,7 +42,8 @@ func cliApp() {
 					"                                2 - regular errors\n" +
 					"                                3 - warnings\n" +
 					"                                4 - info messages (i.e. progress)\n" +
-					"                                5 - debug ",
+					"                                5 - debug\n" +
+					"                                6 - trace ",
 			},
 		},
 
