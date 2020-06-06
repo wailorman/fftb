@@ -29,6 +29,7 @@ func NewConverter(infoGetter InfoGetter) *Converter {
 
 // StopConversion _
 func (c *Converter) StopConversion() {
+	c.stopConversion = make(chan struct{})
 	// broadcast to all channel receivers
 	close(c.stopConversion)
 }

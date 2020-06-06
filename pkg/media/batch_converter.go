@@ -29,6 +29,7 @@ func NewBatchConverter(infoGetter InfoGetter) *BatchConverter {
 
 // StopConversion _
 func (bc *BatchConverter) StopConversion() {
+	bc.stopConversion = make(chan struct{})
 	// broadcast to all channel receivers
 	close(bc.stopConversion)
 }
