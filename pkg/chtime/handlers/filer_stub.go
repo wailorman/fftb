@@ -81,6 +81,16 @@ func (f *filerStub) Clone() files.Filer {
 	return newFile
 }
 
+// BaseName returns file name without extension
+func (f *filerStub) BaseName() string {
+	return strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
+}
+
+// Extension returns file extension from name. Example: ".mp4"
+func (f *filerStub) Extension() string {
+	return filepath.Ext(f.Name())
+}
+
 // NewWithSuffix _
 func (f *filerStub) NewWithSuffix(suffix string) files.Filer {
 	newFile := f.Clone()

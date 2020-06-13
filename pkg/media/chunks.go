@@ -2,7 +2,6 @@ package media
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -72,7 +71,17 @@ func (c *Chunker) Start() error {
 	}).Info("Start processing file...")
 
 	for i := 0; c.currentDuration < c.totalDuration; i++ {
-		resultFile := files.NewFile("./abc_" + strconv.Itoa(i) + ".mp4")
+		resultFile := files.NewFile(
+			fmt.Sprintf("./%s_%d%s", c.mainFile.BaseName(), i, c.mainFile.Extension()),
+		)
+
+		resultFile.SetDirPath(c.resultPath)
+
+		err := c.resultPath.Create()
+
+		if err != nil {
+			return errors.Wrap(err, "Creating result directory")
+		}
 
 		chunkLog := log.WithFields(logrus.Fields{
 			"chunk_file_path": resultFile.FullPath(),

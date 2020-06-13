@@ -19,6 +19,8 @@ type Filer interface {
 	SetDirPath(path Pather)
 	SetFileName(fileName string)
 	Clone() Filer
+	BaseName() string
+	Extension() string
 	NewWithSuffix(suffix string) Filer
 	BuildPath() Pather
 	IsExist() bool
@@ -76,6 +78,16 @@ func (f *File) Clone() Filer {
 	newFile := &File{}
 	*newFile = *f
 	return newFile
+}
+
+// BaseName returns file name without extension
+func (f *File) BaseName() string {
+	return strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
+}
+
+// Extension returns file extension from name. Example: ".mp4"
+func (f *File) Extension() string {
+	return filepath.Ext(f.Name())
 }
 
 // NewWithSuffix _
