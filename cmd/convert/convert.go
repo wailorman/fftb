@@ -36,8 +36,34 @@ func CliConfig() *cli.Command {
 			},
 			&cli.StringFlag{
 				Name:  "preset",
-				Usage: "Encoding preset",
 				Value: "slow",
+				Usage: "Encoding preset.\n" +
+					"\t\n" +
+					"\tWARNING! Apple's VideoToolBox is not support presets\t" +
+					"\t\n" +
+					"\tCPU-encoding values:\n" +
+					"\t- ultrafast\n" +
+					"\t- superfast\n" +
+					"\t- veryfast\n" +
+					"\t- faster\n" +
+					"\t- fast\n" +
+					"\t- medium\n" +
+					"\t- slow\n" +
+					"\t- slower\n" +
+					"\t- veryslow\n" +
+					"\t\n" +
+					"\tNVENC values:\n" +
+					"\t- slow\n" +
+					"\t- medium\n" +
+					"\t- fast\n" +
+					"\t- hp\n" +
+					"\t- hq\n" +
+					"\t- bd\n" +
+					"\t- ll\n" +
+					"\t- llhq\n" +
+					"\t- llhp\n" +
+					"\t- lossless\n" +
+					"\t- losslesshp\t",
 			},
 			&cli.StringFlag{
 				Name:  "scale",
