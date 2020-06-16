@@ -20,7 +20,7 @@ func main() {
 func cliApp() {
 	app := &cli.App{
 		Name:    "chunky",
-		Version: "v0.5.0",
+		Version: "v0.5.1",
 
 		Compiled: time.Now(),
 		Authors: []*cli.Author{
