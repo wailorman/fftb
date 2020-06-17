@@ -27,6 +27,8 @@ func (hw *nvencHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 		mediaFile.SetInputVideoCodec("h264_cuvid")
 	}
 
+	mediaFile.SetNvencRateControl("constqp")
+
 	switch hw.task.VideoCodec {
 	case HevcCodecType:
 		mediaFile.SetVideoCodec("hevc_nvenc")

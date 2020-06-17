@@ -26,8 +26,13 @@ func (c *H264Codec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	mediaFile.SetPreset(c.task.Preset)
 	mediaFile.SetHideBanner(true)
 	mediaFile.SetVsync(true)
-	mediaFile.SetVideoBitRate(c.task.VideoBitRate)
 	mediaFile.SetAudioCodec("copy")
+
+	if c.task.VideoQuality > 0 {
+		mediaFile.SetConstantQuantization(c.task.VideoQuality)
+	} else {
+		mediaFile.SetVideoBitRate(c.task.VideoBitRate)
+	}
 
 	hwaccel := chooseHwAccel(c.task, c.metadata)
 

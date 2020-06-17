@@ -29,6 +29,7 @@ type RecursiveConverterTask struct {
 	VideoCodec   string
 	HWAccel      string
 	VideoBitRate string
+	VideoQuality int
 	Preset       string
 	Scale        string
 }
@@ -59,6 +60,7 @@ func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter InfoGet
 			VideoCodec:   task.VideoCodec,
 			HWAccel:      task.HWAccel,
 			VideoBitRate: task.VideoBitRate,
+			VideoQuality: task.VideoQuality,
 			Preset:       task.Preset,
 			Scale:        task.Scale,
 		})

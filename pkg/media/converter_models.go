@@ -52,6 +52,7 @@ type ConverterTask struct {
 	VideoCodec   string      `yaml:"video_codec"`
 	HWAccel      string      `yaml:"hw_accel"`
 	VideoBitRate string      `yaml:"video_bit_rate"`
+	VideoQuality int         `yaml:"video_crf"`
 	Preset       string      `yaml:"preset"`
 	Scale        string      `yaml:"scale"`
 }
@@ -87,6 +88,7 @@ func (ct *ConverterTask) UnmarshalYAML(unmarshal func(interface{}) error) error 
 		VideoCodec   string `yaml:"video_codec"`
 		HWAccel      string `yaml:"hw_accel"`
 		VideoBitRate string `yaml:"video_bit_rate"`
+		VideoQuality int    `yaml:"video_quality"`
 		Preset       string `yaml:"preset"`
 		Scale        string `yaml:"scale"`
 	}{}
@@ -99,6 +101,7 @@ func (ct *ConverterTask) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	ct.VideoCodec = task.VideoCodec
 	ct.HWAccel = task.HWAccel
 	ct.VideoBitRate = task.VideoBitRate
+	ct.VideoQuality = task.VideoQuality
 	ct.Preset = task.Preset
 	ct.Scale = task.Scale
 

@@ -32,7 +32,12 @@ func CliConfig() *cli.Command {
 			&cli.StringFlag{
 				Name:    "video-bitrate",
 				Aliases: []string{"vb"},
-				Usage:   "Video bitrate. By default delegates choise to ffmpeg",
+				Usage:   "Video bitrate. Ignores if video-quality passed. By default delegates choise to ffmpeg",
+			},
+			&cli.IntFlag{
+				Name:    "video-quality",
+				Aliases: []string{"vq"},
+				Usage:   "Video quality (qp). Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
 			},
 			&cli.StringFlag{
 				Name:  "preset",
@@ -136,6 +141,7 @@ func CliConfig() *cli.Command {
 							VideoCodec:   c.String("video-codec"),
 							Preset:       c.String("preset"),
 							VideoBitRate: c.String("video-bitrate"),
+							VideoQuality: c.Int("video-quality"),
 							Scale:        c.String("scale"),
 						},
 					},
@@ -152,6 +158,7 @@ func CliConfig() *cli.Command {
 						VideoCodec:   c.String("video-codec"),
 						Preset:       c.String("preset"),
 						VideoBitRate: c.String("video-bitrate"),
+						VideoQuality: c.Int("video-quality"),
 						Scale:        c.String("scale"),
 					}, mediaInfoGetter)
 
