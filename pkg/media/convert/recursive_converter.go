@@ -17,7 +17,6 @@ type RecursiveConverter struct {
 	InputVideoCodecDetected chan InputVideoCodecDetectedBatchMessage
 	ConversionStopping      chan ConverterTask
 	ConversionStopped       chan ConverterTask
-	VideoFileFiltered       chan BatchVideoFilteringMessage
 
 	infoGetter     mediaInfo.Getter
 	stopConversion chan struct{}

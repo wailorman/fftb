@@ -15,7 +15,6 @@ type Converter struct {
 	InputVideoCodecDetected chan string
 	ConversionStopping      chan bool
 	ConversionStopped       chan bool
-	VideoFileFiltered       chan VideoFileFilteringMessage
 
 	infoGetter     mediaInfo.Getter
 	stopConversion chan struct{}

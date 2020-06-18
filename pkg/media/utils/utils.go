@@ -9,8 +9,6 @@ import (
 
 // FilterVideos _
 func FilterVideos(allFiles []*files.File, infoGetter mediaInfo.Getter) []files.Filer {
-	// c.VideoFileFiltered = make(chan VideoFileFilteringMessage, len(allFiles))
-
 	videoFiles := make([]files.Filer, 0)
 
 	for _, file := range allFiles {
