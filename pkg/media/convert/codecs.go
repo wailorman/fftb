@@ -1,4 +1,4 @@
-package media
+package convert
 
 import ffmpegModels "github.com/wailorman/goffmpeg/models"
 

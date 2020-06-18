@@ -3,12 +3,14 @@ package convert
 import (
 	"fmt"
 
-	"github.com/wailorman/ffchunker/pkg/files"
-	"github.com/wailorman/ffchunker/pkg/media"
+	"github.com/wailorman/chunky/pkg/files"
 	"gopkg.in/yaml.v2"
 
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
+
+	mediaConvert "github.com/wailorman/chunky/pkg/media/convert"
+	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
 )
 
 // CliConfig _
@@ -96,16 +98,16 @@ func CliConfig() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
-			mediaInfoGetter := media.NewInfoGetter()
+			mediaInfoGetter := mediaInfo.NewGetter()
 
-			var progressChan chan media.BatchProgressMessage
+			var progressChan chan mediaConvert.BatchProgressMessage
 			var doneChan chan bool
-			var errChan chan media.BatchErrorMessage
+			var errChan chan mediaConvert.BatchErrorMessage
 
 			var conversionStarted chan bool
-			var inputVideoCodecDetected chan media.InputVideoCodecDetectedBatchMessage
+			var inputVideoCodecDetected chan mediaConvert.InputVideoCodecDetectedBatchMessage
 
-			var batchTask media.BatchConverterTask
+			var batchTask mediaConvert.BatchConverterTask
 
 			if c.String("config") != "" {
 				configFile := files.NewFile(c.String("config"))
@@ -131,10 +133,10 @@ func CliConfig() *cli.Command {
 				outFile := inFile.Clone()
 				outFile.SetDirPath(files.NewPath(outputPath))
 
-				batchTask = media.BatchConverterTask{
+				batchTask = mediaConvert.BatchConverterTask{
 					Parallelism: c.Int("parallelism"),
-					Tasks: []media.ConverterTask{
-						media.ConverterTask{
+					Tasks: []mediaConvert.ConverterTask{
+						mediaConvert.ConverterTask{
 							InFile:       inFile,
 							OutFile:      outFile,
 							HWAccel:      c.String("hwaccel"),
@@ -150,7 +152,7 @@ func CliConfig() *cli.Command {
 				if c.Bool("recursively") {
 					outputPath := c.Args().Get(1)
 
-					batchTask, err = media.BuildBatchTaskFromRecursive(media.RecursiveConverterTask{
+					batchTask, err = mediaConvert.BuildBatchTaskFromRecursive(mediaConvert.RecursiveConverterTask{
 						Parallelism:  c.Int("parallelism"),
 						InPath:       files.NewPath(inputPath),
 						OutPath:      files.NewPath(outputPath),
@@ -178,7 +180,7 @@ func CliConfig() *cli.Command {
 				return nil
 			}
 
-			converter := media.NewBatchConverter(mediaInfoGetter)
+			converter := mediaConvert.NewBatchConverter(mediaInfoGetter)
 
 			progressChan, doneChan, errChan = converter.Convert(batchTask)
 

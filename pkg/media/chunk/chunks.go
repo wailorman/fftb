@@ -1,20 +1,22 @@
-package media
+package chunk
 
 import (
 	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
-	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/chunky/pkg/ctxlog"
+	"github.com/wailorman/chunky/pkg/files"
+	mediaCut "github.com/wailorman/chunky/pkg/media/cut"
+	mediaDuration "github.com/wailorman/chunky/pkg/media/duration"
 )
 
 // Chunker _
 type Chunker struct {
 	mainFile           files.Filer
 	totalDuration      float64
-	videoCutter        VideoCutter
-	durationCalculator DurationCalculator
+	videoCutter        mediaCut.Cutter
+	durationCalculator mediaDuration.Calculator
 	resultPath         files.Pather
 	maxFileSize        int
 
@@ -30,8 +32,8 @@ type ChunkerResult struct {
 // NewChunker _
 func NewChunker(
 	file files.Filer,
-	videoCutter VideoCutter,
-	durationCalculator DurationCalculator,
+	videoCutter mediaCut.Cutter,
+	durationCalculator mediaDuration.Calculator,
 	resultPath files.Pather,
 	maxFileSize int,
 ) (*Chunker, error) {

@@ -8,9 +8,9 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/wailorman/ffchunker/pkg/chtime"
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
-	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/chunky/pkg/chtime"
+	"github.com/wailorman/chunky/pkg/ctxlog"
+	"github.com/wailorman/chunky/pkg/files"
 )
 
 // CliConfig _

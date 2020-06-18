@@ -2,11 +2,11 @@ package convert
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
-	"github.com/wailorman/ffchunker/pkg/media"
+	"github.com/wailorman/chunky/pkg/ctxlog"
+	mediaConvert "github.com/wailorman/chunky/pkg/media/convert"
 )
 
-func logProgress(msg media.BatchProgressMessage) {
+func logProgress(msg mediaConvert.BatchProgressMessage) {
 	progress := msg.Progress
 
 	ctxlog.Logger.WithFields(logrus.Fields{
@@ -21,7 +21,7 @@ func logProgress(msg media.BatchProgressMessage) {
 	}).Info("Converting progress")
 }
 
-func logError(errorMessage media.BatchErrorMessage) {
+func logError(errorMessage mediaConvert.BatchErrorMessage) {
 	if errorMessage.Err != nil {
 		ctxlog.Logger.WithField("error", errorMessage.Err.Error()).
 			WithField("task_id", errorMessage.Task.ID).
@@ -38,14 +38,14 @@ func logConversionStarted() {
 	ctxlog.Logger.Info("Conversion started")
 }
 
-func logInputVideoCodec(msg media.InputVideoCodecDetectedBatchMessage) {
+func logInputVideoCodec(msg mediaConvert.InputVideoCodecDetectedBatchMessage) {
 	ctxlog.Logger.WithField("input_video_codec", msg.Codec).
 		WithField("task_id", msg.Task.ID).
 		WithField("task_input_file", msg.Task.InFile.FullPath()).
 		Debug("Input video codec detected")
 }
 
-func logTaskConversionStarted(task media.ConverterTask) {
+func logTaskConversionStarted(task mediaConvert.ConverterTask) {
 	ctxlog.Logger.WithField("task_id", task.ID).
 		WithField("task_input_file", task.InFile.FullPath()).
 		Debug("Task conversion started")

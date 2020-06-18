@@ -1,4 +1,4 @@
-package media
+package cut
 
 import (
 	"fmt"
@@ -6,27 +6,27 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
-	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/chunky/pkg/ctxlog"
+	"github.com/wailorman/chunky/pkg/files"
 	"github.com/wailorman/goffmpeg/transcoder"
 )
 
-// VideoCutterInstance _
-type VideoCutterInstance struct {
+// CutterInstance _
+type CutterInstance struct {
 }
 
-// NewVideoCutter _
-func NewVideoCutter() *VideoCutterInstance {
-	return &VideoCutterInstance{}
+// NewCutter _
+func NewCutter() *CutterInstance {
+	return &CutterInstance{}
 }
 
-// VideoCutter _
-type VideoCutter interface {
+// Cutter _
+type Cutter interface {
 	CutVideo(inFile files.Filer, outFile files.Filer, offset float64, maxFileSize int) (files.Filer, error)
 }
 
 // CutVideo _
-func (ci *VideoCutterInstance) CutVideo(
+func (ci *CutterInstance) CutVideo(
 	inFile files.Filer,
 	outFile files.Filer,
 	offset float64,

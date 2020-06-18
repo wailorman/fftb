@@ -1,8 +1,8 @@
-package media
+package convert
 
 import (
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/chunky/pkg/files"
 )
 
 const (
@@ -26,8 +26,8 @@ type VideoFileFilteringMessage struct {
 	Err     error
 }
 
-// ConvertProgress _
-type ConvertProgress struct {
+// Progress _
+type Progress struct {
 	FramesProcessed string
 	CurrentTime     string
 	CurrentBitrate  string

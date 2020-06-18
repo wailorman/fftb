@@ -1,4 +1,4 @@
-package media
+package convert
 
 import ffmpegModels "github.com/wailorman/goffmpeg/models"
 
@@ -16,7 +16,7 @@ type InputVideoCodecDetectedBatchMessage struct {
 
 // BatchProgressMessage _
 type BatchProgressMessage struct {
-	Progress ConvertProgress
+	Progress Progress
 	Task     ConverterTask
 }
 

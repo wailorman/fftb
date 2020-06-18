@@ -1,8 +1,10 @@
-package media
+package convert
 
 import (
 	"strconv"
 	"sync"
+
+	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
 )
 
 // BatchConverter _
@@ -15,12 +17,12 @@ type BatchConverter struct {
 	ConversionStopped       chan ConverterTask
 	VideoFileFiltered       chan BatchVideoFilteringMessage
 
-	infoGetter     InfoGetter
+	infoGetter     mediaInfo.Getter
 	stopConversion chan struct{}
 }
 
 // NewBatchConverter _
-func NewBatchConverter(infoGetter InfoGetter) *BatchConverter {
+func NewBatchConverter(infoGetter mediaInfo.Getter) *BatchConverter {
 	return &BatchConverter{
 		infoGetter:     infoGetter,
 		stopConversion: make(chan struct{}),

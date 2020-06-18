@@ -1,8 +1,9 @@
-package media
+package convert
 
 import (
 	"fmt"
 
+	mediaUtils "github.com/wailorman/chunky/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 )
 
@@ -72,7 +73,7 @@ func (pv *videoScale) configure(mediaFile *ffmpegModels.Mediafile) error {
 }
 
 func getVideoResolution(metadata ffmpegModels.Metadata) (width, height int) {
-	if !isVideo(metadata) {
+	if !mediaUtils.IsVideo(metadata) {
 		return 0, 0
 	}
 

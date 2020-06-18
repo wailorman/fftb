@@ -4,11 +4,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/wailorman/ffchunker/cmd/convert"
-	"github.com/wailorman/ffchunker/cmd/etime"
-	"github.com/wailorman/ffchunker/cmd/log"
-	"github.com/wailorman/ffchunker/cmd/split"
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
+	"github.com/wailorman/chunky/cmd/convert"
+	"github.com/wailorman/chunky/cmd/etime"
+	"github.com/wailorman/chunky/cmd/log"
+	"github.com/wailorman/chunky/cmd/split"
+	"github.com/wailorman/chunky/pkg/ctxlog"
 
 	"github.com/urfave/cli/v2"
 )

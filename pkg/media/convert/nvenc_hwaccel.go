@@ -1,6 +1,7 @@
-package media
+package convert
 
 import (
+	mediaUtils "github.com/wailorman/chunky/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 )
 
@@ -10,7 +11,7 @@ type nvencHWAccel struct {
 }
 
 func (hw *nvencHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
-	if !isVideo(hw.metadata) {
+	if !mediaUtils.IsVideo(hw.metadata) {
 		return ErrFileIsNotVideo
 	}
 

@@ -3,7 +3,7 @@ package log
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
+	"github.com/wailorman/chunky/pkg/ctxlog"
 	goffmpegCtxlog "github.com/wailorman/goffmpeg/ctxlog"
 )
 

@@ -1,6 +1,6 @@
 package handlers
 
-import "github.com/wailorman/ffchunker/pkg/files"
+import "github.com/wailorman/chunky/pkg/files"
 
 type durationCalculatorStub struct {
 	value float64

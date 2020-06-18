@@ -1,4 +1,4 @@
-module github.com/wailorman/ffchunker
+module github.com/wailorman/chunky
 
 go 1.13
 

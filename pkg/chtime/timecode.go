@@ -4,9 +4,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/pkg/chtime/handlers"
-	"github.com/wailorman/ffchunker/pkg/files"
-	"github.com/wailorman/ffchunker/pkg/media"
+	"github.com/wailorman/chunky/pkg/chtime/handlers"
+	"github.com/wailorman/chunky/pkg/files"
+
+	mediaDuration "github.com/wailorman/chunky/pkg/media/duration"
+	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
 )
 
 // ErrNoTimeMatches _
@@ -21,10 +23,10 @@ type ExtractTimeHandler interface {
 
 // ExtractTime _
 func ExtractTime(file files.Filer) (time.Time, string, error) {
-	mediaInfoGetter := media.NewInfoGetter()
+	mediaInfoGetter := mediaInfo.NewGetter()
 
 	patterns := []ExtractTimeHandler{
-		handlers.NewGeforceDVR(media.NewDurationCalculator(mediaInfoGetter)),
+		handlers.NewGeforceDVR(mediaDuration.NewCalculator(mediaInfoGetter)),
 		handlers.NewGeforceFull(),
 		handlers.NewAverMedia(),
 		handlers.NewPlaysTv(),

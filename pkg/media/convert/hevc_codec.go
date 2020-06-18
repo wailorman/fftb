@@ -1,35 +1,35 @@
-package media
+package convert
 
 import (
 	"github.com/pkg/errors"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 )
 
-// H264Codec _
-type H264Codec struct {
+// HevcCodec _
+type HevcCodec struct {
 	task     ConverterTask
 	metadata ffmpegModels.Metadata
 }
 
-// NewH264Codec _
-func NewH264Codec(task ConverterTask, metadata ffmpegModels.Metadata) *H264Codec {
-	return &H264Codec{
+// NewHevcCodec _
+func NewHevcCodec(task ConverterTask, metadata ffmpegModels.Metadata) *HevcCodec {
+	return &HevcCodec{
 		task:     task,
 		metadata: metadata,
 	}
 }
 
-func (c *H264Codec) configure(mediaFile *ffmpegModels.Mediafile) error {
+func (c *HevcCodec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	var err error
 
-	mediaFile.SetVideoCodec("libx264")
+	mediaFile.SetVideoCodec("libx265")
 	mediaFile.SetPreset(c.task.Preset)
 	mediaFile.SetHideBanner(true)
 	mediaFile.SetVsync(true)
 	mediaFile.SetAudioCodec("copy")
 
 	if c.task.VideoQuality > 0 {
-		mediaFile.SetCRF(uint32(c.task.VideoQuality))
+		mediaFile.SetLibx265Params(&ffmpegModels.Libx265Params{CRF: uint32(c.task.VideoQuality)})
 	} else {
 		mediaFile.SetVideoBitRate(c.task.VideoBitRate)
 	}
@@ -43,6 +43,6 @@ func (c *H264Codec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	return nil
 }
 
-func (c *H264Codec) getType() string {
-	return H264CodecType
+func (c *HevcCodec) getType() string {
+	return HevcCodecType
 }

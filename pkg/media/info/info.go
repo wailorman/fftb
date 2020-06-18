@@ -1,28 +1,28 @@
-package media
+package info
 
 import (
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/chunky/pkg/files"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 	"github.com/wailorman/goffmpeg/transcoder"
 )
 
-// InfoGetterInstance _
-type InfoGetterInstance struct {
+// GetterInstance _
+type GetterInstance struct {
 }
 
-// InfoGetter _
-type InfoGetter interface {
+// Getter _
+type Getter interface {
 	GetMediaInfo(file files.Filer) (ffmpegModels.Metadata, error)
 }
 
-// NewInfoGetter _
-func NewInfoGetter() *InfoGetterInstance {
-	return &InfoGetterInstance{}
+// NewGetter _
+func NewGetter() *GetterInstance {
+	return &GetterInstance{}
 }
 
 // GetMediaInfo _
-func (ig *InfoGetterInstance) GetMediaInfo(file files.Filer) (ffmpegModels.Metadata, error) {
+func (ig *GetterInstance) GetMediaInfo(file files.Filer) (ffmpegModels.Metadata, error) {
 	trans := &transcoder.Transcoder{}
 
 	err := trans.InitializeEmptyTranscoder()

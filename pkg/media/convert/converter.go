@@ -1,7 +1,9 @@
-package media
+package convert
 
 import (
 	"github.com/pkg/errors"
+	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
+	mediaUtils "github.com/wailorman/chunky/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 	"github.com/wailorman/goffmpeg/transcoder"
 )
@@ -15,12 +17,12 @@ type Converter struct {
 	ConversionStopped       chan bool
 	VideoFileFiltered       chan VideoFileFilteringMessage
 
-	infoGetter     InfoGetter
+	infoGetter     mediaInfo.Getter
 	stopConversion chan struct{}
 }
 
 // NewConverter _
-func NewConverter(infoGetter InfoGetter) *Converter {
+func NewConverter(infoGetter mediaInfo.Getter) *Converter {
 	return &Converter{
 		infoGetter:     infoGetter,
 		stopConversion: make(chan struct{}),
@@ -54,11 +56,11 @@ func (c *Converter) closeChannels() {
 
 // Convert _
 func (c *Converter) Convert(task ConverterTask) (
-	progress chan ConvertProgress,
+	progress chan Progress,
 	finished chan bool,
 	failed chan error,
 ) {
-	progress = make(chan ConvertProgress)
+	progress = make(chan Progress)
 	finished = make(chan bool)
 	failed = make(chan error)
 
@@ -94,12 +96,12 @@ func (c *Converter) Convert(task ConverterTask) (
 
 		c.MetadataReceived <- metadata
 
-		if !isVideo(metadata) {
+		if !mediaUtils.IsVideo(metadata) {
 			failed <- errors.Wrap(err, "Input file is not video")
 			return
 		}
 
-		c.InputVideoCodecDetected <- getVideoCodec(metadata)
+		c.InputVideoCodecDetected <- mediaUtils.GetVideoCodec(metadata)
 
 		codec, err := chooseCodec(task, metadata)
 
@@ -146,7 +148,7 @@ func (c *Converter) Convert(task ConverterTask) (
 
 			case progressMessage := <-_progress:
 				if progressMessage.FramesProcessed != "" {
-					progress <- ConvertProgress{
+					progress <- Progress{
 						FramesProcessed: progressMessage.FramesProcessed,
 						CurrentTime:     progressMessage.CurrentTime,
 						CurrentBitrate:  progressMessage.CurrentBitrate,

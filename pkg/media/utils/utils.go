@@ -1,11 +1,14 @@
-package media
+package utils
 
 import (
-	"github.com/wailorman/ffchunker/pkg/files"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
+
+	"github.com/wailorman/chunky/pkg/files"
+	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
 )
 
-func filterVideos(allFiles []*files.File, infoGetter InfoGetter) []files.Filer {
+// FilterVideos _
+func FilterVideos(allFiles []*files.File, infoGetter mediaInfo.Getter) []files.Filer {
 	// c.VideoFileFiltered = make(chan VideoFileFilteringMessage, len(allFiles))
 
 	videoFiles := make([]files.Filer, 0)
@@ -17,7 +20,7 @@ func filterVideos(allFiles []*files.File, infoGetter InfoGetter) []files.Filer {
 			continue
 		}
 
-		if isVideo(mediaInfo) {
+		if IsVideo(mediaInfo) {
 			videoFiles = append(videoFiles, file)
 		}
 	}
@@ -25,7 +28,8 @@ func filterVideos(allFiles []*files.File, infoGetter InfoGetter) []files.Filer {
 	return videoFiles
 }
 
-func isVideo(metadata ffmpegModels.Metadata) bool {
+// IsVideo _
+func IsVideo(metadata ffmpegModels.Metadata) bool {
 	if len(metadata.Streams) == 0 {
 		return false
 	}
@@ -37,8 +41,9 @@ func isVideo(metadata ffmpegModels.Metadata) bool {
 	return true
 }
 
-func getVideoCodec(metadata ffmpegModels.Metadata) string {
-	if !isVideo(metadata) {
+// GetVideoCodec _
+func GetVideoCodec(metadata ffmpegModels.Metadata) string {
+	if !IsVideo(metadata) {
 		return ""
 	}
 

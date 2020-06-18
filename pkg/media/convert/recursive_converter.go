@@ -1,10 +1,12 @@
-package media
+package convert
 
 import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/ffchunker/pkg/files"
+	"github.com/wailorman/chunky/pkg/files"
+	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
+	mediaUtils "github.com/wailorman/chunky/pkg/media/utils"
 )
 
 // RecursiveConverter _
@@ -17,7 +19,7 @@ type RecursiveConverter struct {
 	ConversionStopped       chan ConverterTask
 	VideoFileFiltered       chan BatchVideoFilteringMessage
 
-	infoGetter     InfoGetter
+	infoGetter     mediaInfo.Getter
 	stopConversion chan struct{}
 }
 
@@ -35,14 +37,14 @@ type RecursiveConverterTask struct {
 }
 
 // BuildBatchTaskFromRecursive _
-func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter InfoGetter) (BatchConverterTask, error) {
+func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter mediaInfo.Getter) (BatchConverterTask, error) {
 	allFiles, err := task.InPath.Files()
 
 	if err != nil {
 		return BatchConverterTask{}, errors.Wrap(err, "Getting files from path")
 	}
 
-	videoFiles := filterVideos(allFiles, infoGetter)
+	videoFiles := mediaUtils.FilterVideos(allFiles, infoGetter)
 
 	batchTask := BatchConverterTask{
 		Parallelism: task.Parallelism,

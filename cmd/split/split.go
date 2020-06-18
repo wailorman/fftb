@@ -7,9 +7,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/wailorman/ffchunker/pkg/ctxlog"
-	"github.com/wailorman/ffchunker/pkg/files"
-	"github.com/wailorman/ffchunker/pkg/media"
+	"github.com/wailorman/chunky/pkg/ctxlog"
+	"github.com/wailorman/chunky/pkg/files"
+	mediaChunk "github.com/wailorman/chunky/pkg/media/chunk"
+	mediaCut "github.com/wailorman/chunky/pkg/media/cut"
+	mediaDuration "github.com/wailorman/chunky/pkg/media/duration"
+	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
 )
 
 const bytesInMegabyte = 1000000
@@ -66,12 +69,12 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 
 	log.Info("Splitting to chunks...")
 
-	mediaInfoGetter := media.NewInfoGetter()
+	mediaInfoGetter := mediaInfo.NewGetter()
 
-	chunker, err := media.NewChunker(
+	chunker, err := mediaChunk.NewChunker(
 		mainFile,
-		media.NewVideoCutter(),
-		media.NewDurationCalculator(mediaInfoGetter),
+		mediaCut.NewCutter(),
+		mediaDuration.NewCalculator(mediaInfoGetter),
 		outPath,
 		chunkSize*bytesInMegabyte,
 	)
