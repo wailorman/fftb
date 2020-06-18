@@ -29,6 +29,12 @@ func (hw *nvencHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 
 	mediaFile.SetNvencRateControl("constqp")
 
+	if hw.task.VideoQuality > 0 {
+		mediaFile.SetCRF(0)
+		mediaFile.SetLibx265Params(nil)
+		mediaFile.SetConstantQuantization(hw.task.VideoQuality)
+	}
+
 	switch hw.task.VideoCodec {
 	case HevcCodecType:
 		mediaFile.SetVideoCodec("hevc_nvenc")

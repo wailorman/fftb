@@ -29,7 +29,7 @@ func (c *H264Codec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	mediaFile.SetAudioCodec("copy")
 
 	if c.task.VideoQuality > 0 {
-		mediaFile.SetConstantQuantization(c.task.VideoQuality)
+		mediaFile.SetCRF(uint32(c.task.VideoQuality))
 	} else {
 		mediaFile.SetVideoBitRate(c.task.VideoBitRate)
 	}
