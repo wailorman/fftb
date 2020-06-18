@@ -44,6 +44,11 @@ github.com/wailorman/goffmpeg v0.0.0-20200606133350-2bc70a96cf6b h1:P8yiYkZAbfSC
 github.com/wailorman/goffmpeg v0.0.0-20200606133350-2bc70a96cf6b/go.mod h1:4txMpslbfZ9moxKcs55TYvYGoMfcPaXlo55AdZWnoMc=
 github.com/wailorman/goffmpeg v0.0.0-20200617154454-bd5dbea79aa0 h1:w0H/1hWp27DwtOYZuAcMRRQGjEMT93G2Z8aHhbyfjLU=
 github.com/wailorman/goffmpeg v0.0.0-20200617154454-bd5dbea79aa0/go.mod h1:4txMpslbfZ9moxKcs55TYvYGoMfcPaXlo55AdZWnoMc=
+github.com/wailorman/goffmpeg v0.0.0-20200617205125-715bb75e4846 h1:9A8muRpveq/HI4pEz1/9K7EDTr0sUylrKPeULMMEE3o=
+github.com/wailorman/goffmpeg v0.0.0-20200617205238-95645f5c179f h1:NoSlsItlA1AbkeAeqcU/hHvEtjcD23sU0pbhPd3Ms0M=
+github.com/wailorman/goffmpeg v0.0.0-20200617205238-95645f5c179f/go.mod h1:4txMpslbfZ9moxKcs55TYvYGoMfcPaXlo55AdZWnoMc=
+github.com/wailorman/goffmpeg v0.0.0-20200617205705-d6d2cc2d5b3d h1:YEwXkViaD9Lg0Mg8/9YXOI9f5tXfE1Rsi0ccDxOnmbI=
+github.com/wailorman/goffmpeg v0.0.0-20200617205705-d6d2cc2d5b3d/go.mod h1:4txMpslbfZ9moxKcs55TYvYGoMfcPaXlo55AdZWnoMc=
 github.com/x-cray/logrus-prefixed-formatter v0.5.2 h1:00txxvfBM9muc0jiLIEAkAcIMJzfthRT6usrui8uGmg=
 github.com/x-cray/logrus-prefixed-formatter v0.5.2/go.mod h1:2duySbKsL6M18s5GU7VPsoEPHyzalCE06qoARUCeBBE=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
