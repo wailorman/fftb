@@ -24,7 +24,7 @@ func getLogrusLevel(level int) logrus.Level {
 	case 6:
 		return logrus.TraceLevel
 	default:
-		return logrus.DebugLevel
+		return logrus.InfoLevel
 	}
 }
 
