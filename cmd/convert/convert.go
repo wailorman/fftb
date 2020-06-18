@@ -19,6 +19,11 @@ func CliConfig() *cli.Command {
 		Name:    "convert",
 		Aliases: []string{"conv"},
 		Usage:   "Convert video",
+		UsageText: "single file mode: chunky convert [options] <input file> <output file>\n" +
+			"   recursive mode:   chunky convert [options] -R <input path> <output path>\n" +
+			"\n" +
+			"   If directory does not exists, it will create it for you.\n" +
+			"   WARNING: If file already exists, it will overwrite it",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "video-codec",
@@ -29,24 +34,47 @@ func CliConfig() *cli.Command {
 			&cli.StringFlag{
 				Name:    "hardware-acceleration",
 				Aliases: []string{"hwa"},
-				Usage:   "Used hardware acceleration type. Possible values: videotoolbox, nvenc",
+				Usage:   "Used hardware acceleration type. Possible values: videotoolbox (for macs), nvenc (for Nvidia GPUs). By default uses x264/x265 CPU encoders",
 			},
 			&cli.StringFlag{
 				Name:    "video-bitrate",
 				Aliases: []string{"vb"},
-				Usage:   "Video bitrate. Ignores if video-quality passed. By default delegates choise to ffmpeg",
+				Usage:   "Video bitrate. Ignores if --video-quality is passed. By default delegates choise to ffmpeg. Examples: 25M, 1600K",
 			},
 			&cli.IntFlag{
 				Name:    "video-quality",
 				Aliases: []string{"vq"},
-				Usage:   "Video quality (qp). Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
+				Usage:   "Video quality (-crf option for CPU encoding and -qp option for NVENC). Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
+			},
+			&cli.StringFlag{
+				Name:  "scale",
+				Usage: "Scaling. Possible values: 1/2 (half resolution), 1/4 (quarter resolution)",
+			},
+			&cli.IntFlag{
+				Name:    "parallelism",
+				Aliases: []string{"P"},
+				Usage:   "Number of parallel ffmpeg workers. With higher parallelism value you can utilize more CPU/GPU resources, but in some situations ffmpeg can't run in parallel or will not give a profit",
+				Value:   1,
+			},
+			&cli.BoolFlag{
+				Name:    "recursively",
+				Aliases: []string{"R"},
+				Usage:   "Convert all video files in directory recursively",
+			},
+			&cli.BoolFlag{
+				Name:  "dry-run",
+				Usage: "Do not execute conversion and print yaml task config",
+			},
+			&cli.StringFlag{
+				Name:  "config",
+				Usage: "Config file path (output from --dry-run option)",
 			},
 			&cli.StringFlag{
 				Name:  "preset",
 				Value: "slow",
 				Usage: "Encoding preset.\n" +
 					"\t\n" +
-					"\tWARNING! Apple's VideoToolBox is not support presets\t" +
+					"\tWARNING! Apple's VideoToolBox does not support presets\n" +
 					"\t\n" +
 					"\tCPU-encoding values:\n" +
 					"\t- ultrafast\n" +
@@ -71,29 +99,6 @@ func CliConfig() *cli.Command {
 					"\t- llhp\n" +
 					"\t- lossless\n" +
 					"\t- losslesshp\t",
-			},
-			&cli.StringFlag{
-				Name:  "scale",
-				Usage: "Scaling. Possible values: 1/2 (half resolution), 1/4 (quarter resolution)",
-			},
-			&cli.StringFlag{
-				Name:  "config",
-				Usage: "Config file path",
-			},
-			&cli.IntFlag{
-				Name:    "parallelism",
-				Aliases: []string{"P"},
-				Usage:   "Number of parallel ffmpeg workers",
-				Value:   1,
-			},
-			&cli.BoolFlag{
-				Name:    "recursively",
-				Aliases: []string{"R"},
-				Usage:   "Go through all files recursively",
-			},
-			&cli.BoolFlag{
-				Name:  "dry-run",
-				Usage: "Print YAML task file",
 			},
 		},
 

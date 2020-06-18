@@ -36,14 +36,14 @@ func cliApp() {
 				Aliases: []string{"V"},
 				Value:   5,
 				Usage: "Verbosity level\n" +
-					"                                Possible values:\n" +
-					"                                0 - quiet mode, only panics\n" +
-					"                                1 - fatal errors\n" +
-					"                                2 - regular errors\n" +
-					"                                3 - warnings\n" +
-					"                                4 - info messages (i.e. progress)\n" +
-					"                                5 - debug\n" +
-					"                                6 - trace ",
+					"\tPossible values:\n" +
+					"\t0 - quiet mode, only panics\n" +
+					"\t1 - fatal errors\n" +
+					"\t2 - regular errors\n" +
+					"\t3 - warnings\n" +
+					"\t4 - info messages (i.e. progress)\n" +
+					"\t5 - debug\n" +
+					"\t6 - trace ",
 			},
 		},
 
