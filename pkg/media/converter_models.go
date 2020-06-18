@@ -52,7 +52,7 @@ type ConverterTask struct {
 	VideoCodec   string      `yaml:"video_codec"`
 	HWAccel      string      `yaml:"hw_accel"`
 	VideoBitRate string      `yaml:"video_bit_rate"`
-	VideoQuality int         `yaml:"video_crf"`
+	VideoQuality int         `yaml:"video_quality"`
 	Preset       string      `yaml:"preset"`
 	Scale        string      `yaml:"scale"`
 }
