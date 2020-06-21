@@ -4,9 +4,9 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/chunky/pkg/files"
-	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
-	mediaUtils "github.com/wailorman/chunky/pkg/media/utils"
+	"github.com/wailorman/fftb/pkg/files"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
 // RecursiveConverter _

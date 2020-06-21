@@ -2,7 +2,7 @@ package convert
 
 import (
 	"github.com/pkg/errors"
-	"github.com/wailorman/chunky/pkg/files"
+	"github.com/wailorman/fftb/pkg/files"
 )
 
 const (

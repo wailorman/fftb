@@ -1,4 +1,4 @@
-module github.com/wailorman/chunky
+module github.com/wailorman/fftb
 
 go 1.13
 

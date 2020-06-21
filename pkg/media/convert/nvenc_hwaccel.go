@@ -1,7 +1,7 @@
 package convert
 
 import (
-	mediaUtils "github.com/wailorman/chunky/pkg/media/utils"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 )
 

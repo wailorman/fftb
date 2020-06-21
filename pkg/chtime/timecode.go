@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/chunky/pkg/chtime/handlers"
-	"github.com/wailorman/chunky/pkg/files"
+	"github.com/wailorman/fftb/pkg/chtime/handlers"
+	"github.com/wailorman/fftb/pkg/files"
 
-	mediaDuration "github.com/wailorman/chunky/pkg/media/duration"
-	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
+	mediaDuration "github.com/wailorman/fftb/pkg/media/duration"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 )
 
 // ErrNoTimeMatches _

@@ -2,8 +2,8 @@ package convert
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/wailorman/chunky/pkg/ctxlog"
-	mediaConvert "github.com/wailorman/chunky/pkg/media/convert"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	mediaConvert "github.com/wailorman/fftb/pkg/media/convert"
 )
 
 func logProgress(msg mediaConvert.BatchProgressMessage) {

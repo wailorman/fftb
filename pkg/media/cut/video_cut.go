@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/wailorman/chunky/pkg/ctxlog"
-	"github.com/wailorman/chunky/pkg/files"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/goffmpeg/transcoder"
 )
 

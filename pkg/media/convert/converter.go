@@ -2,8 +2,8 @@ package convert
 
 import (
 	"github.com/pkg/errors"
-	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
-	mediaUtils "github.com/wailorman/chunky/pkg/media/utils"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 	"github.com/wailorman/goffmpeg/transcoder"
 )

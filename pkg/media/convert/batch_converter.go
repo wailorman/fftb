@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync"
 
-	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 )
 
 // BatchConverter _

@@ -2,7 +2,7 @@ package info
 
 import (
 	"github.com/pkg/errors"
-	"github.com/wailorman/chunky/pkg/files"
+	"github.com/wailorman/fftb/pkg/files"
 	ffmpegModels "github.com/wailorman/goffmpeg/models"
 	"github.com/wailorman/goffmpeg/transcoder"
 )

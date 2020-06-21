@@ -4,11 +4,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/wailorman/chunky/cmd/convert"
-	"github.com/wailorman/chunky/cmd/etime"
-	"github.com/wailorman/chunky/cmd/log"
-	"github.com/wailorman/chunky/cmd/split"
-	"github.com/wailorman/chunky/pkg/ctxlog"
+	"github.com/wailorman/fftb/cmd/convert"
+	"github.com/wailorman/fftb/cmd/etime"
+	"github.com/wailorman/fftb/cmd/log"
+	"github.com/wailorman/fftb/cmd/split"
+	"github.com/wailorman/fftb/pkg/ctxlog"
 
 	"github.com/urfave/cli/v2"
 )
@@ -19,7 +19,7 @@ func main() {
 
 func cliApp() {
 	app := &cli.App{
-		Name:    "chunky",
+		Name:    "fftb",
 		Version: "v0.6.1",
 
 		Compiled: time.Now(),

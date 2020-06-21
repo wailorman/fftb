@@ -3,14 +3,14 @@ package convert
 import (
 	"fmt"
 
-	"github.com/wailorman/chunky/pkg/files"
+	"github.com/wailorman/fftb/pkg/files"
 	"gopkg.in/yaml.v2"
 
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 
-	mediaConvert "github.com/wailorman/chunky/pkg/media/convert"
-	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
+	mediaConvert "github.com/wailorman/fftb/pkg/media/convert"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 )
 
 // CliConfig _
@@ -19,8 +19,8 @@ func CliConfig() *cli.Command {
 		Name:    "convert",
 		Aliases: []string{"conv"},
 		Usage:   "Convert video",
-		UsageText: "single file mode: chunky convert [options] <input file> <output file>\n" +
-			"   recursive mode:   chunky convert [options] -R <input path> <output path>\n" +
+		UsageText: "single file mode: fftb convert [options] <input file> <output file>\n" +
+			"   recursive mode:   fftb convert [options] -R <input path> <output path>\n" +
 			"\n" +
 			"   If directory does not exists, it will create it for you.\n" +
 			"   WARNING: If file already exists, it will overwrite it",

@@ -7,12 +7,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/wailorman/chunky/pkg/ctxlog"
-	"github.com/wailorman/chunky/pkg/files"
-	mediaChunk "github.com/wailorman/chunky/pkg/media/chunk"
-	mediaCut "github.com/wailorman/chunky/pkg/media/cut"
-	mediaDuration "github.com/wailorman/chunky/pkg/media/duration"
-	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/files"
+	mediaChunk "github.com/wailorman/fftb/pkg/media/chunk"
+	mediaCut "github.com/wailorman/fftb/pkg/media/cut"
+	mediaDuration "github.com/wailorman/fftb/pkg/media/duration"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 )
 
 const bytesInMegabyte = 1000000

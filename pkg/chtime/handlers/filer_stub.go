@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wailorman/chunky/pkg/files"
+	"github.com/wailorman/fftb/pkg/files"
 )
 
 // filerStub _

@@ -5,10 +5,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/wailorman/chunky/pkg/ctxlog"
-	"github.com/wailorman/chunky/pkg/files"
-	mediaCut "github.com/wailorman/chunky/pkg/media/cut"
-	mediaDuration "github.com/wailorman/chunky/pkg/media/duration"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/files"
+	mediaCut "github.com/wailorman/fftb/pkg/media/cut"
+	mediaDuration "github.com/wailorman/fftb/pkg/media/duration"
 )
 
 // Chunker _

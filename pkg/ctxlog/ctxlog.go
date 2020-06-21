@@ -15,7 +15,7 @@ func New(contextName string) *logrus.Entry {
 }
 
 // DefaultContext _
-const DefaultContext = "chunky"
+const DefaultContext = "fftb"
 
 // Logger _
 var Logger = New(DefaultContext)

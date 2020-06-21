@@ -8,18 +8,18 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
-	"github.com/wailorman/chunky/pkg/chtime"
-	"github.com/wailorman/chunky/pkg/ctxlog"
-	"github.com/wailorman/chunky/pkg/files"
+	"github.com/wailorman/fftb/pkg/chtime"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/files"
 )
 
 // CliConfig _
 func CliConfig() *cli.Command {
 	return &cli.Command{
-		Name:    "etime",
-		Aliases: []string{"et"},
-		Usage:   "Update file modified date meta from it's name",
-
+		Name:      "etime",
+		Aliases:   []string{"et"},
+		Usage:     "Update file modified date meta from it's name",
+		UsageText: "fftb etime [options] <input dir or file>",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "recursively",

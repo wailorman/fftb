@@ -2,8 +2,8 @@ package cut
 
 import (
 	"github.com/pkg/errors"
-	"github.com/wailorman/chunky/pkg/files"
-	mediaInfo "github.com/wailorman/chunky/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/files"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 )
 
 // CalculatorInstance _
