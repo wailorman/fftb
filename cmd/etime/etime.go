@@ -16,10 +16,17 @@ import (
 // CliConfig _
 func CliConfig() *cli.Command {
 	return &cli.Command{
-		Name:      "etime",
-		Aliases:   []string{"et"},
-		Usage:     "Update file modified date meta from it's name",
-		UsageText: "fftb etime [options] <input dir or file>",
+		Name:    "etime",
+		Aliases: []string{"et"},
+		Usage:   "Update file modified date meta from it's name",
+		UsageText: "fftb etime [options] <input dir or file>\n" +
+			"\n" +
+			"   Supported timestamp patterns:\n" +
+			"   NMS 22-05-2020 21-52-13.mp4\n" +
+			"   20180505_170735.mp4\n" +
+			"   Far Cry New Dawn 2020.02.12 - 23.03.10.00.DVR.mp4\n" +
+			"   Far Cry New Dawn 2020.02.12 - 23.03.10.00.mp4\n" +
+			"   2016_05_20_15_31_51-ses.mp4\n",
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:    "recursively",

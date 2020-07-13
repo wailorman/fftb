@@ -23,19 +23,14 @@ func CliConfig() *cli.Command {
 		Name:    "split",
 		Aliases: []string{"sp"},
 		Usage:   "Split video file to chunks",
-
+		UsageText: "fftb split [options] <video file path> <output path>\n" +
+			"   WARNING! This tool is not tested well and can produce broken files!",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:    "chunk-size",
 				Aliases: []string{"s"},
 				Usage:   "Chunk size in megabytes (approximate)",
 				Value:   1024,
-			},
-			&cli.StringFlag{
-				Name:    "path",
-				Aliases: []string{"p"},
-				Usage:   "Output path for chunks (WARNING: Will overwrite file if it already exists)",
-				Value:   "chunks",
 			},
 		},
 
@@ -46,13 +41,19 @@ func CliConfig() *cli.Command {
 				return errors.Wrap(err, "Getting current working directory")
 			}
 
-			path := c.Args().First()
+			inputFilePath := c.Args().Get(0)
 
-			if path == "" {
-				return errors.New("Missing path argument")
+			if inputFilePath == "" {
+				return errors.New("Missing file path argument")
 			}
 
-			return splitToChunks(pwd, path, c.Int("chunk-size"), c.String("path"))
+			outputPath := c.Args().Get(1)
+
+			if outputPath == "" {
+				return errors.New("Missing output path argument")
+			}
+
+			return splitToChunks(pwd, inputFilePath, c.Int("chunk-size"), outputPath)
 		},
 	}
 }
