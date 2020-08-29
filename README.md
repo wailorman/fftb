@@ -25,8 +25,8 @@ So it extracts creation time from filename and writes it to file's metadata. As 
 
 Currently, these filename patterns are supported:
 
-* `NMS 22-05-2020 21-52-13.mp4` (Mirillis Action!)
-* `20180505_170735.mp4` (AverMedia)
+* `NMS 22-05-2020 21-52-13.mp4` [(Mirillis Action!)](https://mirillis.com/en/products/action.html)
+* `20180505_170735.mp4` [(AverMedia)](https://www.avermedia.com/en/product-detail/GC513)
 * `Far Cry New Dawn 2020.02.12 - 23.03.10.00.DVR.mp4` (Nvidia ShadowPlay Instant replay)
 * `Far Cry New Dawn 2020.02.12 - 23.03.10.00.mp4` (Nvidia ShadowPlay)
 * `2016_05_20_15_31_51-ses.mp4` (plays tv)
@@ -38,6 +38,8 @@ $ fftb etime -R .
 ```
 
 ### convert
+
+**[Read more about converting](docs/converting_guide.md)**
 
 Convert video file to H264 or HEVC with hardware acceleration using [ffmpeg](https://ffmpeg.org), but without diving into ffmpeg's complexity. Optimized for converting game records.
 
