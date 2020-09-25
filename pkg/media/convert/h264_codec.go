@@ -27,6 +27,7 @@ func (c *H264Codec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	mediaFile.SetHideBanner(true)
 	mediaFile.SetVsync(true)
 	mediaFile.SetAudioCodec("copy")
+	mediaFile.SetMaxMuxingQueueSize(2048)
 
 	if c.task.VideoQuality > 0 {
 		mediaFile.SetCRF(uint32(c.task.VideoQuality))
