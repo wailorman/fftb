@@ -3,8 +3,8 @@ package info
 import (
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
-	ffmpegModels "github.com/wailorman/goffmpeg/models"
-	"github.com/wailorman/goffmpeg/transcoder"
+	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	"github.com/wailorman/fftb/pkg/goffmpeg/transcoder"
 )
 
 // GetterInstance _

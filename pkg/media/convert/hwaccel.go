@@ -1,6 +1,6 @@
 package convert
 
-import ffmpegModels "github.com/wailorman/goffmpeg/models"
+import ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 
 // hwAccelerator _
 type hwAccelerator interface {

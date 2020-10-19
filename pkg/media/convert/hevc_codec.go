@@ -2,7 +2,7 @@ package convert
 
 import (
 	"github.com/pkg/errors"
-	ffmpegModels "github.com/wailorman/goffmpeg/models"
+	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 )
 
 // HevcCodec _

@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/files"
-	"github.com/wailorman/goffmpeg/transcoder"
+	"github.com/wailorman/fftb/pkg/goffmpeg/transcoder"
 )
 
 // CutterInstance _

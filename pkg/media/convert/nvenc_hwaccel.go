@@ -2,7 +2,7 @@ package convert
 
 import (
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
-	ffmpegModels "github.com/wailorman/goffmpeg/models"
+	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 )
 
 type nvencHWAccel struct {

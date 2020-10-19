@@ -1,6 +1,6 @@
 package convert
 
-import ffmpegModels "github.com/wailorman/goffmpeg/models"
+import ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 
 type codecConfigurator interface {
 	configure(mediaFile *ffmpegModels.Mediafile) error

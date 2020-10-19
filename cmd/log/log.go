@@ -4,7 +4,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/wailorman/fftb/pkg/ctxlog"
-	goffmpegCtxlog "github.com/wailorman/goffmpeg/ctxlog"
+	goffmpegCtxlog "github.com/wailorman/fftb/pkg/goffmpeg/ctxlog"
 )
 
 func getLogrusLevel(level int) logrus.Level {

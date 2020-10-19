@@ -1,7 +1,7 @@
 package utils
 
 import (
-	ffmpegModels "github.com/wailorman/goffmpeg/models"
+	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 
 	"github.com/wailorman/fftb/pkg/files"
 	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
