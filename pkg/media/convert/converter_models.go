@@ -46,15 +46,16 @@ type BatchConverterTask struct {
 
 // ConverterTask _
 type ConverterTask struct {
-	ID           string      `yaml:"id"`
-	InFile       files.Filer `yaml:"in_file"`
-	OutFile      files.Filer `yaml:"out_file"`
-	VideoCodec   string      `yaml:"video_codec"`
-	HWAccel      string      `yaml:"hw_accel"`
-	VideoBitRate string      `yaml:"video_bit_rate"`
-	VideoQuality int         `yaml:"video_quality"`
-	Preset       string      `yaml:"preset"`
-	Scale        string      `yaml:"scale"`
+	ID               string      `yaml:"id"`
+	InFile           files.Filer `yaml:"in_file"`
+	OutFile          files.Filer `yaml:"out_file"`
+	VideoCodec       string      `yaml:"video_codec"`
+	HWAccel          string      `yaml:"hw_accel"`
+	VideoBitRate     string      `yaml:"video_bit_rate"`
+	VideoQuality     int         `yaml:"video_quality"`
+	Preset           string      `yaml:"preset"`
+	Scale            string      `yaml:"scale"`
+	KeyframeInterval int         `yaml:"keyframe_interval"`
 }
 
 // ErrFileIsNotVideo _
@@ -82,15 +83,16 @@ var ErrOutputFileExistsOrIsDirectory = errors.New("Output file exists or is dire
 func (ct *ConverterTask) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	task := struct {
-		ID           string `yaml:"id"`
-		InFile       string `yaml:"in_file"`
-		OutFile      string `yaml:"out_file"`
-		VideoCodec   string `yaml:"video_codec"`
-		HWAccel      string `yaml:"hw_accel"`
-		VideoBitRate string `yaml:"video_bit_rate"`
-		VideoQuality int    `yaml:"video_quality"`
-		Preset       string `yaml:"preset"`
-		Scale        string `yaml:"scale"`
+		ID               string `yaml:"id"`
+		InFile           string `yaml:"in_file"`
+		OutFile          string `yaml:"out_file"`
+		VideoCodec       string `yaml:"video_codec"`
+		HWAccel          string `yaml:"hw_accel"`
+		VideoBitRate     string `yaml:"video_bit_rate"`
+		VideoQuality     int    `yaml:"video_quality"`
+		Preset           string `yaml:"preset"`
+		Scale            string `yaml:"scale"`
+		KeyframeInterval int    `yaml:"keyframe_interval"`
 	}{}
 
 	if err := unmarshal(&task); err != nil {
@@ -104,6 +106,7 @@ func (ct *ConverterTask) UnmarshalYAML(unmarshal func(interface{}) error) error 
 	ct.VideoQuality = task.VideoQuality
 	ct.Preset = task.Preset
 	ct.Scale = task.Scale
+	ct.KeyframeInterval = task.KeyframeInterval
 
 	ct.InFile = files.NewFile(task.InFile)
 	ct.OutFile = files.NewFile(task.OutFile)

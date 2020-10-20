@@ -35,6 +35,10 @@ func (c *HevcCodec) configure(mediaFile *ffmpegModels.Mediafile) error {
 		mediaFile.SetVideoBitRate(c.task.VideoBitRate)
 	}
 
+	if c.task.KeyframeInterval > 0 {
+		mediaFile.SetKeyframeInterval(c.task.KeyframeInterval)
+	}
+
 	hwaccel := chooseHwAccel(c.task, c.metadata)
 
 	if err = hwaccel.configure(mediaFile); err != nil {
