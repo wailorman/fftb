@@ -28,8 +28,8 @@ func NewBatchConverter(infoGetter mediaInfo.Getter) *BatchConverter {
 	}
 }
 
-// StopConversion _
-func (bc *BatchConverter) StopConversion() {
+// Stop _
+func (bc *BatchConverter) Stop() {
 	bc.stopConversion = make(chan struct{})
 	// broadcast to all channel receivers
 	close(bc.stopConversion)
@@ -87,7 +87,7 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 						}
 
 						if batchTask.StopConversionOnError {
-							bc.StopConversion()
+							bc.Stop()
 						}
 					}
 
@@ -122,33 +122,33 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 }
 
 func (bc *BatchConverter) convertOne(task ConverterTask, progress chan BatchProgressMessage) error {
-	singleConverter := NewConverter(bc.infoGetter)
-	_progress, _finished, _failed := singleConverter.Convert(task)
+	sConv := NewConverter(bc.infoGetter)
+	_progress, _finished, _failed := sConv.Convert(task)
 
 	for {
 		select {
 		case <-bc.stopConversion:
-			singleConverter.StopConversion()
+			sConv.Stop()
 
-		case <-singleConverter.ConversionStarted:
+		case <-sConv.ConversionStarted:
 			bc.TaskConversionStarted <- task
 
-		case metadata := <-singleConverter.MetadataReceived:
+		case metadata := <-sConv.MetadataReceived:
 			bc.MetadataReceived <- MetadataReceivedBatchMessage{
 				Metadata: metadata,
 				Task:     task,
 			}
 
-		case videoCodec := <-singleConverter.InputVideoCodecDetected:
+		case videoCodec := <-sConv.InputVideoCodecDetected:
 			bc.InputVideoCodecDetected <- InputVideoCodecDetectedBatchMessage{
 				Codec: videoCodec,
 				Task:  task,
 			}
 
-		case <-singleConverter.ConversionStopping:
+		case <-sConv.ConversionStopping:
 			bc.ConversionStopping <- task
 
-		case <-singleConverter.ConversionStopped:
+		case <-sConv.ConversionStopped:
 			bc.ConversionStopped <- task
 
 		case progressMessage := <-_progress:

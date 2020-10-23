@@ -1,6 +1,9 @@
 package convert
 
-import ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+import (
+	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	"github.com/wailorman/fftb/pkg/media/ff"
+)
 
 // MetadataReceivedBatchMessage _
 type MetadataReceivedBatchMessage struct {
@@ -16,7 +19,7 @@ type InputVideoCodecDetectedBatchMessage struct {
 
 // BatchProgressMessage _
 type BatchProgressMessage struct {
-	Progress Progress
+	Progress ff.Progressable
 	Task     ConverterTask
 }
 

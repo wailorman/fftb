@@ -2,10 +2,10 @@ package convert
 
 import (
 	"github.com/pkg/errors"
+	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	"github.com/wailorman/fftb/pkg/media/ff"
 	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
-	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
-	"github.com/wailorman/fftb/pkg/goffmpeg/transcoder"
 )
 
 // Converter _
@@ -16,54 +16,37 @@ type Converter struct {
 	ConversionStopping      chan bool
 	ConversionStopped       chan bool
 
-	infoGetter     mediaInfo.Getter
-	stopConversion chan struct{}
+	infoGetter mediaInfo.Getter
+	ffworker   *ff.Instance
 }
 
 // NewConverter _
 func NewConverter(infoGetter mediaInfo.Getter) *Converter {
+	ffworker := ff.New()
+
 	return &Converter{
-		infoGetter:     infoGetter,
-		stopConversion: make(chan struct{}),
+		infoGetter:         infoGetter,
+		ffworker:           ffworker,
+		ConversionStarted:  ffworker.Started,
+		ConversionStopping: ffworker.Stopping,
+		ConversionStopped:  ffworker.Stopped,
 	}
 }
 
-// StopConversion _
-func (c *Converter) StopConversion() {
-	c.stopConversion = make(chan struct{})
-	// broadcast to all channel receivers
-	close(c.stopConversion)
-}
-
-// initChannels _
-func (c *Converter) initChannels() {
-	c.ConversionStopping = make(chan bool, 1)
-	c.ConversionStopped = make(chan bool, 1)
-	c.ConversionStarted = make(chan bool, 1)
-	c.MetadataReceived = make(chan ffmpegModels.Metadata, 1)
-	c.InputVideoCodecDetected = make(chan string, 1)
-}
-
-// closeChannels _
-func (c *Converter) closeChannels() {
-	close(c.ConversionStopping)
-	close(c.ConversionStopped)
-	close(c.ConversionStarted)
-	close(c.MetadataReceived)
-	close(c.InputVideoCodecDetected)
+// Stop _
+func (c *Converter) Stop() {
+	c.ffworker.Stop()
 }
 
 // Convert _
 func (c *Converter) Convert(task ConverterTask) (
-	progress chan Progress,
+	progress chan ff.Progressable,
 	finished chan bool,
 	failed chan error,
 ) {
-	progress = make(chan Progress)
+	progress = make(chan ff.Progressable)
 	finished = make(chan bool)
 	failed = make(chan error)
-
-	c.initChannels()
 
 	go func() {
 		var err error
@@ -72,19 +55,14 @@ func (c *Converter) Convert(task ConverterTask) (
 		defer close(finished)
 		defer close(failed)
 
-		defer c.closeChannels()
-
-		trans := new(transcoder.Transcoder)
-
-		err = trans.Initialize(
-			task.InFile.FullPath(),
-			task.OutFile.FullPath(),
-		)
+		err = c.ffworker.Init(task.InFile, task.OutFile)
 
 		if err != nil {
-			failed <- errors.Wrap(err, "Transcoder initializing error")
+			failed <- errors.Wrap(err, "ffworker initializing error")
 			return
 		}
+
+		mediaFile := c.ffworker.MediaFile()
 
 		metadata, err := c.infoGetter.GetMediaInfo(task.InFile)
 
@@ -109,14 +87,14 @@ func (c *Converter) Convert(task ConverterTask) (
 			return
 		}
 
-		err = codec.configure(trans.MediaFile())
+		err = codec.configure(mediaFile)
 
 		if err != nil {
 			failed <- errors.Wrap(err, "Configuring codec")
 			return
 		}
 
-		err = newVideoScale(task, metadata).configure(trans.MediaFile())
+		err = newVideoScale(task, metadata).configure(mediaFile)
 
 		if err != nil {
 			failed <- errors.Wrap(err, "Configuring video scale")
@@ -130,41 +108,20 @@ func (c *Converter) Convert(task ConverterTask) (
 			return
 		}
 
-		done := trans.Run(true)
-
-		c.ConversionStarted <- true
-
-		_progress := trans.Output()
+		_progress, _finished, _failed := c.ffworker.Start()
 
 		for {
 			select {
-			case <-c.stopConversion:
-				c.ConversionStopping <- true
-				trans.Stop()
-				c.ConversionStopped <- true
+			case <-_finished:
 				finished <- true
+				return
+
+			case failure := <-_failed:
+				failed <- failure
 				return
 
 			case progressMessage := <-_progress:
-				if progressMessage.FramesProcessed != "" {
-					progress <- Progress{
-						FramesProcessed: progressMessage.FramesProcessed,
-						CurrentTime:     progressMessage.CurrentTime,
-						CurrentBitrate:  progressMessage.CurrentBitrate,
-						Progress:        progressMessage.Progress,
-						Speed:           progressMessage.Speed,
-						FPS:             progressMessage.FPS,
-						File:            task.InFile,
-					}
-				}
-
-			case err := <-done:
-				if err != nil {
-					failed <- err
-				}
-
-				finished <- true
-				return
+				progress <- progressMessage
 			}
 		}
 	}()

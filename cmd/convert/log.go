@@ -11,13 +11,13 @@ func logProgress(msg mediaConvert.BatchProgressMessage) {
 
 	ctxlog.Logger.WithFields(logrus.Fields{
 		"id":               msg.Task.ID,
-		"frames_processed": progress.FramesProcessed,
-		"current_time":     progress.CurrentTime,
-		"current_bitrate":  progress.CurrentBitrate,
-		"progress":         progress.Progress,
-		"speed":            progress.Speed,
-		"fps":              progress.FPS,
-		"file_path":        progress.File.FullPath(),
+		"frames_processed": progress.FramesProcessed(),
+		"current_time":     progress.CurrentTime(),
+		"current_bitrate":  progress.CurrentBitrate(),
+		"progress":         progress.Progress(),
+		"speed":            progress.Speed(),
+		"fps":              progress.FPS(),
+		"file_path":        progress.File().FullPath(),
 	}).Info("Converting progress")
 }
 
