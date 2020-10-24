@@ -17,9 +17,9 @@ var GeforceDVRRegexp = regexp.MustCompile("(\\d{4}\\.\\d{2}\\.\\d{2} - \\d{2}\\.
 // GeforceDVRTimeLayout _
 const GeforceDVRTimeLayout = "2006.01.02 - 15.04.05.99"
 
-// DurationCalculator interface _
+// DurationCalculator _
 type DurationCalculator interface {
-	Calculate(file files.Filer) (float64, error)
+	CalculateDuration(file files.Filer) (float64, error)
 }
 
 // GeforceDVR _
@@ -44,7 +44,7 @@ func (gf *GeforceDVR) Extract(file files.Filer) (time.Time, error) {
 	if gf.IsMatch(file) {
 		str := GeforceDVRRegexp.FindString(file.Name())
 
-		videoDurationSecs, err := gf.durationCalculator.Calculate(file)
+		videoDurationSecs, err := gf.durationCalculator.CalculateDuration(file)
 
 		if err != nil {
 			return time.Time{}, errors.Wrap(err, "Video duration calculation")

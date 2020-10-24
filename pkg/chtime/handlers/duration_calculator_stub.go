@@ -13,6 +13,6 @@ func newDurationCalculatorStub(value float64) *durationCalculatorStub {
 }
 
 // Calculate _
-func (d *durationCalculatorStub) Calculate(file files.Filer) (float64, error) {
+func (d *durationCalculatorStub) CalculateDuration(file files.Filer) (float64, error) {
 	return d.value, nil
 }

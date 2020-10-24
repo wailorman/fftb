@@ -38,7 +38,7 @@ func NewChunker(
 	maxFileSize int,
 ) (*Chunker, error) {
 
-	duration, err := durationCalculator.Calculate(file)
+	duration, err := durationCalculator.CalculateDuration(file)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Calculating file duration")
@@ -59,7 +59,7 @@ func NewChunker(
 func (c *Chunker) Start() error {
 	log := ctxlog.Logger
 
-	totalDuration, err := c.durationCalculator.Calculate(c.mainFile)
+	totalDuration, err := c.durationCalculator.CalculateDuration(c.mainFile)
 
 	if err != nil {
 		return errors.Wrap(err, "Calculating duration of main file")
@@ -111,7 +111,7 @@ func (c *Chunker) Start() error {
 			return errors.Wrap(err, "Cutting video")
 		}
 
-		chunkDuration, err := c.durationCalculator.Calculate(chunk)
+		chunkDuration, err := c.durationCalculator.CalculateDuration(chunk)
 
 		if chunkDuration == 0 {
 			err = chunk.Remove()

@@ -13,7 +13,7 @@ type CalculatorInstance struct {
 
 // Calculator _
 type Calculator interface {
-	Calculate(file files.Filer) (float64, error)
+	CalculateDuration(file files.Filer) (float64, error)
 }
 
 // NewCalculator _
@@ -23,8 +23,8 @@ func NewCalculator(infoGetter mediaInfo.Getter) *CalculatorInstance {
 	}
 }
 
-// Calculate _
-func (dc *CalculatorInstance) Calculate(file files.Filer) (float64, error) {
+// CalculateDuration _
+func (dc *CalculatorInstance) CalculateDuration(file files.Filer) (float64, error) {
 	metadata, err := dc.infoGetter.GetMediaInfo(file)
 
 	if err != nil {
