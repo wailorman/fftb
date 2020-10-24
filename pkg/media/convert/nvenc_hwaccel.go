@@ -39,7 +39,6 @@ func (hw *nvencHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 	switch hw.task.VideoCodec {
 	case HevcCodecType:
 		mediaFile.SetVideoCodec("hevc_nvenc")
-		mediaFile.SetVideoTag("hvc1")
 	case H264CodecType:
 		mediaFile.SetVideoCodec("h264_nvenc")
 	default:
