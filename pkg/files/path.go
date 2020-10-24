@@ -19,6 +19,15 @@ type Path struct {
 	path string
 }
 
+// NewPath _
+func NewPath(relativePath string) *Path {
+	fullPath, _ := filepath.Abs(relativePath)
+
+	return &Path{
+		path: fullPath,
+	}
+}
+
 // FullPath _
 func (p *Path) FullPath() string {
 	return p.path

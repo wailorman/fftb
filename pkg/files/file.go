@@ -34,6 +34,18 @@ type File struct {
 	dirPath  string
 }
 
+// NewFile _
+func NewFile(relativePath string) *File {
+	fullPath, _ := filepath.Abs(relativePath)
+
+	dirPath, fileName := filepath.Split(fullPath)
+
+	return &File{
+		fileName: fileName,
+		dirPath:  dirPath,
+	}
+}
+
 // FullPath _
 func (f *File) FullPath() string {
 	return filepath.Join(f.dirPath, f.fileName)
