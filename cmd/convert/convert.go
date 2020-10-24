@@ -150,7 +150,7 @@ func CliConfig() *cli.Command {
 						mediaConvert.ConverterTask{
 							InFile:       inFile,
 							OutFile:      outFile,
-							HWAccel:      c.String("hwaccel"),
+							HWAccel:      c.String("hwa"),
 							VideoCodec:   c.String("video-codec"),
 							Preset:       c.String("preset"),
 							VideoBitRate: c.String("video-bitrate"),
@@ -167,7 +167,7 @@ func CliConfig() *cli.Command {
 						Parallelism:  c.Int("parallelism"),
 						InPath:       files.NewPath(inputPath),
 						OutPath:      files.NewPath(outputPath),
-						HWAccel:      c.String("hwaccel"),
+						HWAccel:      c.String("hwa"),
 						VideoCodec:   c.String("video-codec"),
 						Preset:       c.String("preset"),
 						VideoBitRate: c.String("video-bitrate"),
