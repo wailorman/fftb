@@ -33,6 +33,22 @@ func NewConverter(infoGetter mediaInfo.Getter) *Converter {
 	}
 }
 
+func (c *Converter) initChannels() {
+	c.ConversionStopping = make(chan bool, 1)
+	c.ConversionStopped = make(chan bool, 1)
+	c.ConversionStarted = make(chan bool, 1)
+	c.MetadataReceived = make(chan ffmpegModels.Metadata, 1)
+	c.InputVideoCodecDetected = make(chan string, 1)
+}
+
+func (c *Converter) closeChannels() {
+	close(c.ConversionStopping)
+	close(c.ConversionStopped)
+	close(c.ConversionStarted)
+	close(c.MetadataReceived)
+	close(c.InputVideoCodecDetected)
+}
+
 // Stop _
 func (c *Converter) Stop() {
 	c.ffworker.Stop()
@@ -48,12 +64,16 @@ func (c *Converter) Convert(task ConverterTask) (
 	finished = make(chan bool)
 	failed = make(chan error)
 
+	c.initChannels()
+
 	go func() {
 		var err error
 
 		defer close(progress)
 		defer close(finished)
 		defer close(failed)
+
+		defer c.closeChannels()
 
 		err = c.ffworker.Init(task.InFile, task.OutFile)
 
