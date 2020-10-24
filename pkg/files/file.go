@@ -56,12 +56,12 @@ func (f *File) Name() string {
 	return f.fileName
 }
 
-// DirPath _
+// DirPath returns file's parent directory path
 func (f *File) DirPath() string {
 	return f.dirPath
 }
 
-// BuildPath _
+// BuildPath returns Pather instance of file's parent directory
 func (f *File) BuildPath() Pather {
 	return NewPath(f.DirPath())
 }
