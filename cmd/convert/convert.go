@@ -34,7 +34,10 @@ func CliConfig() *cli.Command {
 			&cli.StringFlag{
 				Name:    "hardware-acceleration",
 				Aliases: []string{"hwa"},
-				Usage:   "Used hardware acceleration type. Possible values: videotoolbox (for macs), nvenc (for Nvidia GPUs). By default uses x264/x265 CPU encoders",
+				Usage: "Used hardware acceleration type. Possible values:\n" +
+					"videotoolbox (for macs),\n" +
+					"nvenc (for Nvidia GPUs).\n" +
+					"By default uses x264/x265 CPU encoders",
 			},
 			&cli.StringFlag{
 				Name:    "video-bitrate",
@@ -44,7 +47,8 @@ func CliConfig() *cli.Command {
 			&cli.IntFlag{
 				Name:    "video-quality",
 				Aliases: []string{"vq"},
-				Usage:   "Video quality (-crf option for CPU encoding and -qp option for NVENC). Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
+				Usage: "Video quality (-crf option for CPU encoding and -qp option for NVENC).\n" +
+					"Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
 			},
 			&cli.StringFlag{
 				Name:  "scale",
@@ -53,8 +57,10 @@ func CliConfig() *cli.Command {
 			&cli.IntFlag{
 				Name:    "parallelism",
 				Aliases: []string{"P"},
-				Usage:   "Number of parallel ffmpeg workers. With higher parallelism value you can utilize more CPU/GPU resources, but in some situations ffmpeg can't run in parallel or will not give a profit",
-				Value:   1,
+				Usage: "Number of parallel ffmpeg workers.\n" +
+					"With higher parallelism value you can utilize more CPU/GPU resources, \n" +
+					"but in some situations ffmpeg can't run in parallel or will not give a profit",
+				Value: 1,
 			},
 			&cli.BoolFlag{
 				Name:    "recursively",
