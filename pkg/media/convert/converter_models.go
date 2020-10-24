@@ -68,6 +68,9 @@ var ErrResolutionNotSupportScaling = errors.New("Resolution not support scaling"
 // ErrOutputFileExistsOrIsDirectory _
 var ErrOutputFileExistsOrIsDirectory = errors.New("Output file exists or is directory")
 
+// ErrVtbQualityNotSupported _
+var ErrVtbQualityNotSupported = errors.New("Video quality option is not supported by Apple VideoToolBox")
+
 // UnmarshalYAML _
 func (ct *ConverterTask) UnmarshalYAML(unmarshal func(interface{}) error) error {
 

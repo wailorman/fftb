@@ -1,8 +1,8 @@
 package convert
 
 import (
-	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
 type vtbHWAccel struct {
@@ -13,6 +13,10 @@ type vtbHWAccel struct {
 func (hw *vtbHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 	if !mediaUtils.IsVideo(hw.metadata) {
 		return ErrFileIsNotVideo
+	}
+
+	if hw.task.VideoQuality > 0 {
+		return ErrVtbQualityNotSupported
 	}
 
 	mediaFile.SetHardwareAcceleration("videotoolbox")
