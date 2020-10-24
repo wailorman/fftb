@@ -9,7 +9,7 @@ import (
 
 // Pather _
 type Pather interface {
-	Files() ([]*Filer, error)
+	Files() ([]Filer, error)
 	FullPath() string
 	Create() error
 }
@@ -20,7 +20,7 @@ type Path struct {
 }
 
 // NewPath _
-func NewPath(relativePath string) *Path {
+func NewPath(relativePath string) Pather {
 	fullPath, _ := filepath.Abs(relativePath)
 
 	return &Path{
@@ -50,8 +50,8 @@ func (p *Path) Clone() *Path {
 }
 
 // Files _
-func (p *Path) Files() ([]*Filer, error) {
-	files := make([]*File, 0)
+func (p *Path) Files() ([]Filer, error) {
+	files := make([]Filer, 0)
 
 	err := filepath.Walk(p.path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

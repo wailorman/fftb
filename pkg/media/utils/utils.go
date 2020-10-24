@@ -8,7 +8,7 @@ import (
 )
 
 // FilterVideos _
-func FilterVideos(allFiles []*files.File, infoGetter mediaInfo.Getter) []files.Filer {
+func FilterVideos(allFiles []files.Filer, infoGetter mediaInfo.Getter) []files.Filer {
 	videoFiles := make([]files.Filer, 0)
 
 	for _, file := range allFiles {
