@@ -7,20 +7,20 @@ import (
 	"github.com/wailorman/fftb/pkg/files"
 )
 
-// ChTimer _
-type ChTimer struct {
+// Instance _
+type Instance struct {
 	file files.Filer
 }
 
-// NewChTimer _
-func NewChTimer(file files.Filer) *ChTimer {
-	return &ChTimer{
+// New _
+func New(file files.Filer) *Instance {
+	return &Instance{
 		file: file,
 	}
 }
 
-// ChTimerResult _
-type ChTimerResult struct {
+// Result _
+type Result struct {
 	Ok          bool
 	Time        time.Time
 	File        files.Filer
@@ -28,8 +28,8 @@ type ChTimerResult struct {
 	Error       error
 }
 
-func newChTimerResult(ok bool, time time.Time, file files.Filer, usedHandler string, err error) ChTimerResult {
-	return ChTimerResult{
+func newResult(ok bool, time time.Time, file files.Filer, usedHandler string, err error) Result {
+	return Result{
 		Ok:          ok,
 		Time:        time,
 		File:        file,
@@ -39,37 +39,37 @@ func newChTimerResult(ok bool, time time.Time, file files.Filer, usedHandler str
 }
 
 // Perform _
-func (t *ChTimer) Perform() ChTimerResult {
+func (t *Instance) Perform() Result {
 	extractedTime, usedHandler, err := ExtractTime(t.file)
 
 	if err != nil {
-		return newChTimerResult(false, extractedTime, t.file, usedHandler, err)
+		return newResult(false, extractedTime, t.file, usedHandler, err)
 	}
 
 	err = t.file.SetChTime(extractedTime)
 
 	if err != nil {
-		return newChTimerResult(false, extractedTime, t.file, usedHandler, err)
+		return newResult(false, extractedTime, t.file, usedHandler, err)
 	}
 
-	return newChTimerResult(true, extractedTime, t.file, usedHandler, nil)
+	return newResult(true, extractedTime, t.file, usedHandler, nil)
 }
 
-// RecursiveChTimer _
-type RecursiveChTimer struct {
+// RecursiveInstance _
+type RecursiveInstance struct {
 	path files.Pather
 }
 
-// NewRecursiveChTimer _
-func NewRecursiveChTimer(path files.Pather) *RecursiveChTimer {
-	return &RecursiveChTimer{
+// NewRecursive _
+func NewRecursive(path files.Pather) *RecursiveInstance {
+	return &RecursiveInstance{
 		path: path,
 	}
 }
 
 // Perform _
-func (rt *RecursiveChTimer) Perform() (chan ChTimerResult, chan bool) {
-	results := make(chan ChTimerResult, 0)
+func (rt *RecursiveInstance) Perform() (chan Result, chan bool) {
+	results := make(chan Result, 0)
 	done := make(chan bool, 1)
 
 	files, err := rt.path.Files()
@@ -80,7 +80,7 @@ func (rt *RecursiveChTimer) Perform() (chan ChTimerResult, chan bool) {
 
 	go func() {
 		for _, file := range files {
-			results <- NewChTimer(file).Perform()
+			results <- New(file).Perform()
 		}
 
 		done <- true
