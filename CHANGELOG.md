@@ -1,4 +1,13 @@
-# [](https://github.com/wailorman/fftb/compare/v0.7.1...v) (2020-10-24)
+# [](https://github.com/wailorman/fftb/compare/v0.8.0...v) (2020-10-27)
+
+
+
+# [0.8.0](https://github.com/wailorman/fftb/compare/v0.7.1...v0.8.0) (2020-10-27)
+
+
+### Features
+
+* **split:** split video by keyframes ([369efed](https://github.com/wailorman/fftb/commit/369efed37e2bfc7c98fb9bfc3479043dc9737286))
 
 
 
