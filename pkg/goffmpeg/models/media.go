@@ -92,6 +92,9 @@ type Mediafile struct {
 	constantQuantization     int
 	nvencTargetQuality       int
 	libx265Params            *Libx265Params
+	mapFlag                  string
+	segmentTime              int
+	resetTimestamps          bool
 }
 
 // Libx265Params _
@@ -345,6 +348,21 @@ func (m *Mediafile) SetOutputPipeWriter(w *io.PipeWriter) {
 // SetMovFlags _
 func (m *Mediafile) SetMovFlags(val string) {
 	m.movFlags = val
+}
+
+// SetMap _
+func (m *Mediafile) SetMap(val string) {
+	m.mapFlag = val
+}
+
+// SetSegmentTime _
+func (m *Mediafile) SetSegmentTime(val int) {
+	m.segmentTime = val
+}
+
+// SetResetTimestamps _
+func (m *Mediafile) SetResetTimestamps(val bool) {
+	m.resetTimestamps = val
 }
 
 // SetHideBanner _
@@ -734,6 +752,21 @@ func (m *Mediafile) MovFlags() string {
 	return m.movFlags
 }
 
+// Map _
+func (m *Mediafile) Map() string {
+	return m.mapFlag
+}
+
+// SegmentTime _
+func (m *Mediafile) SegmentTime() int {
+	return m.segmentTime
+}
+
+// ResetTimestamps _
+func (m *Mediafile) ResetTimestamps() bool {
+	return m.resetTimestamps
+}
+
 // HideBanner _
 func (m *Mediafile) HideBanner() bool {
 	return m.hideBanner
@@ -877,6 +910,7 @@ func (m *Mediafile) ToStrCommand() []string {
 		"InputVideoCodec",
 		"InputPath",
 		"InputPipe",
+		"Map",
 		"HideBanner",
 		"FileSizeLimit",
 		"Aspect",
@@ -923,6 +957,7 @@ func (m *Mediafile) ToStrCommand() []string {
 		"HlsSegmentDuration",
 		"HlsPlaylistType",
 		"HlsMasterPlaylistName",
+		"SegmentTime",
 		"HlsSegmentFilename",
 		"AudioFilter",
 		"VideoFilter",
@@ -1047,6 +1082,33 @@ func (m *Mediafile) ObtainOutputPipe() []string {
 func (m *Mediafile) ObtainMovFlags() []string {
 	if m.movFlags != "" {
 		return []string{"-movflags", m.movFlags}
+	}
+
+	return nil
+}
+
+// ObtainMap _
+func (m *Mediafile) ObtainMap() []string {
+	if m.mapFlag != "" {
+		return []string{"-map", m.mapFlag}
+	}
+
+	return nil
+}
+
+// ObtainSegmentTime _
+func (m *Mediafile) ObtainSegmentTime() []string {
+	if m.segmentTime != 0 {
+		return []string{"-segment_time", fmt.Sprintf("%d", m.segmentTime)}
+	}
+
+	return nil
+}
+
+// ObtainResetTimestamps _
+func (m *Mediafile) ObtainResetTimestamps() []string {
+	if m.resetTimestamps {
+		return []string{"-reset_timestamps", "1"}
 	}
 
 	return nil

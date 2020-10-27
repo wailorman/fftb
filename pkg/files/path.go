@@ -12,6 +12,9 @@ type Pather interface {
 	Files() ([]Filer, error)
 	FullPath() string
 	Create() error
+	BuildSubpath(path string) Pather
+	BuildFile(name string) Filer
+	Destroy() error
 }
 
 // Path _
@@ -40,6 +43,21 @@ func (p *Path) Create() error {
 	}
 
 	return nil
+}
+
+// BuildSubpath returns instance of new directory in current directory (not written to disk)
+func (p *Path) BuildSubpath(path string) Pather {
+	return NewPath(p.FullPath() + "/" + path)
+}
+
+// BuildFile returns instance of new file inside current directory (not written to disk)
+func (p *Path) BuildFile(name string) Filer {
+	return NewFile(p.FullPath() + "/" + name)
+}
+
+// Destroy _
+func (p *Path) Destroy() error {
+	return os.RemoveAll(p.FullPath())
 }
 
 // Clone _

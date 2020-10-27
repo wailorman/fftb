@@ -2,138 +2,186 @@ package chunk
 
 import (
 	"fmt"
+	"sort"
+	"strings"
+	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/files"
-	mediaCut "github.com/wailorman/fftb/pkg/media/cut"
-	mediaDuration "github.com/wailorman/fftb/pkg/media/duration"
+	"github.com/wailorman/fftb/pkg/media/ff"
+	"github.com/wailorman/fftb/pkg/media/segm"
 )
 
-// Chunker _
-type Chunker struct {
-	mainFile           files.Filer
-	totalDuration      float64
-	videoCutter        mediaCut.Cutter
-	durationCalculator mediaDuration.Calculator
-	resultPath         files.Pather
-	maxFileSize        int
+// Instance _
+type Instance struct {
+	mainFile   files.Filer
+	resultPath files.Pather
+	req        Request
 
-	chunks          []files.Filer
-	currentDuration float64
+	chunks      []files.Filer
+	segmenter   Segmenter
+	middlewares []Middleware
+
+	durationCalculator DurationCalculator
+	timecodeExtractor  TimecodeExtractor
 }
 
-// ChunkerResult _
-type ChunkerResult struct {
+// Segmenter _
+type Segmenter interface {
+	Init(req segm.Request) error
+	Start() (progress chan ff.Progressable, segments chan segm.Segment, finished chan bool, failed chan error)
+	Purge() error
+}
+
+// DurationCalculator _
+type DurationCalculator interface {
+	CalculateDuration(file files.Filer) (float64, error)
+}
+
+// TimecodeExtractor _
+type TimecodeExtractor interface {
+	GetTimecode() (time.Time, error)
+}
+
+// Result _
+type Result struct {
 	file files.Filer
 }
 
-// NewChunker _
-func NewChunker(
-	file files.Filer,
-	videoCutter mediaCut.Cutter,
-	durationCalculator mediaDuration.Calculator,
-	resultPath files.Pather,
-	maxFileSize int,
-) (*Chunker, error) {
-
-	duration, err := durationCalculator.CalculateDuration(file)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Calculating file duration")
+// New _
+func New(segmenter Segmenter) *Instance {
+	return &Instance{
+		segmenter:   segmenter,
+		middlewares: make([]Middleware, 0),
 	}
-
-	return &Chunker{
-		mainFile:           file,
-		totalDuration:      duration,
-		durationCalculator: durationCalculator,
-		videoCutter:        videoCutter,
-		resultPath:         resultPath,
-		maxFileSize:        maxFileSize,
-		chunks:             make([]files.Filer, 0),
-	}, nil
 }
 
-// Start _
-func (c *Chunker) Start() error {
-	log := ctxlog.Logger
+// Request _
+type Request struct {
+	InFile             files.Filer
+	OutPath            files.Pather
+	SegmentDurationSec int
+}
 
-	totalDuration, err := c.durationCalculator.CalculateDuration(c.mainFile)
+// Middleware _
+type Middleware interface {
+	RenameSegments(req Request, sortedSegments []segm.Segment) error
+}
+
+// Use _
+func (c *Instance) Use(m Middleware) {
+	c.middlewares = append(c.middlewares, m)
+}
+
+// Init _
+func (c *Instance) Init(req Request) error {
+	c.segmenter = segm.New()
+	c.req = req
+
+	err := c.segmenter.Init(segm.Request{
+		InFile:         req.InFile,
+		OutPath:        req.OutPath,
+		KeepTimestamps: false,
+		SegmentSec:     req.SegmentDurationSec,
+	})
 
 	if err != nil {
-		return errors.Wrap(err, "Calculating duration of main file")
-	}
-
-	c.totalDuration = totalDuration
-
-	log.WithFields(logrus.Fields{
-		"total_duration": totalDuration,
-		"file_path":      c.mainFile.FullPath(),
-	}).Info("Start processing file...")
-
-	for i := 0; c.currentDuration < c.totalDuration; i++ {
-		resultFile := files.NewFile(
-			fmt.Sprintf("./%s_%d%s", c.mainFile.BaseName(), i, c.mainFile.Extension()),
-		)
-
-		resultFile.SetDirPath(c.resultPath)
-
-		err := c.resultPath.Create()
-
-		if err != nil {
-			return errors.Wrap(err, "Creating result directory")
-		}
-
-		chunkLog := log.WithFields(logrus.Fields{
-			"chunk_file_path": resultFile.FullPath(),
-			"chunk_number":    i,
-		})
-
-		resultFile.Remove()
-
-		err = resultFile.EnsureParentDirExists()
-
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Creating parent directory for chunk #%d", i))
-		}
-
-		chunkLog.Info("Processing chunk")
-
-		chunk, err := c.videoCutter.CutVideo(
-			c.mainFile,
-			resultFile,
-			c.currentDuration,
-			c.maxFileSize,
-		)
-
-		if err != nil {
-			return errors.Wrap(err, "Cutting video")
-		}
-
-		chunkDuration, err := c.durationCalculator.CalculateDuration(chunk)
-
-		if chunkDuration == 0 {
-			err = chunk.Remove()
-
-			if err != nil {
-				return errors.Wrap(err, "Empty file removing")
-			}
-
-			return nil
-		}
-
-		chunkLog = chunkLog.WithField("duration", chunkDuration)
-		chunkLog.Info("Cutted chunk")
-
-		c.chunks = append(c.chunks, chunk)
-
-		if err != nil {
-			return errors.Wrap(err, "Calculating chunk duration")
-		}
-
-		c.currentDuration += chunkDuration
+		return errors.Wrap(err, "Segmenter initialization")
 	}
 
 	return nil
+}
+
+// Start _
+func (c *Instance) Start() (progress chan ff.Progressable, finished chan bool, failed chan error) {
+	progress = make(chan ff.Progressable)
+	finished = make(chan bool)
+	failed = make(chan error)
+
+	sProgress, sSegments, sFinished, sFailed := c.segmenter.Start()
+
+	segs := make([]segm.Segment, 0)
+
+	go func() {
+		for {
+			select {
+			case progressMsg := <-sProgress:
+				progress <- progressMsg
+			case segment := <-sSegments:
+				segs = append(segs, segment)
+			case failure := <-sFailed:
+				failed <- failure
+			case <-sFinished:
+				err := persistSegments(c.req, segs)
+
+				if err != nil {
+					failed <- errors.Wrap(err, "Failed to persist segments to result path")
+					rollbackSegmenter(failed, c.segmenter)
+					return
+				}
+
+				segs = sortSegments(segs)
+
+				for _, mwr := range c.middlewares {
+					err := mwr.RenameSegments(c.req, segs)
+
+					if err != nil {
+						failed <- errors.Wrap(err, "Failed to perform middleware")
+						rollbackSegmenter(failed, c.segmenter)
+						return
+					}
+				}
+
+				rollbackSegmenter(failed, c.segmenter)
+
+				finished <- true
+				return
+			}
+		}
+	}()
+
+	return progress, finished, failed
+}
+
+func sortSegments(segs []segm.Segment) []segm.Segment {
+	sortedSegments := make([]segm.Segment, 0)
+
+	for _, seg := range segs {
+		sortedSegments = append(sortedSegments, seg)
+	}
+
+	sort.SliceStable(segs, func(i, j int) bool {
+		return segs[i].Position < segs[j].Position
+	})
+
+	return sortedSegments
+}
+
+func persistSegments(req Request, segs []segm.Segment) error {
+	for _, seg := range segs {
+		segmentNewName := strings.Join([]string{
+			req.InFile.BaseName(),
+			"_",
+			fmt.Sprint(seg.Position),
+			req.InFile.Extension(),
+		}, "")
+
+		segmentNewFile := req.OutPath.BuildFile(segmentNewName)
+
+		err := seg.File.Move(segmentNewFile.FullPath())
+
+		if err != nil {
+			return errors.Wrap(err, "Renaming tmp segment file")
+		}
+	}
+
+	return nil
+}
+
+func rollbackSegmenter(failed chan error, segmenter Segmenter) {
+	err := segmenter.Purge()
+
+	if err != nil {
+		failed <- errors.Wrap(err, "Rolling back segmenter")
+	}
 }

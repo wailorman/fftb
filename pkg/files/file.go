@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -25,6 +26,8 @@ type Filer interface {
 	BuildPath() Pather
 	IsExist() bool
 	ReadContent() (string, error)
+	Move(newFullPath string) error
+	Rename(newName string) error
 	MarshalYAML() (interface{}, error)
 }
 
@@ -97,7 +100,7 @@ func (f *File) BaseName() string {
 	return strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))
 }
 
-// Extension returns file extension from name. Example: ".mp4"
+// Extension returns file extension with dot from name. Example: ".mp4"
 func (f *File) Extension() string {
 	return filepath.Ext(f.Name())
 }
@@ -150,6 +153,19 @@ func (f *File) ReadContent() (string, error) {
 	b, err := ioutil.ReadAll(file)
 
 	return string(b), nil
+}
+
+// Move _
+func (f *File) Move(newFullPath string) error {
+	return os.Rename(f.FullPath(), newFullPath)
+}
+
+// Rename _
+func (f *File) Rename(newName string) error {
+	return os.Rename(
+		f.FullPath(),
+		path.Join(f.DirPath(), newName),
+	)
 }
 
 // MarshalYAML is YAML Marshaller interface implementation

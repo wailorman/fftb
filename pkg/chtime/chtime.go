@@ -19,6 +19,11 @@ func New(file files.Filer) *Instance {
 	}
 }
 
+// TimecodeExtractor _
+type TimecodeExtractor interface {
+	GetTimecode() (time.Time, error)
+}
+
 // Result _
 type Result struct {
 	Ok          bool
@@ -53,6 +58,20 @@ func (t *Instance) Perform() Result {
 	}
 
 	return newResult(true, extractedTime, t.file, usedHandler, nil)
+}
+
+// ErrNoTimeInformation _
+var ErrNoTimeInformation = errors.New("No timecode information in string")
+
+// GetTimecode _
+func (t *Instance) GetTimecode() (time.Time, error) {
+	result := t.Perform()
+
+	if !result.Ok {
+		return time.Time{}, ErrNoTimeInformation
+	}
+
+	return result.Time, nil
 }
 
 // RecursiveInstance _

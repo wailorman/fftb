@@ -81,6 +81,16 @@ func (f *filerStub) Clone() files.Filer {
 	return newFile
 }
 
+// Move _
+func (f *filerStub) Move(newFullPath string) error {
+	return nil
+}
+
+// Rename _
+func (f *filerStub) Rename(newName string) error {
+	return nil
+}
+
 // BaseName returns file name without extension
 func (f *filerStub) BaseName() string {
 	return strings.TrimSuffix(f.Name(), filepath.Ext(f.Name()))

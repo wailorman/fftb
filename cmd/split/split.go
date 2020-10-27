@@ -9,10 +9,8 @@ import (
 
 	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/files"
-	mediaChunk "github.com/wailorman/fftb/pkg/media/chunk"
-	mediaCut "github.com/wailorman/fftb/pkg/media/cut"
-	mediaDuration "github.com/wailorman/fftb/pkg/media/duration"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/chunk"
+	"github.com/wailorman/fftb/pkg/media/segm"
 )
 
 const bytesInMegabyte = 1000000
@@ -29,8 +27,8 @@ func CliConfig() *cli.Command {
 			&cli.IntFlag{
 				Name:    "chunk-size",
 				Aliases: []string{"s"},
-				Usage:   "Chunk size in megabytes (approximate)",
-				Value:   1024,
+				Usage:   "Chunk size in seconds (approximate)",
+				Value:   60,
 			},
 		},
 
@@ -70,27 +68,26 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 
 	log.Info("Splitting to chunks...")
 
-	mediaInfoGetter := mediaInfo.NewGetter()
+	segmenter := segm.New()
+	chunker := chunk.New(segmenter)
+	chunker.Init(chunk.Request{
+		InFile:             mainFile,
+		OutPath:            outPath,
+		SegmentDurationSec: chunkSize,
+	})
 
-	chunker, err := mediaChunk.NewChunker(
-		mainFile,
-		mediaCut.NewCutter(),
-		mediaDuration.NewCalculator(mediaInfoGetter),
-		outPath,
-		chunkSize*bytesInMegabyte,
-	)
+	progress, finished, failed := chunker.Start()
 
-	if err != nil {
-		return errors.Wrap(err, "Building chunker")
+	for {
+		select {
+		case progressMsg := <-progress:
+			logProgress(progressMsg)
+		case failure := <-failed:
+			logError(failure)
+			return nil
+		case <-finished:
+			logDone()
+			return nil
+		}
 	}
-
-	err = chunker.Start()
-
-	if err != nil {
-		return errors.Wrap(err, "Splitting to chunks")
-	}
-
-	log.Info("Splitting done")
-
-	return nil
 }
