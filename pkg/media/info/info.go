@@ -7,8 +7,8 @@ import (
 	"github.com/wailorman/fftb/pkg/goffmpeg/transcoder"
 )
 
-// GetterInstance _
-type GetterInstance struct {
+// Instance _
+type Instance struct {
 }
 
 // Getter _
@@ -16,13 +16,13 @@ type Getter interface {
 	GetMediaInfo(file files.Filer) (ffmpegModels.Metadata, error)
 }
 
-// NewGetter _
-func NewGetter() *GetterInstance {
-	return &GetterInstance{}
+// New _
+func New() Getter {
+	return &Instance{}
 }
 
 // GetMediaInfo _
-func (ig *GetterInstance) GetMediaInfo(file files.Filer) (ffmpegModels.Metadata, error) {
+func (ig *Instance) GetMediaInfo(file files.Filer) (ffmpegModels.Metadata, error) {
 	trans := &transcoder.Transcoder{}
 
 	err := trans.InitializeEmptyTranscoder()
