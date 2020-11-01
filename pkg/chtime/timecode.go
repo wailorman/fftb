@@ -8,7 +8,7 @@ import (
 	"github.com/wailorman/fftb/pkg/files"
 
 	mediaDuration "github.com/wailorman/fftb/pkg/media/duration"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/info"
 )
 
 // ErrNoTimeMatches _
@@ -23,10 +23,10 @@ type ExtractTimeHandler interface {
 
 // ExtractTime _
 func ExtractTime(file files.Filer) (time.Time, string, error) {
-	mediaInfoGetter := mediaInfo.NewGetter()
+	infoGetter := info.New()
 
 	patterns := []ExtractTimeHandler{
-		handlers.NewGeforceDVR(mediaDuration.NewCalculator(mediaInfoGetter)),
+		handlers.NewGeforceDVR(mediaDuration.NewCalculator(infoGetter)),
 		handlers.NewGeforceFull(),
 		handlers.NewAverMedia(),
 		handlers.NewPlaysTv(),

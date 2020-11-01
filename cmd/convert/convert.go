@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	mediaConvert "github.com/wailorman/fftb/pkg/media/convert"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/info"
 )
 
 // CliConfig _
@@ -109,7 +109,7 @@ func CliConfig() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
-			mediaInfoGetter := mediaInfo.NewGetter()
+			infoGetter := info.New()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
 			var doneChan chan bool
@@ -173,7 +173,7 @@ func CliConfig() *cli.Command {
 						VideoBitRate: c.String("video-bitrate"),
 						VideoQuality: c.Int("video-quality"),
 						Scale:        c.String("scale"),
-					}, mediaInfoGetter)
+					}, infoGetter)
 
 					if err != nil {
 						return errors.Wrap(err, "Building recursive task")
@@ -191,7 +191,7 @@ func CliConfig() *cli.Command {
 				return nil
 			}
 
-			converter := mediaConvert.NewBatchConverter(mediaInfoGetter)
+			converter := mediaConvert.NewBatchConverter(infoGetter)
 
 			progressChan, doneChan, errChan = converter.Convert(batchTask)
 

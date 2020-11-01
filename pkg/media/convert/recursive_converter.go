@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/info"
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
@@ -18,7 +18,7 @@ type RecursiveConverter struct {
 	ConversionStopping      chan ConverterTask
 	ConversionStopped       chan ConverterTask
 
-	infoGetter     mediaInfo.Getter
+	infoGetter     info.Getter
 	stopConversion chan struct{}
 }
 
@@ -36,7 +36,7 @@ type RecursiveConverterTask struct {
 }
 
 // BuildBatchTaskFromRecursive _
-func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter mediaInfo.Getter) (BatchConverterTask, error) {
+func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter info.Getter) (BatchConverterTask, error) {
 	allFiles, err := task.InPath.Files()
 
 	if err != nil {

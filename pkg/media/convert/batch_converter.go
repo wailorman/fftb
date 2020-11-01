@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync"
 
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/info"
 )
 
 // BatchConverter _
@@ -16,12 +16,12 @@ type BatchConverter struct {
 	ConversionStopping      chan ConverterTask
 	ConversionStopped       chan ConverterTask
 
-	infoGetter     mediaInfo.Getter
+	infoGetter     info.Getter
 	stopConversion chan struct{}
 }
 
 // NewBatchConverter _
-func NewBatchConverter(infoGetter mediaInfo.Getter) *BatchConverter {
+func NewBatchConverter(infoGetter info.Getter) *BatchConverter {
 	return &BatchConverter{
 		infoGetter:     infoGetter,
 		stopConversion: make(chan struct{}),

@@ -3,21 +3,21 @@ package cut
 import (
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/info"
 )
 
 // CalculatorInstance _
 type CalculatorInstance struct {
-	infoGetter mediaInfo.Getter
+	infoGetter info.Getter
 }
 
 // Calculator _
 type Calculator interface {
-	CalculateDuration(file files.Filer) (float64, error)
+	CalculateDuration(files.Filer) (float64, error)
 }
 
 // NewCalculator _
-func NewCalculator(infoGetter mediaInfo.Getter) *CalculatorInstance {
+func NewCalculator(infoGetter info.Getter) *CalculatorInstance {
 	return &CalculatorInstance{
 		infoGetter: infoGetter,
 	}
