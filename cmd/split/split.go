@@ -13,8 +13,6 @@ import (
 	"github.com/wailorman/fftb/pkg/media/segm"
 )
 
-const bytesInMegabyte = 1000000
-
 // CliConfig _
 func CliConfig() *cli.Command {
 	return &cli.Command{
