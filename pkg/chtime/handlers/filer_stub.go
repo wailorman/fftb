@@ -119,8 +119,8 @@ func (f *filerStub) NewWithSuffix(suffix string) files.Filer {
 	return newFile
 }
 
-// ReadContent _
-func (f *filerStub) ReadContent() (string, error) {
+// ReadAllContent _
+func (f *filerStub) ReadAllContent() (string, error) {
 	file, err := os.Open(f.FullPath())
 
 	if err != nil {

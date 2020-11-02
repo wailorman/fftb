@@ -25,7 +25,7 @@ type Filer interface {
 	NewWithSuffix(suffix string) Filer
 	BuildPath() Pather
 	IsExist() bool
-	ReadContent() (string, error)
+	ReadAllContent() (string, error)
 	Move(newFullPath string) error
 	Rename(newName string) error
 	MarshalYAML() (interface{}, error)
@@ -140,8 +140,8 @@ func (f *File) Remove() error {
 	return os.Remove(f.FullPath())
 }
 
-// ReadContent _
-func (f *File) ReadContent() (string, error) {
+// ReadAllContent _
+func (f *File) ReadAllContent() (string, error) {
 	file, err := os.Open(f.FullPath())
 
 	if err != nil {
