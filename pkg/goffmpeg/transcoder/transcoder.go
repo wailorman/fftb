@@ -262,34 +262,38 @@ func (t *Transcoder) GetFramesMetadata(filePath string) (chan bool, chan models.
 		for {
 			select {
 			case errMsg := <-rStderr:
-				stdErrMessages = append(stdErrMessages, errMsg)
+				if errMsg != "" {
+					stdErrMessages = append(stdErrMessages, errMsg)
+				}
 			case line := <-rStdout:
-				line = strings.ReplaceAll(line, "},", "}")
+				if line != "" {
+					line = strings.ReplaceAll(line, "},", "}")
 
-				if strings.Contains(line, "\"media_type\": \"audio\"") {
-					audioFrame := &models.AudioFrame{}
+					if strings.Contains(line, "\"media_type\": \"audio\"") {
+						audioFrame := &models.AudioFrame{}
 
-					err := json.Unmarshal([]byte(line), audioFrame)
+						err := json.Unmarshal([]byte(line), audioFrame)
 
-					if err != nil {
-						failed <- errors.Wrap(err, "Unmarshaling audio frame")
-						done <- true
-						return
+						if err != nil {
+							failed <- errors.Wrap(err, "Unmarshaling audio frame")
+							done <- true
+							return
+						}
+
+						frames <- audioFrame
+					} else if strings.Contains(line, "\"media_type\": \"video\"") {
+						videoFrame := &models.VideoFrame{}
+
+						err := json.Unmarshal([]byte(line), videoFrame)
+
+						if err != nil {
+							failed <- errors.Wrap(err, "Unmarshaling video frame")
+							done <- true
+							return
+						}
+
+						frames <- videoFrame
 					}
-
-					frames <- audioFrame
-				} else if strings.Contains(line, "\"media_type\": \"video\"") {
-					videoFrame := &models.VideoFrame{}
-
-					err := json.Unmarshal([]byte(line), videoFrame)
-
-					if err != nil {
-						failed <- errors.Wrap(err, "Unmarshaling video frame")
-						done <- true
-						return
-					}
-
-					frames <- videoFrame
 				}
 			case err := <-rFailures:
 				failed <- errors.Wrap(err, "Receiving output from ffprobe")
