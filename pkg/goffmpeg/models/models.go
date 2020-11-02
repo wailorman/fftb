@@ -1,5 +1,9 @@
 package models
 
+import (
+	"strconv"
+)
+
 // Ffmpeg _
 type Ffmpeg struct {
 	FfmpegBinPath  string
@@ -45,6 +49,130 @@ type Streams struct {
 	BitRate            string      `json:"bit_rate"`
 
 	DurationFloat float64
+}
+
+// Framer _
+type Framer interface {
+	GetType() string
+}
+
+// AudioFrame _
+type AudioFrame struct {
+	MediaType               string `json:"media_type"`
+	StreamIndex             int    `json:"stream_index"`
+	KeyFrame                int    `json:"key_frame"`
+	PktPts                  int    `json:"pkt_pts"`
+	PktPtsTime              string `json:"pkt_pts_time"`
+	PktDts                  int    `json:"pkt_dts"`
+	PktDtsTime              string `json:"pkt_dts_time"`
+	BestEffortTimestamp     int    `json:"best_effort_timestamp"`
+	BestEffortTimestampTime string `json:"best_effort_timestamp_time"`
+	PktDuration             int    `json:"pkt_duration"`
+	PktDurationTime         string `json:"pkt_duration_time"`
+	PktPos                  string `json:"pkt_pos"`
+	PktSize                 string `json:"pkt_size"`
+	SampleFmt               string `json:"sample_fmt"`
+	NbSamples               int    `json:"nb_samples"`
+	Channels                int    `json:"channels"`
+	ChannelLayout           string `json:"channel_layout"`
+}
+
+// GetType _
+func (f *AudioFrame) GetType() string {
+	return "AudioFrame"
+}
+
+// PktPtsTimeFloat _
+func (f *AudioFrame) PktPtsTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.PktPtsTime, 64)
+}
+
+// PktDtsTimeFloat _
+func (f *AudioFrame) PktDtsTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.PktDtsTime, 64)
+}
+
+// BestEffortTimestampTimeFloat _
+func (f *AudioFrame) BestEffortTimestampTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.BestEffortTimestampTime, 64)
+}
+
+// PktDurationTimeFloat _
+func (f *AudioFrame) PktDurationTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.PktDurationTime, 64)
+}
+
+// PktPosInt _
+func (f *AudioFrame) PktPosInt() (int64, error) {
+	return strconv.ParseInt(f.PktPos, 10, 64)
+}
+
+// PktSizeInt _
+func (f *AudioFrame) PktSizeInt() (int64, error) {
+	return strconv.ParseInt(f.PktSize, 10, 64)
+}
+
+// VideoFrame _
+type VideoFrame struct {
+	MediaType               string `json:"media_type"`
+	StreamIndex             int    `json:"stream_index"`
+	KeyFrame                int    `json:"key_frame"`
+	PktPts                  int    `json:"pkt_pts"`
+	PktPtsTime              string `json:"pkt_pts_time"`
+	PktDts                  int    `json:"pkt_dts"`
+	PktDtsTime              string `json:"pkt_dts_time"`
+	BestEffortTimestamp     int    `json:"best_effort_timestamp"`
+	BestEffortTimestampTime string `json:"best_effort_timestamp_time"`
+	PktDuration             int    `json:"pkt_duration"`
+	PktDurationTime         string `json:"pkt_duration_time"`
+	PktPos                  string `json:"pkt_pos"`
+	PktSize                 string `json:"pkt_size"`
+	Width                   int    `json:"width"`
+	Height                  int    `json:"height"`
+	PixFmt                  string `json:"pix_fmt"`
+	SampleAspectRatio       string `json:"sample_aspect_ratio"`
+	PictType                string `json:"pict_type"`
+	CodedPictureNumber      int    `json:"coded_picture_number"`
+	DisplayPictureNumber    int    `json:"display_picture_number"`
+	InterlacedFrame         int    `json:"interlaced_frame"`
+	TopFieldFirst           int    `json:"top_field_first"`
+	RepeatPict              int    `json:"repeat_pict"`
+	ChromaLocation          string `json:"chroma_location"`
+}
+
+// GetType _
+func (f *VideoFrame) GetType() string {
+	return "VideoFrame"
+}
+
+// PktPtsTimeFloat _
+func (f *VideoFrame) PktPtsTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.PktPtsTime, 64)
+}
+
+// PktDtsTimeFloat _
+func (f *VideoFrame) PktDtsTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.PktDtsTime, 64)
+}
+
+// BestEffortTimestampTimeFloat _
+func (f *VideoFrame) BestEffortTimestampTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.BestEffortTimestampTime, 64)
+}
+
+// PktDurationTimeFloat _
+func (f *VideoFrame) PktDurationTimeFloat() (float64, error) {
+	return strconv.ParseFloat(f.PktDurationTime, 64)
+}
+
+// PktPosInt _
+func (f *VideoFrame) PktPosInt() (int64, error) {
+	return strconv.ParseInt(f.PktPos, 10, 64)
+}
+
+// PktSizeInt _
+func (f *VideoFrame) PktSizeInt() (int64, error) {
+	return strconv.ParseInt(f.PktSize, 10, 64)
 }
 
 // Disposition _

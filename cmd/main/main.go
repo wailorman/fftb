@@ -7,6 +7,7 @@ import (
 	"github.com/wailorman/fftb/cmd/convert"
 	"github.com/wailorman/fftb/cmd/etime"
 	"github.com/wailorman/fftb/cmd/log"
+	"github.com/wailorman/fftb/cmd/minfo"
 	"github.com/wailorman/fftb/cmd/split"
 	"github.com/wailorman/fftb/pkg/ctxlog"
 
@@ -56,6 +57,7 @@ func cliApp() {
 			etime.CliConfig(),
 			split.CliConfig(),
 			convert.CliConfig(),
+			minfo.CliConfig(),
 		},
 	}
 
