@@ -1,6 +1,10 @@
 package utils
 
 import (
+	"io"
+	"os"
+
+	"github.com/pkg/errors"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 
 	"github.com/wailorman/fftb/pkg/files"
@@ -46,4 +50,31 @@ func GetVideoCodec(metadata ffmpegModels.Metadata) string {
 	}
 
 	return metadata.Streams[0].CodecName
+}
+
+// OutputWriteCloser _
+type OutputWriteCloser interface {
+	io.WriteCloser
+	io.StringWriter
+}
+
+// BuildOutputPipe _
+func BuildOutputPipe(outputFilePath string) (OutputWriteCloser, error) {
+	if outputFilePath != "" {
+		outputFile := files.NewFile(outputFilePath)
+
+		if err := outputFile.Create(); err != nil {
+			return nil, errors.Wrap(err, "Creating output file")
+		}
+
+		outputWriter, err := outputFile.WriteContent()
+
+		if err != nil {
+			return nil, errors.Wrap(err, "Initializing output writer")
+		}
+
+		return outputWriter, nil
+	}
+
+	return os.Stdout, nil
 }

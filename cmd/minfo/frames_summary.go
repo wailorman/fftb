@@ -8,10 +8,17 @@ import (
 	"github.com/urfave/cli/v2"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/utils"
 )
 
 var framesSummarySubcommand = &cli.Command{
 	Name: "frames-summary",
+	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:    "output",
+			Aliases: []string{"o"},
+		},
+	},
 	Action: func(c *cli.Context) error {
 		inputFilePath := c.Args().Get(0)
 
@@ -22,6 +29,16 @@ var framesSummarySubcommand = &cli.Command{
 		infoGetter := info.New()
 		inputFile := files.NewFile(inputFilePath)
 
+		if !inputFile.IsExist() {
+			return fmt.Errorf("Input file does not exists: %s", inputFilePath)
+		}
+
+		outputWriter, err := utils.BuildOutputPipe(c.String("output"))
+
+		if err != nil {
+			return errors.Wrap(err, "Building output pipe")
+		}
+
 		summary, err := infoGetter.GetFramesSummary(inputFile)
 
 		jsonBytes, err := json.Marshal(summary)
@@ -30,7 +47,8 @@ var framesSummarySubcommand = &cli.Command{
 			return errors.Wrap(err, "Marshaling json")
 		}
 
-		fmt.Println(string(jsonBytes))
+		outputWriter.WriteString(string(jsonBytes))
+		outputWriter.WriteString("\n")
 
 		return nil
 	},

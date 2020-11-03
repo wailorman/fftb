@@ -134,6 +134,16 @@ func (f *filerStub) ReadAllContent() (string, error) {
 	return string(b), nil
 }
 
+// Create _
+func (f *filerStub) Create() error {
+	return nil
+}
+
+// WriteContent _
+func (f *filerStub) WriteContent() (files.FileWriter, error) {
+	return nil, nil
+}
+
 // MarshalYAML is YAML Marshaller interface implementation
 func (f *filerStub) MarshalYAML() (interface{}, error) {
 	return f.FullPath(), nil
