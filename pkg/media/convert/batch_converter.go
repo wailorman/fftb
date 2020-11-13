@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/wailorman/fftb/pkg/media/info"
 	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 )
 
@@ -16,8 +17,9 @@ type BatchConverter struct {
 	ConversionStopping      chan ConverterTask
 	ConversionStopped       chan ConverterTask
 
-	infoGetter     mediaInfo.Getter
-	stopConversion chan struct{}
+	infoGetter           info.Getter
+	stopConversion       chan struct{}
+	conversionWasStopped bool
 }
 
 // NewBatchConverter _
@@ -31,6 +33,7 @@ func NewBatchConverter(infoGetter mediaInfo.Getter) *BatchConverter {
 // Stop _
 func (bc *BatchConverter) Stop() {
 	bc.stopConversion = make(chan struct{})
+	bc.conversionWasStopped = true
 	// broadcast to all channel receivers
 	close(bc.stopConversion)
 }
@@ -78,16 +81,18 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 		for i := 0; i < batchTask.Parallelism; i++ {
 			go func() {
 				for task := range taskQueue {
-					err := bc.convertOne(task, progress)
+					if !bc.conversionWasStopped {
+						err := bc.convertOne(task, progress)
 
-					if err != nil {
-						failed <- BatchErrorMessage{
-							Task: task,
-							Err:  err,
-						}
+						if err != nil {
+							failed <- BatchErrorMessage{
+								Task: task,
+								Err:  err,
+							}
 
-						if batchTask.StopConversionOnError {
-							bc.Stop()
+							if batchTask.StopConversionOnError {
+								bc.Stop()
+							}
 						}
 					}
 
