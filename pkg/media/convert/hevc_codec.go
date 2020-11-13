@@ -27,7 +27,7 @@ func (c *HevcCodec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	mediaFile.SetHideBanner(true)
 	mediaFile.SetVsync(true)
 	mediaFile.SetAudioCodec("copy")
-	mediaFile.SetMaxMuxingQueueSize(2048)
+	mediaFile.SetMaxMuxingQueueSize(102400)
 	mediaFile.SetVideoTag("hvc1")
 
 	if c.task.VideoQuality > 0 {
