@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Filer _
@@ -28,6 +30,8 @@ type Filer interface {
 	IsExist() bool
 	ReadAllContent() (string, error)
 	Create() error
+	Size() (int, error)
+	ReadContent() (FileReader, error)
 	WriteContent() (FileWriter, error)
 	Move(newFullPath string) error
 	Rename(newName string) error
@@ -50,6 +54,25 @@ func NewFile(relativePath string) *File {
 		fileName: fileName,
 		dirPath:  dirPath,
 	}
+}
+
+// NewTempFile _
+func NewTempFile(dir, name string) (*File, error) {
+	tempDir := NewPath(os.TempDir() + "/" + dir)
+
+	err := tempDir.Create()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Creating directory in tmp dir")
+	}
+
+	file, err := ioutil.TempFile(tempDir.FullPath(), "*_"+name)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Creating tmp file")
+	}
+
+	return NewFile(file.Name()), nil
 }
 
 // FullPath _
@@ -89,6 +112,17 @@ func (f *File) SetDirPath(path Pather) {
 // SetFileName _
 func (f *File) SetFileName(fileName string) {
 	f.fileName = fileName
+}
+
+// Size _
+func (f *File) Size() (int, error) {
+	info, err := os.Stat(f.FullPath())
+
+	if err != nil {
+		return 0, errors.Wrap(err, "Getting file size")
+	}
+
+	return int(info.Size()), nil
 }
 
 // Clone _
@@ -150,6 +184,17 @@ type FileWriter interface {
 	io.Writer
 	io.StringWriter
 	io.Closer
+}
+
+// FileReader _
+type FileReader interface {
+	io.Reader
+	io.Closer
+}
+
+// ReadContent _
+func (f *File) ReadContent() (FileReader, error) {
+	return os.Open(f.FullPath())
 }
 
 // WriteContent _

@@ -92,12 +92,12 @@ type Segment struct {
 // Start _
 func (s *Instance) Start() (
 	progress chan ff.Progressable,
-	segments chan Segment,
+	segments chan *Segment,
 	finished chan bool,
 	failed chan error,
 ) {
 	progress = make(chan ff.Progressable)
-	segments = make(chan Segment)
+	segments = make(chan *Segment)
 	finished = make(chan bool)
 	failed = make(chan error)
 
@@ -164,14 +164,14 @@ func (s *Instance) Purge() error {
 	return s.tmpPath.Destroy()
 }
 
-func collectSegments(files []files.Filer) []Segment {
-	result := make([]Segment, 0)
+func collectSegments(files []files.Filer) []*Segment {
+	result := make([]*Segment, 0)
 
 	for _, file := range files {
 		foundSegment := getSegmentFromFile(file)
 
 		if foundSegment != nil {
-			result = append(result, *foundSegment)
+			result = append(result, foundSegment)
 		}
 	}
 

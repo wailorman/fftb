@@ -1,8 +1,8 @@
 package convert
 
 import (
-	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
 type nvencHWAccel struct {
@@ -21,11 +21,13 @@ func (hw *nvencHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 
 	mediaFile.SetHardwareAcceleration("cuvid")
 
-	switch hw.metadata.Streams[0].CodecName {
-	case "hevc":
-		mediaFile.SetInputVideoCodec("hevc_cuvid")
-	case "h264":
-		mediaFile.SetInputVideoCodec("h264_cuvid")
+	if !hw.task.CPUDecoding {
+		switch hw.metadata.Streams[0].CodecName {
+		case "hevc":
+			mediaFile.SetInputVideoCodec("hevc_cuvid")
+		case "h264":
+			mediaFile.SetInputVideoCodec("h264_cuvid")
+		}
 	}
 
 	mediaFile.SetNvencRateControl("constqp")

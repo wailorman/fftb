@@ -57,6 +57,7 @@ func cliApp() {
 			etime.CliConfig(),
 			split.CliConfig(),
 			convert.CliConfig(),
+			convert.DistributedCliConfig(),
 			minfo.CliConfig(),
 		},
 	}

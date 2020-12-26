@@ -19,6 +19,7 @@ type Progressable interface {
 	CurrentTime() string
 	CurrentBitrate() string
 	Progress() float64
+	Percent() float64
 	Speed() string
 	FPS() float64
 	File() files.Filer
@@ -41,6 +42,11 @@ func (p *Progress) CurrentBitrate() string {
 
 // Progress _
 func (p *Progress) Progress() float64 {
+	return p.progress
+}
+
+// Percent _
+func (p *Progress) Percent() float64 {
 	return p.progress
 }
 

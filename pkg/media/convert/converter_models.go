@@ -39,12 +39,14 @@ type ConverterTask struct {
 	InFile           files.Filer `yaml:"in_file"`
 	OutFile          files.Filer `yaml:"out_file"`
 	VideoCodec       string      `yaml:"video_codec"`
+	CPUDecoding      bool        `yaml:"cpu_decoding"`
 	HWAccel          string      `yaml:"hw_accel"`
 	VideoBitRate     string      `yaml:"video_bit_rate"`
 	VideoQuality     int         `yaml:"video_quality"`
 	Preset           string      `yaml:"preset"`
 	Scale            string      `yaml:"scale"`
 	KeyframeInterval int         `yaml:"keyframe_interval"`
+	Muxer            string      `yaml:"muxer"`
 }
 
 // ErrFileIsNotVideo _

@@ -29,7 +29,7 @@ type Instance struct {
 // Segmenter _
 type Segmenter interface {
 	Init(req segm.Request) error
-	Start() (progress chan ff.Progressable, segments chan segm.Segment, finished chan bool, failed chan error)
+	Start() (progress chan ff.Progressable, segments chan *segm.Segment, finished chan bool, failed chan error)
 	Purge() error
 }
 
@@ -108,7 +108,7 @@ func (c *Instance) Start() (progress chan ff.Progressable, finished chan bool, f
 			case progressMsg := <-sProgress:
 				progress <- progressMsg
 			case segment := <-sSegments:
-				segs = append(segs, segment)
+				segs = append(segs, *segment)
 			case failure := <-sFailed:
 				failed <- failure
 			case <-sFinished:
