@@ -7,12 +7,12 @@ import (
 
 // H264Codec _
 type H264Codec struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 
 // NewH264Codec _
-func NewH264Codec(task ConverterTask, metadata ffmpegModels.Metadata) *H264Codec {
+func NewH264Codec(task Task, metadata ffmpegModels.Metadata) *H264Codec {
 	return &H264Codec{
 		task:     task,
 		metadata: metadata,
@@ -23,19 +23,19 @@ func (c *H264Codec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	var err error
 
 	mediaFile.SetVideoCodec("libx264")
-	mediaFile.SetPreset(c.task.Preset)
+	mediaFile.SetPreset(c.task.Params.Preset)
 	mediaFile.SetHideBanner(true)
 	mediaFile.SetVsync(true)
 	mediaFile.SetAudioCodec("copy")
-	mediaFile.SetMaxMuxingQueueSize(2048)
+	mediaFile.SetMaxMuxingQueueSize(102400)
 
-	if c.task.VideoQuality > 0 {
-		mediaFile.SetCRF(uint32(c.task.VideoQuality))
+	if c.task.Params.VideoQuality > 0 {
+		mediaFile.SetCRF(uint32(c.task.Params.VideoQuality))
 	} else {
-		mediaFile.SetVideoBitRate(c.task.VideoBitRate)
+		mediaFile.SetVideoBitRate(c.task.Params.VideoBitRate)
 	}
 
-	mediaFile.SetKeyframeInterval(c.task.KeyframeInterval)
+	mediaFile.SetKeyframeInterval(c.task.Params.KeyframeInterval)
 
 	hwaccel := chooseHwAccel(c.task, c.metadata)
 

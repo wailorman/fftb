@@ -1,4 +1,14 @@
-# [](https://github.com/wailorman/fftb/compare/v0.8.0...v) (2020-10-27)
+# [](https://github.com/wailorman/fftb/compare/v0.8.1...v) (2020-11-13)
+
+
+
+## [0.8.1](https://github.com/wailorman/fftb/compare/v0.8.0...v0.8.1) (2020-11-13)
+
+
+### Bug Fixes
+
+* **convert:** increase muxing queue size to 102400 ([5165b00](https://github.com/wailorman/fftb/commit/5165b00525b69508c3b3919b55afc4a455dc5bec))
+* **convert:** stop conversion on error ([fe5310d](https://github.com/wailorman/fftb/commit/fe5310d5996d23b7a47374a5c0ce46ef99d275f2))
 
 
 

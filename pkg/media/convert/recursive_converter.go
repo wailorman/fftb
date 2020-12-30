@@ -12,58 +12,48 @@ import (
 // RecursiveConverter _
 type RecursiveConverter struct {
 	ConversionStarted       chan bool
-	TaskConversionStarted   chan ConverterTask
+	TaskConversionStarted   chan Task
 	MetadataReceived        chan MetadataReceivedBatchMessage
 	InputVideoCodecDetected chan InputVideoCodecDetectedBatchMessage
-	ConversionStopping      chan ConverterTask
-	ConversionStopped       chan ConverterTask
+	ConversionStopping      chan Task
+	ConversionStopped       chan Task
 
 	infoGetter     info.Getter
 	stopConversion chan struct{}
 }
 
-// RecursiveConverterTask _
-type RecursiveConverterTask struct {
-	Parallelism  int
-	InPath       files.Pather
-	OutPath      files.Pather
-	VideoCodec   string
-	HWAccel      string
-	VideoBitRate string
-	VideoQuality int
-	Preset       string
-	Scale        string
+// RecursiveTask _
+type RecursiveTask struct {
+	Parallelism int
+	InPath      files.Pather
+	OutPath     files.Pather
+	Params      Params
 }
 
 // BuildBatchTaskFromRecursive _
-func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter info.Getter) (BatchConverterTask, error) {
+func BuildBatchTaskFromRecursive(task RecursiveTask, infoGetter mediaInfo.Getter) (BatchTask, error) {
 	allFiles, err := task.InPath.Files()
 
 	if err != nil {
-		return BatchConverterTask{}, errors.Wrap(err, "Getting files from path")
+		return BatchTask{}, errors.Wrap(err, "Getting files from path")
 	}
 
 	videoFiles := mediaUtils.FilterVideos(allFiles, infoGetter)
 
-	batchTask := BatchConverterTask{
+	batchTask := BatchTask{
 		Parallelism: task.Parallelism,
-		Tasks:       make([]ConverterTask, 0),
+		Tasks:       make([]Task, 0),
 	}
 
 	for i, file := range videoFiles {
 		outFile := file.Clone()
 		outFile.SetDirPath(task.OutPath)
 
-		batchTask.Tasks = append(batchTask.Tasks, ConverterTask{
-			ID:           strconv.Itoa(i),
-			InFile:       file,
-			OutFile:      outFile,
-			VideoCodec:   task.VideoCodec,
-			HWAccel:      task.HWAccel,
-			VideoBitRate: task.VideoBitRate,
-			VideoQuality: task.VideoQuality,
-			Preset:       task.Preset,
-			Scale:        task.Scale,
+		batchTask.Tasks = append(batchTask.Tasks, Task{
+			ID:      strconv.Itoa(i),
+			InFile:  file.FullPath(),
+			OutFile: outFile.FullPath(),
+			Params:  task.Params,
 		})
 	}
 

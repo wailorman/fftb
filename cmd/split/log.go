@@ -32,8 +32,8 @@ func logSplittingStarted() {
 	ctxlog.Logger.Info("Splitting started")
 }
 
-func logTaskSplittingStarted(task mediaConvert.ConverterTask) {
+func logTaskSplittingStarted(task mediaConvert.Task) {
 	ctxlog.Logger.WithField("task_id", task.ID).
-		WithField("task_input_file", task.InFile.FullPath()).
+		WithField("task_input_file", task.InFile).
 		Debug("Task splitting started")
 }
