@@ -7,12 +7,12 @@ import (
 
 // HevcCodec _
 type HevcCodec struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 
 // NewHevcCodec _
-func NewHevcCodec(task ConverterTask, metadata ffmpegModels.Metadata) *HevcCodec {
+func NewHevcCodec(task Task, metadata ffmpegModels.Metadata) *HevcCodec {
 	return &HevcCodec{
 		task:     task,
 		metadata: metadata,

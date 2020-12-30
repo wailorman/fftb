@@ -118,7 +118,7 @@ func CliConfig() *cli.Command {
 			var conversionStarted chan bool
 			var inputVideoCodecDetected chan mediaConvert.InputVideoCodecDetectedBatchMessage
 
-			var batchTask mediaConvert.BatchConverterTask
+			var batchTask mediaConvert.BatchTask
 
 			if c.String("config") != "" {
 				configFile := files.NewFile(c.String("config"))
@@ -144,10 +144,10 @@ func CliConfig() *cli.Command {
 				outFile := inFile.Clone()
 				outFile.SetDirPath(files.NewPath(outputPath))
 
-				batchTask = mediaConvert.BatchConverterTask{
+				batchTask = mediaConvert.BatchTask{
 					Parallelism: c.Int("parallelism"),
-					Tasks: []mediaConvert.ConverterTask{
-						mediaConvert.ConverterTask{
+					Tasks: []mediaConvert.Task{
+						mediaConvert.Task{
 							InFile:       inFile.FullPath(),
 							OutFile:      outFile.FullPath(),
 							HWAccel:      c.String("hwa"),
@@ -163,7 +163,7 @@ func CliConfig() *cli.Command {
 				if c.Bool("recursively") {
 					outputPath := c.Args().Get(1)
 
-					batchTask, err = mediaConvert.BuildBatchTaskFromRecursive(mediaConvert.RecursiveConverterTask{
+					batchTask, err = mediaConvert.BuildBatchTaskFromRecursive(mediaConvert.RecursiveTask{
 						Parallelism:  c.Int("parallelism"),
 						InPath:       files.NewPath(inputPath),
 						OutPath:      files.NewPath(outputPath),

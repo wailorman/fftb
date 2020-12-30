@@ -26,15 +26,15 @@ type VideoFileFilteringMessage struct {
 	Err     error
 }
 
-// BatchConverterTask _
-type BatchConverterTask struct {
-	Parallelism           int             `yaml:"parallelism"`
-	StopConversionOnError bool            `yaml:"stop_conversion_on_error"`
-	Tasks                 []ConverterTask `yaml:"tasks"`
+// BatchTask _
+type BatchTask struct {
+	Parallelism           int    `yaml:"parallelism"`
+	StopConversionOnError bool   `yaml:"stop_conversion_on_error"`
+	Tasks                 []Task `yaml:"tasks"`
 }
 
-// ConverterTask _
-type ConverterTask struct {
+// Task _
+type Task struct {
 	ID               string `yaml:"id"`
 	InFile           string `yaml:"in_file"`
 	OutFile          string `yaml:"out_file"`

@@ -45,7 +45,7 @@ func logInputVideoCodec(msg mediaConvert.InputVideoCodecDetectedBatchMessage) {
 		Debug("Input video codec detected")
 }
 
-func logTaskConversionStarted(task mediaConvert.ConverterTask) {
+func logTaskConversionStarted(task mediaConvert.Task) {
 	ctxlog.Logger.WithField("task_id", task.ID).
 		WithField("task_input_file", task.InFile).
 		Debug("Task conversion started")

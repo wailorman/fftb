@@ -56,7 +56,7 @@ func (c *Converter) Stop() {
 }
 
 // Convert _
-func (c *Converter) Convert(task ConverterTask) (
+func (c *Converter) Convert(task Task) (
 	progress chan ff.Progressable,
 	finished chan bool,
 	failed chan error,

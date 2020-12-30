@@ -7,12 +7,12 @@ import (
 
 // H264Codec _
 type H264Codec struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 
 // NewH264Codec _
-func NewH264Codec(task ConverterTask, metadata ffmpegModels.Metadata) *H264Codec {
+func NewH264Codec(task Task, metadata ffmpegModels.Metadata) *H264Codec {
 	return &H264Codec{
 		task:     task,
 		metadata: metadata,

@@ -8,7 +8,7 @@ type hwAccelerator interface {
 	getType() string
 }
 
-func chooseHwAccel(task ConverterTask, metadata ffmpegModels.Metadata) hwAccelerator {
+func chooseHwAccel(task Task, metadata ffmpegModels.Metadata) hwAccelerator {
 	switch task.HWAccel {
 	case NvencHWAccelType:
 		return &nvencHWAccel{

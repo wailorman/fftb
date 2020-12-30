@@ -6,7 +6,7 @@ import (
 )
 
 type nvencHWAccel struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 

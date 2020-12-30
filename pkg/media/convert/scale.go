@@ -15,11 +15,11 @@ const (
 )
 
 type videoScale struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 
-func newVideoScale(task ConverterTask, metadata ffmpegModels.Metadata) *videoScale {
+func newVideoScale(task Task, metadata ffmpegModels.Metadata) *videoScale {
 	return &videoScale{
 		task:     task,
 		metadata: metadata,
