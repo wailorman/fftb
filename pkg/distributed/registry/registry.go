@@ -14,20 +14,26 @@ import (
 
 	"database/sql"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+
 	// ss
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/mattn/go-sqlite3"
+
 	// "database/sql"
 	// _ "github.com/mattn/go-sqlite3"
 	// "github.com/golang-migrate/migrate/v4"
 	// "github.com/golang-migrate/migrate/v4/database/sqlite3"
 	// _ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/subchen/go-trylock/v2"
 )
 
 // SqliteRegistry _
 type SqliteRegistry struct {
-	db  *sql.DB
-	gdb *gorm.DB
+	db              *sql.DB
+	gdb             *gorm.DB
+	freeSegmentLock trylock.TryLocker
 }
 
 // NewSqliteRegistry _
@@ -37,7 +43,9 @@ func NewSqliteRegistry(databasePath, migrationsPath string) (*SqliteRegistry, er
 	// TODO: migrations
 	// pkg/distributed/registry/migrations
 
-	r := &SqliteRegistry{}
+	r := &SqliteRegistry{
+		freeSegmentLock: trylock.New(),
+	}
 
 	r.db, err = sql.Open("sqlite3", databasePath)
 
@@ -45,24 +53,28 @@ func NewSqliteRegistry(databasePath, migrationsPath string) (*SqliteRegistry, er
 		return nil, errors.Wrap(err, "Initializing sqlite database file")
 	}
 
-	// driver, err := sqlite3.WithInstance(r.db, &sqlite3.Config{})
+	// -
+	driver, err := sqlite3.WithInstance(r.db, &sqlite3.Config{})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Initializing sqlite migrations driver")
 	}
 
-	// m, err := migrate.NewWithDatabaseInstance(
-	// 	"file://"+migrationsPath,
-	// 	"sqlite3",
-	// 	driver,
-	// )
+	// -
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://"+migrationsPath,
+		"sqlite3",
+		driver,
+	)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Initializing migrator")
 	}
 
-	// err = m.Steps(1)
+	// -
+	err = m.Steps(1)
 
+	// -
 	// if err != nil {
 	// 	return nil, errors.Wrap(err, "Performing migrations")
 	// }

@@ -89,14 +89,14 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	order.Segments = dSegments
 
 	for i, seg := range segs {
-		dTask := dSegments[i]
+		dSeg := dSegments[i]
 		// seg := segs[i]
-		claim, err := c.Dealer.GetStorageClaim(dTask)
+		claim, err := c.Dealer.GetInputStorageClaim(dSeg)
 
 		if err != nil {
 			errObj := errors.Wrap(
 				err,
-				fmt.Sprintf("Getting storage claim for dealer segment #%d (%s)", i, dTask.GetID()),
+				fmt.Sprintf("Getting storage claim for dealer segment #%d (%s)", i, dSeg.GetID()),
 			)
 
 			order.Failed(errObj)
@@ -135,8 +135,8 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 		}
 	}
 
-	for _, dTask := range dSegments {
-		err := c.Dealer.PublishSegment(dTask)
+	for _, dSeg := range dSegments {
+		err := c.Dealer.PublishSegment(dSeg)
 
 		if err != nil {
 			errObj := errors.Wrap(err, "Publishing segment")

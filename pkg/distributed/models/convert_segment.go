@@ -2,18 +2,22 @@ package models
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // ConvertSegment _
 type ConvertSegment struct {
-	Identity             string
-	OrderIdentity        string
-	Type                 string
-	StorageClaimIdentity string
+	Identity                   string
+	OrderIdentity              string
+	Type                       string
+	InputStorageClaimIdentity  string
+	OutputStorageClaimIdentity string
 
-	Params convert.ConverterTask
+	Params      convert.ConverterTask
+	LockedUntil *time.Time
+	LockedBy    string
 	// Muxer      string
 	// VideoCodec string
 	// // HWAccel          string
@@ -39,9 +43,14 @@ func (ct *ConvertSegment) GetOrderID() string {
 	return ct.OrderIdentity
 }
 
-// GetStorageClaimIdentity _
-func (ct *ConvertSegment) GetStorageClaimIdentity() string {
-	return ct.StorageClaimIdentity
+// GetInputStorageClaimIdentity _
+func (ct *ConvertSegment) GetInputStorageClaimIdentity() string {
+	return ct.InputStorageClaimIdentity
+}
+
+// GetOutputStorageClaimIdentity _
+func (ct *ConvertSegment) GetOutputStorageClaimIdentity() string {
+	return ct.OutputStorageClaimIdentity
 }
 
 // GetPayload _
@@ -49,6 +58,24 @@ func (ct *ConvertSegment) GetPayload() (string, error) {
 	b, err := json.Marshal(ct)
 
 	return string(b), err
+}
+
+// GetIsLocked _
+func (ct *ConvertSegment) GetIsLocked() bool {
+	if ct.LockedUntil == nil {
+		return false
+	}
+
+	return time.Now().After(*ct.LockedUntil) && ct.LockedBy != ""
+}
+
+// GetLockedBy _
+func (ct *ConvertSegment) GetLockedBy() string {
+	if !ct.GetIsLocked() {
+		return ""
+	}
+
+	return ct.LockedBy
 }
 
 // // GetStorageClaim _

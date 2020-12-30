@@ -8,6 +8,7 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
+	"github.com/wailorman/fftb/pkg/distributed/worker"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
@@ -29,9 +30,12 @@ func DistributedCliConfig() *cli.Command {
 				Usage: "Video quality (-crf option for CPU encoding and -qp option for NVENC).\n" +
 					"                                      Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
 			},
+			&cli.BoolFlag{
+				Name: "worker",
+			},
 		},
 		Action: func(c *cli.Context) error {
-			storagePath := files.NewPath(".fftb/test/storage")
+			storagePath := files.NewPath(".fftb/storage")
 
 			err := storagePath.Create()
 
@@ -39,9 +43,17 @@ func DistributedCliConfig() *cli.Command {
 				panic(err)
 			}
 
-			segmentsPath := files.NewPath(".fftb/test/segments")
+			segmentsPath := files.NewPath(".fftb/segments")
 
 			err = segmentsPath.Create()
+
+			if err != nil {
+				panic(err)
+			}
+
+			workerPath := files.NewPath(".fftb/worker")
+
+			err = workerPath.Create()
 
 			if err != nil {
 				panic(err)
@@ -60,19 +72,25 @@ func DistributedCliConfig() *cli.Command {
 				Dealer:   dealer,
 			})
 
-			inFile := files.NewFile(c.Args().Get(0))
+			if !c.Bool("worker") {
+				inFile := files.NewFile(c.Args().Get(0))
 
-			// order, err := contracter.PrepareOrder(&models.ConvertContracterRequest{
-			_, err = contracter.PrepareOrder(&models.ConvertContracterRequest{
-				Params: convert.ConverterTask{
-					InFile:       inFile,
-					VideoCodec:   c.String("video-codec"),
-					VideoQuality: c.Int("video-quality"),
-				},
-			})
+				// order, err := contracter.PrepareOrder(&models.ConvertContracterRequest{
+				_, err = contracter.PrepareOrder(&models.ConvertContracterRequest{
+					Params: convert.ConverterTask{
+						InFile:       inFile,
+						VideoCodec:   c.String("video-codec"),
+						VideoQuality: c.Int("video-quality"),
+					},
+				})
 
-			if err != nil {
-				panic(err)
+				if err != nil {
+					panic(err)
+				}
+			} else {
+				worker := worker.NewWorker(workerPath, dealer)
+
+				worker.Start()
 			}
 
 			return nil

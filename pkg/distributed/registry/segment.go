@@ -3,6 +3,8 @@ package registry
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
@@ -11,12 +13,20 @@ import (
 
 // Segment _
 type Segment struct {
-	ID                   string
-	OrderID              string
-	Kind                 string
-	StorageClaimIdentity string
-	Payload              string
+	ID                         string
+	OrderID                    string
+	Kind                       string
+	InputStorageClaimIdentity  string
+	OutputStorageClaimIdentity string
+	Payload                    string
+	LockedUntil                *time.Time
+	LockedBy                   string
+	// CreatedAt                  *time.Time
+	// UpdatedAt                  *time.Time
 }
+
+// LockSegmentTimeout _
+const LockSegmentTimeout = time.Duration(10 * time.Second)
 
 // FindSegmentByID _
 func (r *SqliteRegistry) FindSegmentByID(id string) (models.ISegment, error) {
@@ -32,6 +42,52 @@ func (r *SqliteRegistry) FindSegmentByID(id string) (models.ISegment, error) {
 	}
 
 	return fromDbSegment(dbSegment)
+}
+
+// FindNotLockedSegment _
+func (r *SqliteRegistry) FindNotLockedSegment() (models.ISegment, error) {
+	dbSegments := make([]*Segment, 0)
+
+	locked := r.freeSegmentLock.TryLockTimeout(LockSegmentTimeout)
+
+	if !locked {
+		return nil, models.ErrFreeSegmentLockTimeout
+	}
+
+	defer r.freeSegmentLock.Unlock()
+
+	r.gdb.Find(&dbSegments)
+
+	for _, dbSeg := range dbSegments {
+		seg, err := fromDbSegment(dbSeg)
+
+		if err != nil {
+			// log.Panicf("failed to parse segment from db: %s\n", err)
+			log.Printf("failed to parse segment from db: %s\n", err)
+			continue
+		}
+
+		if !seg.GetIsLocked() {
+			return seg, nil
+		}
+	}
+
+	return nil, models.ErrNotFound
+}
+
+// LockSegmentByID _
+func (r *SqliteRegistry) LockSegmentByID(segmentID string, lockedBy string) error {
+	if lockedBy == "" {
+		return models.ErrMissingLockAuthor
+	}
+
+	result := r.gdb.Model(&Segment{ID: segmentID}).Updates(map[string]interface{}{"locked_until": time.Now(), "locked_by": lockedBy})
+
+	if result.RowsAffected == 0 {
+		return models.ErrNotFound
+	}
+
+	return nil
 }
 
 // FindSegmentsByOrderID _
@@ -106,7 +162,8 @@ func toDbSegment(segment models.ISegment) (*Segment, error) {
 
 	dbSegment.OrderID = segment.GetOrderID()
 	dbSegment.Kind = segment.GetType()
-	dbSegment.StorageClaimIdentity = segment.GetStorageClaimIdentity()
+	dbSegment.InputStorageClaimIdentity = segment.GetInputStorageClaimIdentity()
+	dbSegment.OutputStorageClaimIdentity = segment.GetOutputStorageClaimIdentity()
 
 	return dbSegment, nil
 }
@@ -118,6 +175,8 @@ func fromDbSegment(dbSegment *Segment) (models.ISegment, error) {
 
 	convertSegment := &models.ConvertSegment{}
 
+	// fmt.Printf("dbSegment.Payload: %#v\n", dbSegment.Payload)
+
 	err := json.Unmarshal([]byte(dbSegment.Payload), convertSegment)
 
 	if err != nil {
@@ -127,7 +186,8 @@ func fromDbSegment(dbSegment *Segment) (models.ISegment, error) {
 	convertSegment.Identity = dbSegment.ID
 	convertSegment.Type = dbSegment.Kind
 	convertSegment.OrderIdentity = dbSegment.OrderID
-	convertSegment.StorageClaimIdentity = dbSegment.StorageClaimIdentity
+	convertSegment.InputStorageClaimIdentity = dbSegment.InputStorageClaimIdentity
+	convertSegment.OutputStorageClaimIdentity = dbSegment.OutputStorageClaimIdentity
 
 	return convertSegment, nil
 }

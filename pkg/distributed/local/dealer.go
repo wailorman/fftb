@@ -2,16 +2,25 @@ package local
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/subchen/go-trylock/v2"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 )
+
+// LockSegmentTimeout _
+const LockSegmentTimeout = time.Duration(10 * time.Second)
+
+// LocalAuthor _
+const LocalAuthor = "local"
 
 // Dealer _
 type Dealer struct {
 	storageController models.IStorageController
 	registry          models.IRegistry
+	freeSegmentLock   trylock.TryLocker
 }
 
 // NewDealer _
@@ -19,6 +28,7 @@ func NewDealer(sc models.IStorageController, r models.IRegistry) *Dealer {
 	return &Dealer{
 		storageController: sc,
 		registry:          r,
+		freeSegmentLock:   trylock.New(),
 	}
 }
 
@@ -35,19 +45,22 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 	// claimIdentity := fmt.Sprintf("%s.%s", id, convertReq.Params.Muxer)
 	// claimIdentity := fmt.Sprintf("%s.%s", id, "mp4")
 	id := uuid.New().String()
-	claimIdentity := fmt.Sprintf("%s/%s/%s", convertReq.OrderIdentity, convertReq.Identity, id)
+	inputClaimIdentity := fmt.Sprintf("%s/%s/%s_input", convertReq.OrderIdentity, convertReq.Identity, id)
+	outputClaimIdentity := fmt.Sprintf("%s/%s/%s_output", convertReq.OrderIdentity, convertReq.Identity, id)
 
-	claim, err := d.storageController.AllocateStorageClaim(claimIdentity)
+	inputClaim, err := d.storageController.AllocateStorageClaim(inputClaimIdentity)
+	outputClaim, err := d.storageController.AllocateStorageClaim(outputClaimIdentity)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Allocating storage claim for task")
 	}
 
 	convertSegment := &models.ConvertSegment{
-		Identity:             convertReq.Identity,
-		OrderIdentity:        convertReq.OrderIdentity,
-		StorageClaimIdentity: claim.GetID(),
-		Params:               convertReq.Params,
+		Identity:                   convertReq.Identity,
+		OrderIdentity:              convertReq.OrderIdentity,
+		InputStorageClaimIdentity:  inputClaim.GetID(),
+		OutputStorageClaimIdentity: outputClaim.GetID(),
+		Params:                     convertReq.Params,
 
 		// Muxer:      convertReq.Muxer,
 		// VideoCodec: convertReq.VideoCodec,
@@ -65,20 +78,56 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 }
 
 // FindFreeSegment _
-func (d *Dealer) FindFreeSegment() (models.ISegment, error) {
-	panic(models.ErrNotImplemented)
-	// return nil, nil
+func (d *Dealer) FindFreeSegment(author string) (models.ISegment, error) {
+	locked := d.freeSegmentLock.TryLockTimeout(LockSegmentTimeout)
+
+	if !locked {
+		return nil, models.ErrFreeSegmentLockTimeout
+	}
+
+	defer d.freeSegmentLock.Unlock()
+
+	freeSegment, err := d.registry.FindNotLockedSegment()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Looking for free segment")
+	}
+
+	err = d.registry.LockSegmentByID(freeSegment.GetID(), author)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Locking free segment")
+	}
+
+	return freeSegment, nil
 }
 
-// GetStorageClaim _
-func (d *Dealer) GetStorageClaim(segment models.ISegment) (models.IStorageClaim, error) {
+// GetInputStorageClaim _
+func (d *Dealer) GetInputStorageClaim(segment models.ISegment) (models.IStorageClaim, error) {
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
 		return nil, models.ErrUnknownSegmentType
 	}
 
-	claim, err := d.storageController.BuildStorageClaim(convertSegment.StorageClaimIdentity)
+	claim, err := d.storageController.BuildStorageClaim(convertSegment.InputStorageClaimIdentity)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Building storage claim from identity")
+	}
+
+	return claim, nil
+}
+
+// GetOutputStorageClaim _
+func (d *Dealer) GetOutputStorageClaim(segment models.ISegment) (models.IStorageClaim, error) {
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return nil, models.ErrUnknownSegmentType
+	}
+
+	claim, err := d.storageController.BuildStorageClaim(convertSegment.OutputStorageClaimIdentity)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Building storage claim from identity")
@@ -115,5 +164,25 @@ func (d *Dealer) PublishSegment(segment models.ISegment) error {
 
 // Subscription _
 func (d *Dealer) Subscription(segment models.ISegment) (models.Subscriber, error) {
+	panic(models.ErrNotImplemented)
+}
+
+// FinishSegment _
+func (d *Dealer) FinishSegment(models.ISegment, models.Progresser) error {
+	panic(models.ErrNotImplemented)
+}
+
+// NotifyProcess _
+func (d *Dealer) NotifyProcess(models.ISegment, models.Progresser) error {
+	panic(models.ErrNotImplemented)
+}
+
+// NotifyRawDownload _
+func (d *Dealer) NotifyRawDownload(models.ISegment, models.Progresser) error {
+	panic(models.ErrNotImplemented)
+}
+
+// NotifyResultUpload _
+func (d *Dealer) NotifyResultUpload(models.ISegment, models.Progresser) error {
 	panic(models.ErrNotImplemented)
 }

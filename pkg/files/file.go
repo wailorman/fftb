@@ -172,7 +172,7 @@ func (f *File) EnsureParentDirExists() error {
 	return path.Create()
 }
 
-// Create _
+// Create creates file
 func (f *File) Create() error {
 	_, err := os.Create(f.FullPath())
 

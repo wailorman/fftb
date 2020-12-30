@@ -26,6 +26,18 @@ var ErrMissingStorageClaim = errors.New("Missing storage claim")
 // ErrNotFound _
 var ErrNotFound = errors.New("Not found")
 
+// ErrTimeoutReached _
+var ErrTimeoutReached = errors.New("Timeout reached")
+
+// // ErrNoFreeSegments _
+// var ErrNoFreeSegments = errors.New("No free segments")
+
+// ErrFreeSegmentLockTimeout _
+var ErrFreeSegmentLockTimeout = errors.New("Free segment lock timeout")
+
+// ErrMissingLockAuthor _
+var ErrMissingLockAuthor = errors.New("Missing lock author")
+
 // IContracter _
 type IContracter interface {
 	PrepareOrder(req IContracterRequest) (IOrder, error)
@@ -45,11 +57,18 @@ type IOrder interface {
 	Failed(error)
 }
 
+// InputOutputStorageClaimer _
+type InputOutputStorageClaimer interface {
+	GetInputStorageClaim(ISegment) (IStorageClaim, error)
+	GetOutputStorageClaim(ISegment) (IStorageClaim, error)
+}
+
 // IContractDealer _
 type IContractDealer interface {
+	InputOutputStorageClaimer
+
 	AllocateSegment(req IDealerRequest) (ISegment, error)
 	FindSegmentByID(id string) (ISegment, error)
-	GetStorageClaim(ISegment) (IStorageClaim, error)
 	NotifyRawUpload(Progresser) error
 	NotifyResultDownload(Progresser) error
 	PublishSegment(ISegment) error
@@ -59,12 +78,13 @@ type IContractDealer interface {
 
 // IWorkDealer _
 type IWorkDealer interface {
-	FindFreeSegment() (ISegment, error)
-	GetStorageClaim(ISegment) IStorageClaim
-	NotifyRawDownload(Progresser) error
-	NotifyResultUpload(Progresser) error
-	NotifyProcess(Progresser) error
-	FinishSegment(Progresser) error
+	InputOutputStorageClaimer
+
+	FindFreeSegment(author string) (ISegment, error)
+	NotifyRawDownload(ISegment, Progresser) error
+	NotifyResultUpload(ISegment, Progresser) error
+	NotifyProcess(ISegment, Progresser) error
+	FinishSegment(ISegment, Progresser) error
 }
 
 // IDealerRequest _
@@ -78,9 +98,12 @@ type ISegment interface {
 	GetID() string
 	GetOrderID() string
 	GetType() string
-	GetStorageClaimIdentity() string
+	GetInputStorageClaimIdentity() string
+	GetOutputStorageClaimIdentity() string
 	// GetStorageClaim() IStorageClaim // should be done by dealer
 	GetPayload() (string, error)
+	GetIsLocked() bool
+	GetLockedBy() string
 }
 
 // IRegistry _
@@ -91,7 +114,9 @@ type IRegistry interface {
 
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(orderID string) ([]ISegment, error)
+	FindNotLockedSegment() (ISegment, error)
 	PersistSegment(segment ISegment) error
+	LockSegmentByID(segmentID string, lockedBy string) error
 }
 
 // IStorageController _
