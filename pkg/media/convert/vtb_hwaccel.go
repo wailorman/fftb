@@ -6,7 +6,7 @@ import (
 )
 
 type vtbHWAccel struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 
@@ -15,14 +15,14 @@ func (hw *vtbHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 		return ErrFileIsNotVideo
 	}
 
-	if hw.task.VideoQuality > 0 {
+	if hw.task.Params.VideoQuality > 0 {
 		return ErrVtbQualityNotSupported
 	}
 
 	mediaFile.SetHardwareAcceleration("videotoolbox")
 	mediaFile.SetPreset("")
 
-	switch hw.task.VideoCodec {
+	switch hw.task.Params.VideoCodec {
 	case HevcCodecType:
 		mediaFile.SetVideoCodec("hevc_videotoolbox")
 	case H264CodecType:

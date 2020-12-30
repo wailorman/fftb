@@ -11,11 +11,11 @@ import (
 // BatchConverter _
 type BatchConverter struct {
 	ConversionStarted       chan bool
-	TaskConversionStarted   chan ConverterTask
+	TaskConversionStarted   chan Task
 	MetadataReceived        chan MetadataReceivedBatchMessage
 	InputVideoCodecDetected chan InputVideoCodecDetectedBatchMessage
-	ConversionStopping      chan ConverterTask
-	ConversionStopped       chan ConverterTask
+	ConversionStopping      chan Task
+	ConversionStopped       chan Task
 
 	infoGetter           info.Getter
 	stopConversion       chan struct{}
@@ -41,11 +41,11 @@ func (bc *BatchConverter) Stop() {
 // initChannels _
 func (bc *BatchConverter) initChannels(taskCount int) {
 	bc.ConversionStarted = make(chan bool, 1)
-	bc.TaskConversionStarted = make(chan ConverterTask, taskCount)
+	bc.TaskConversionStarted = make(chan Task, taskCount)
 	bc.MetadataReceived = make(chan MetadataReceivedBatchMessage, taskCount)
 	bc.InputVideoCodecDetected = make(chan InputVideoCodecDetectedBatchMessage, taskCount)
-	bc.ConversionStopping = make(chan ConverterTask, taskCount)
-	bc.ConversionStopped = make(chan ConverterTask, taskCount)
+	bc.ConversionStopping = make(chan Task, taskCount)
+	bc.ConversionStopped = make(chan Task, taskCount)
 }
 
 // closeChannels _
@@ -59,7 +59,7 @@ func (bc *BatchConverter) closeChannels() {
 }
 
 // Convert _
-func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
+func (bc *BatchConverter) Convert(batchTask BatchTask) (
 	progress chan BatchProgressMessage,
 	finished chan bool,
 	failed chan BatchErrorMessage,
@@ -69,7 +69,7 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 	progress = make(chan BatchProgressMessage)
 	finished = make(chan bool)
 	failed = make(chan BatchErrorMessage)
-	taskQueue := make(chan ConverterTask, taskCount)
+	taskQueue := make(chan Task, taskCount)
 	bc.initChannels(taskCount)
 
 	var wg sync.WaitGroup
@@ -126,7 +126,7 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 	return progress, finished, failed
 }
 
-func (bc *BatchConverter) convertOne(task ConverterTask, progress chan BatchProgressMessage) error {
+func (bc *BatchConverter) convertOne(task Task, progress chan BatchProgressMessage) error {
 	sConv := NewConverter(bc.infoGetter)
 	_progress, _finished, _failed := sConv.Convert(task)
 

@@ -7,8 +7,8 @@ type codecConfigurator interface {
 	getType() string
 }
 
-func chooseCodec(task ConverterTask, metadata ffmpegModels.Metadata) (codecConfigurator, error) {
-	switch task.VideoCodec {
+func chooseCodec(task Task, metadata ffmpegModels.Metadata) (codecConfigurator, error) {
+	switch task.Params.VideoCodec {
 	case H264CodecType:
 		return &H264Codec{
 			task:     task,

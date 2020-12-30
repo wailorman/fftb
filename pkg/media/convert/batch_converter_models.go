@@ -8,29 +8,29 @@ import (
 // MetadataReceivedBatchMessage _
 type MetadataReceivedBatchMessage struct {
 	Metadata ffmpegModels.Metadata
-	Task     ConverterTask
+	Task     Task
 }
 
 // InputVideoCodecDetectedBatchMessage _
 type InputVideoCodecDetectedBatchMessage struct {
 	Codec string
-	Task  ConverterTask
+	Task  Task
 }
 
 // BatchProgressMessage _
 type BatchProgressMessage struct {
 	Progress ff.Progressable
-	Task     ConverterTask
+	Task     Task
 }
 
 // BatchVideoFilteringMessage _
 type BatchVideoFilteringMessage struct {
 	Message VideoFileFilteringMessage
-	Task    ConverterTask
+	Task    Task
 }
 
 // BatchErrorMessage _
 type BatchErrorMessage struct {
 	Err  error
-	Task ConverterTask
+	Task Task
 }

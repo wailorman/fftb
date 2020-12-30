@@ -25,7 +25,7 @@ func logError(errorMessage mediaConvert.BatchErrorMessage) {
 	if errorMessage.Err != nil {
 		ctxlog.Logger.WithField("error", errorMessage.Err.Error()).
 			WithField("task_id", errorMessage.Task.ID).
-			WithField("task_input_file", errorMessage.Task.InFile.FullPath()).
+			WithField("task_input_file", errorMessage.Task.InFile).
 			Warn("Error")
 	}
 }
@@ -41,12 +41,12 @@ func logConversionStarted() {
 func logInputVideoCodec(msg mediaConvert.InputVideoCodecDetectedBatchMessage) {
 	ctxlog.Logger.WithField("input_video_codec", msg.Codec).
 		WithField("task_id", msg.Task.ID).
-		WithField("task_input_file", msg.Task.InFile.FullPath()).
+		WithField("task_input_file", msg.Task.InFile).
 		Debug("Input video codec detected")
 }
 
-func logTaskConversionStarted(task mediaConvert.ConverterTask) {
+func logTaskConversionStarted(task mediaConvert.Task) {
 	ctxlog.Logger.WithField("task_id", task.ID).
-		WithField("task_input_file", task.InFile.FullPath()).
+		WithField("task_input_file", task.InFile).
 		Debug("Task conversion started")
 }
