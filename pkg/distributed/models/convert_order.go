@@ -12,7 +12,7 @@ type ConvertOrder struct {
 	Type     string
 	Segments []*ConvertSegment
 
-	Params convert.ConverterTask
+	Params convert.Params
 
 	// Muxer      string
 	// VideoCodec string

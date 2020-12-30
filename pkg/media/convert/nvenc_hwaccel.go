@@ -21,15 +21,6 @@ func (hw *nvencHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 
 	mediaFile.SetHardwareAcceleration("cuvid")
 
-	if !hw.task.CPUDecoding {
-		switch hw.metadata.Streams[0].CodecName {
-		case "hevc":
-			mediaFile.SetInputVideoCodec("hevc_cuvid")
-		case "h264":
-			mediaFile.SetInputVideoCodec("h264_cuvid")
-		}
-	}
-
 	mediaFile.SetNvencRateControl("constqp")
 
 	if hw.task.Params.VideoQuality > 0 {

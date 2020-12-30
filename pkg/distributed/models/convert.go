@@ -1,6 +1,7 @@
 package models
 
 import (
+	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
@@ -9,7 +10,9 @@ const ConvertV1Type = "convert/v1"
 
 // ConvertContracterRequest _
 type ConvertContracterRequest struct {
-	Params convert.ConverterTask
+	InFile  files.Filer
+	OutFile files.Filer
+	Params  convert.Params
 	// Muxer      string
 	// VideoCodec string
 	// // HWAccel          string
@@ -32,7 +35,7 @@ type ConvertDealerRequest struct {
 	Identity      string
 	OrderIdentity string
 
-	Params convert.ConverterTask
+	Params convert.Params
 	// Muxer      string
 	// VideoCodec string
 	// // HWAccel          string

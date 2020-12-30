@@ -105,18 +105,20 @@ func (w *Instance) Start() error {
 
 		outputFile := w.tmpPath.BuildFile(outputClaim.GetID())
 
-		batchTask := convert.BatchConverterTask{
+		batchTask := convert.BatchTask{
 			Parallelism: 1,
-			Tasks: []convert.ConverterTask{
-				convert.ConverterTask{
-					InFile:  inputFile,
-					OutFile: outputFile,
-					// HWAccel:      c.String("hwa"),
-					VideoCodec: convertSegment.Params.VideoCodec,
-					// Preset:       c.String("preset"),
-					// VideoBitRate: c.String("video-bitrate"),
-					VideoQuality: convertSegment.Params.VideoQuality,
-					// Scale:        c.String("scale"),
+			Tasks: []convert.Task{
+				convert.Task{
+					InFile:  inputFile.FullPath(),
+					OutFile: outputFile.FullPath(),
+					Params: convert.Params{
+						// HWAccel:      c.String("hwa"),
+						VideoCodec: convertSegment.Params.VideoCodec,
+						// Preset:       c.String("preset"),
+						// VideoBitRate: c.String("video-bitrate"),
+						VideoQuality: convertSegment.Params.VideoQuality,
+						// Scale:        c.String("scale"),
+					},
 				},
 			},
 		}

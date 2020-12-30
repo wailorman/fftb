@@ -75,10 +75,9 @@ func DistributedCliConfig() *cli.Command {
 			if !c.Bool("worker") {
 				inFile := files.NewFile(c.Args().Get(0))
 
-				// order, err := contracter.PrepareOrder(&models.ConvertContracterRequest{
 				_, err = contracter.PrepareOrder(&models.ConvertContracterRequest{
-					Params: convert.ConverterTask{
-						InFile:       inFile,
+					InFile: inFile,
+					Params: convert.Params{
 						VideoCodec:   c.String("video-codec"),
 						VideoQuality: c.Int("video-quality"),
 					},

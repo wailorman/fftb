@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 

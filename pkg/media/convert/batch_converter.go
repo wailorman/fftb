@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/wailorman/fftb/pkg/media/info"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 )
 
 // BatchConverter _

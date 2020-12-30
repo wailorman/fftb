@@ -15,7 +15,7 @@ type ConvertSegment struct {
 	InputStorageClaimIdentity  string
 	OutputStorageClaimIdentity string
 
-	Params      convert.ConverterTask
+	Params      convert.Params
 	LockedUntil *time.Time
 	LockedBy    string
 	// Muxer      string

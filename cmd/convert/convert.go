@@ -177,7 +177,7 @@ func CliConfig() *cli.Command {
 							VideoQuality: c.Int("video-quality"),
 							Scale:        c.String("scale"),
 						},
-					}, mediaInfoGetter)
+					}, infoGetter)
 
 					if err != nil {
 						return errors.Wrap(err, "Building recursive task")

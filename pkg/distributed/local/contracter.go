@@ -159,7 +159,7 @@ func splitRequestToSegments(
 ) ([]*segm.Segment, error) {
 	segmenter := segm.New()
 	segmenter.Init(segm.Request{
-		InFile:         req.Params.InFile,
+		InFile:         req.InFile,
 		KeepTimestamps: false,
 		OutPath:        tmpPath,
 		SegmentSec:     DefaultSegmentSize,
