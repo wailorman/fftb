@@ -1,8 +1,8 @@
 package convert
 
 import (
-	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
 type nvencHWAccel struct {
@@ -30,13 +30,13 @@ func (hw *nvencHWAccel) configure(mediaFile *ffmpegModels.Mediafile) error {
 
 	mediaFile.SetNvencRateControl("constqp")
 
-	if hw.task.VideoQuality > 0 {
+	if hw.task.Params.VideoQuality > 0 {
 		mediaFile.SetCRF(0)
 		mediaFile.SetLibx265Params(nil)
-		mediaFile.SetConstantQuantization(hw.task.VideoQuality)
+		mediaFile.SetConstantQuantization(hw.task.Params.VideoQuality)
 	}
 
-	switch hw.task.VideoCodec {
+	switch hw.task.Params.VideoCodec {
 	case HevcCodecType:
 		mediaFile.SetVideoCodec("hevc_nvenc")
 	case H264CodecType:

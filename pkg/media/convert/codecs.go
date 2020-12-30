@@ -8,7 +8,7 @@ type codecConfigurator interface {
 }
 
 func chooseCodec(task Task, metadata ffmpegModels.Metadata) (codecConfigurator, error) {
-	switch task.VideoCodec {
+	switch task.Params.VideoCodec {
 	case H264CodecType:
 		return &H264Codec{
 			task:     task,

@@ -148,14 +148,16 @@ func CliConfig() *cli.Command {
 					Parallelism: c.Int("parallelism"),
 					Tasks: []mediaConvert.Task{
 						mediaConvert.Task{
-							InFile:       inFile.FullPath(),
-							OutFile:      outFile.FullPath(),
-							HWAccel:      c.String("hwa"),
-							VideoCodec:   c.String("video-codec"),
-							Preset:       c.String("preset"),
-							VideoBitRate: c.String("video-bitrate"),
-							VideoQuality: c.Int("video-quality"),
-							Scale:        c.String("scale"),
+							InFile:  inFile.FullPath(),
+							OutFile: outFile.FullPath(),
+							Params: mediaConvert.Params{
+								HWAccel:      c.String("hwa"),
+								VideoCodec:   c.String("video-codec"),
+								Preset:       c.String("preset"),
+								VideoBitRate: c.String("video-bitrate"),
+								VideoQuality: c.Int("video-quality"),
+								Scale:        c.String("scale"),
+							},
 						},
 					},
 				}
@@ -164,15 +166,17 @@ func CliConfig() *cli.Command {
 					outputPath := c.Args().Get(1)
 
 					batchTask, err = mediaConvert.BuildBatchTaskFromRecursive(mediaConvert.RecursiveTask{
-						Parallelism:  c.Int("parallelism"),
-						InPath:       files.NewPath(inputPath),
-						OutPath:      files.NewPath(outputPath),
-						HWAccel:      c.String("hwa"),
-						VideoCodec:   c.String("video-codec"),
-						Preset:       c.String("preset"),
-						VideoBitRate: c.String("video-bitrate"),
-						VideoQuality: c.Int("video-quality"),
-						Scale:        c.String("scale"),
+						Parallelism: c.Int("parallelism"),
+						InPath:      files.NewPath(inputPath),
+						OutPath:     files.NewPath(outputPath),
+						Params: mediaConvert.Params{
+							HWAccel:      c.String("hwa"),
+							VideoCodec:   c.String("video-codec"),
+							Preset:       c.String("preset"),
+							VideoBitRate: c.String("video-bitrate"),
+							VideoQuality: c.Int("video-quality"),
+							Scale:        c.String("scale"),
+						},
 					}, mediaInfoGetter)
 
 					if err != nil {

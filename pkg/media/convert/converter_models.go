@@ -35,9 +35,14 @@ type BatchTask struct {
 
 // Task _
 type Task struct {
-	ID               string `yaml:"id"`
-	InFile           string `yaml:"in_file"`
-	OutFile          string `yaml:"out_file"`
+	ID      string `yaml:"id"`
+	InFile  string `yaml:"in_file"`
+	OutFile string `yaml:"out_file"`
+	Params  Params
+}
+
+// Params _
+type Params struct {
 	VideoCodec       string `yaml:"video_codec"`
 	HWAccel          string `yaml:"hw_accel"`
 	VideoBitRate     string `yaml:"video_bit_rate"`
