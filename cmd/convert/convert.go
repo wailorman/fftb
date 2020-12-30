@@ -148,8 +148,8 @@ func CliConfig() *cli.Command {
 					Parallelism: c.Int("parallelism"),
 					Tasks: []mediaConvert.ConverterTask{
 						mediaConvert.ConverterTask{
-							InFile:       inFile,
-							OutFile:      outFile,
+							InFile:       inFile.FullPath(),
+							OutFile:      outFile.FullPath(),
 							HWAccel:      c.String("hwa"),
 							VideoCodec:   c.String("video-codec"),
 							Preset:       c.String("preset"),

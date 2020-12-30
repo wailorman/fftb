@@ -56,8 +56,8 @@ func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter mediaIn
 
 		batchTask.Tasks = append(batchTask.Tasks, ConverterTask{
 			ID:           strconv.Itoa(i),
-			InFile:       file,
-			OutFile:      outFile,
+			InFile:       file.FullPath(),
+			OutFile:      outFile.FullPath(),
 			VideoCodec:   task.VideoCodec,
 			HWAccel:      task.HWAccel,
 			VideoBitRate: task.VideoBitRate,
