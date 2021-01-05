@@ -31,6 +31,11 @@ func NewPath(relativePath string) Pather {
 	}
 }
 
+// NewTempPath _
+func NewTempPath(name string) Pather {
+	return NewPath(filepath.Clean(os.TempDir() + "/" + name))
+}
+
 // FullPath _
 func (p *Path) FullPath() string {
 	return p.path
