@@ -7,6 +7,15 @@ import (
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
+// SegmentPreparedState _
+const SegmentPreparedState = "prepared"
+
+// SegmentPublishedState _
+const SegmentPublishedState = "published"
+
+// SegmentFinishedState _
+const SegmentFinishedState = "finished"
+
 // ConvertSegment _
 type ConvertSegment struct {
 	Identity                   string
@@ -14,6 +23,7 @@ type ConvertSegment struct {
 	Type                       string
 	InputStorageClaimIdentity  string
 	OutputStorageClaimIdentity string
+	State                      string
 
 	Params      convert.Params
 	LockedUntil *time.Time
@@ -89,4 +99,9 @@ func (ct *ConvertSegment) Failed(err error) {
 	// panic(ErrNotImplemented)
 	panic(err)
 	// return
+}
+
+// GetState _
+func (ct *ConvertSegment) GetState() string {
+	return ct.State
 }

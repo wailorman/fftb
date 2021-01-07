@@ -24,6 +24,7 @@ type Segment struct {
 	Payload                    string     `json:"payload"`
 	LockedUntil                *time.Time `json:"locked_until"`
 	LockedBy                   string     `json:"locked_by"`
+	State                      string     `json:"state"`
 	// CreatedAt                  *time.Time
 	// UpdatedAt                  *time.Time
 }
@@ -61,13 +62,28 @@ func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
 
 // FindNotLockedSegment _
 func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
+	// TODO: receive cancellation context
 	ctx, cancel := context.WithCancel(context.TODO())
-	done, results, failures := r.store.FindAll(ctx, "v1/segments/*")
+	results, failures := r.store.FindAll(ctx, "v1/segments/*")
 
 	for {
 		select {
+		case err := <-failures:
+			if err != nil {
+				cancel()
+				return nil, err
+			}
 
 		case data := <-results:
+			fmt.Printf("FindNotLockedSegment data: %#v\n", data)
+			fmt.Printf("FindNotLockedSegment string(data): %#v\n", string(data))
+			// fmt.Printf("FindNotLockedSegment ok: %#v\n", ok)
+
+			if len(data) == 0 {
+				cancel()
+				return nil, models.ErrNotFound
+			}
+
 			dbSeg := &Segment{}
 
 			err := unmarshalObject(data, SegmentObjectType, dbSeg)
@@ -79,8 +95,6 @@ func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 			}
 
 			if dbSeg.LockedUntil == nil || time.Now().After(*dbSeg.LockedUntil) {
-				cancel()
-
 				modSeg, err := fromDbSegment(dbSeg)
 
 				if err != nil {
@@ -89,16 +103,19 @@ func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 					continue
 				}
 
+				if modSeg.GetState() != models.SegmentPublishedState {
+					// TODO: log debug info about segment if not published
+					continue
+				}
+
+				cancel()
 				return modSeg, nil
 			}
 
-		case err := <-failures:
-			cancel()
-			return nil, err
-
-		case <-done:
-			cancel()
-			return nil, models.ErrNotFound
+			// TODO: log
+			continue
+		default:
+			continue
 		}
 	}
 }
@@ -150,11 +167,16 @@ func (r *Instance) FindSegmentsByOrderID(orderID string) ([]models.ISegment, err
 	modSegs := make([]models.ISegment, 0)
 
 	ctx, cancel := context.WithCancel(context.TODO())
-	done, results, failures := r.store.FindAll(ctx, "v1/segments/*")
+	results, failures := r.store.FindAll(ctx, "v1/segments/*")
 
 	for {
 		select {
 		case data := <-results:
+			if data == nil || len(data) == 0 {
+				cancel()
+				return nil, models.ErrNotFound
+			}
+
 			dbSeg := &Segment{}
 			err := unmarshalObject(data, SegmentObjectType, dbSeg)
 
@@ -179,10 +201,6 @@ func (r *Instance) FindSegmentsByOrderID(orderID string) ([]models.ISegment, err
 		case err := <-failures:
 			cancel()
 			return nil, errors.Wrap(err, "Failed to list segments")
-
-		case <-done:
-			cancel()
-			return modSegs, nil
 		}
 	}
 }
@@ -231,6 +249,7 @@ func toDbSegment(segment models.ISegment) (*Segment, error) {
 
 	dbSegment.OrderID = segment.GetOrderID()
 	dbSegment.ObjectType = SegmentObjectType
+	dbSegment.State = segment.GetState()
 	dbSegment.Kind = segment.GetType()
 	dbSegment.InputStorageClaimIdentity = segment.GetInputStorageClaimIdentity()
 	dbSegment.OutputStorageClaimIdentity = segment.GetOutputStorageClaimIdentity()
@@ -256,6 +275,7 @@ func fromDbSegment(dbSeg *Segment) (models.ISegment, error) {
 	modSeg.Identity = dbSeg.ID
 	modSeg.Type = dbSeg.Kind
 	modSeg.OrderIdentity = dbSeg.OrderID
+	modSeg.State = dbSeg.State
 	modSeg.InputStorageClaimIdentity = dbSeg.InputStorageClaimIdentity
 	modSeg.OutputStorageClaimIdentity = dbSeg.OutputStorageClaimIdentity
 

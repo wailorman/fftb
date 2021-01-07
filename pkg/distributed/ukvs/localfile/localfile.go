@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -215,21 +216,30 @@ func (c *Client) Set(key string, val []byte) error {
 }
 
 // GetAll _
-func (c *Client) GetAll(fctx context.Context) (chan struct{}, chan []byte, chan error) {
+func (c *Client) GetAll(fctx context.Context) (chan []byte, chan error) {
 	return c.FindAll(fctx, "*")
 }
 
 // FindAll _
-func (c *Client) FindAll(fctx context.Context, pattern string) (chan struct{}, chan []byte, chan error) {
-	done := make(chan struct{})
-	results := make(chan []byte)
-	failures := make(chan error)
+func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, chan error) {
+	results := make(chan []byte, 1)
+	failures := make(chan error, 1)
+
+	fmt.Printf("___FindAll called\n")
 
 	go func() {
-		defer close(results)
-		defer close(failures)
+		defer func() {
+			fmt.Printf("close results\n")
+			close(results)
+		}()
+		defer func() {
+			fmt.Printf("close failures\n")
+			close(failures)
+		}()
 
 		for key, cont := range c.registry.Data {
+			fmt.Printf("_FindAll key: %#v\n", key)
+			fmt.Printf("_FindAll string(cont.Val): %#v\n", string(cont.Val))
 			val, extractionErr := c.extractContainer(cont)
 
 			keyMatches, matchErr := filepath.Match(pattern, key)
@@ -242,28 +252,44 @@ func (c *Client) FindAll(fctx context.Context, pattern string) (chan struct{}, c
 			if !keyMatches || extractionErr != nil {
 				select {
 				case <-c.ctx.Done():
+					fmt.Printf("ctx done\n")
 					return
 				case <-fctx.Done():
+					fmt.Printf("fctx done\n")
 					return
 				default:
 					continue
 				}
 			}
 
+			fmt.Printf("localfile key: %#v\n", key)
+
 			select {
 			case <-c.ctx.Done():
+				fmt.Printf("ctx done\n")
 				return
 			case <-fctx.Done():
+				fmt.Printf("fctx done\n")
 				return
-			case results <- val:
-				continue
+			default:
+				fmt.Printf("sending val: %#v\n", val)
+				results <- val
 			}
 		}
 
-		done <- struct{}{}
+		fmt.Printf("___FindAll finished\n")
+
+		// func() {
+		// 	fmt.Printf("close results\n")
+		// 	close(results)
+		// }()
+		// func() {
+		// 	fmt.Printf("close failures\n")
+		// 	close(failures)
+		// }()
 	}()
 
-	return done, results, failures
+	return results, failures
 }
 
 // Destroy _
@@ -302,7 +328,7 @@ func (c *Client) ExpireAt(key string, t time.Time) error {
 }
 
 func (c *Client) extractContainer(cont *Container) ([]byte, error) {
-	if cont == nil {
+	if cont == nil || cont.Val == nil || len(cont.Val) == 0 {
 		return nil, errEmptyValue
 	}
 

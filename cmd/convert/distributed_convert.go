@@ -12,31 +12,20 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/registry"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs/localfile"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
-	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // DistributedCliConfig _
 func DistributedCliConfig() *cli.Command {
+	flags := convertParamsFlags()
+
+	flags = append(flags, &cli.BoolFlag{
+		Name: "worker",
+	})
+
 	return &cli.Command{
 		Name:    "distributed-convert",
 		Aliases: []string{"dconv"},
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "video-codec",
-				Aliases: []string{"vc"},
-				Usage:   "Video codec. Possible values: h264, hevc",
-				Value:   "h264",
-			},
-			&cli.IntFlag{
-				Name:    "video-quality",
-				Aliases: []string{"vq"},
-				Usage: "Video quality (-crf option for CPU encoding and -qp option for NVENC).\n" +
-					"                                      Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
-			},
-			&cli.BoolFlag{
-				Name: "worker",
-			},
-		},
+		Flags:   flags,
 		Action: func(c *cli.Context) error {
 			ctx, cancel := context.WithCancel(context.Background())
 			storagePath := files.NewPath(".fftb/storage")
@@ -92,10 +81,7 @@ func DistributedCliConfig() *cli.Command {
 
 				_, err = contracter.PrepareOrder(&models.ConvertContracterRequest{
 					InFile: inFile,
-					Params: convert.Params{
-						VideoCodec:   c.String("video-codec"),
-						VideoQuality: c.Int("video-quality"),
-					},
+					Params: convertParamsFromFlags(c),
 				})
 
 				if err != nil {

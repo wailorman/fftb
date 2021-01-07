@@ -163,7 +163,7 @@ func Test__GetAll(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		_, values, _ := store.GetAll(ctx)
+		values, _ := store.GetAll(ctx)
 
 		val1, ok1 := <-values
 		cancel()
@@ -197,7 +197,7 @@ func Test__FindAll(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		_, values, _ := store.FindAll(ctx, "orders/*")
+		values, _ := store.FindAll(ctx, "orders/*")
 
 		val1, ok1 := <-values
 		cancel()

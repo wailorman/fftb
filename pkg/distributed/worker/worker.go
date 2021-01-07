@@ -46,7 +46,7 @@ func (w *Instance) Start() error {
 
 		if err != nil {
 			if errors.Is(err, models.ErrNotFound) {
-				log.Println("Free task not found")
+				log.Printf("\n\n\n\n\n\n\nFree task not found\n")
 				time.Sleep(FreeTaskDelay)
 			} else {
 				log.Printf("Searching free task error: %s\n", err)
@@ -156,6 +156,13 @@ func (w *Instance) proceedSegment(freeSegment models.ISegment) error {
 			}
 
 			log.Printf("segment %s is done!", freeSegment.GetID())
+
+			err = w.dealer.FinishSegment(freeSegment)
+
+			if err != nil {
+				panic(errors.Wrap(err, "Sending segment finish notification"))
+			}
+
 			return nil
 		}
 	}

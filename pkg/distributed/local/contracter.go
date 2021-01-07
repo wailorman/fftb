@@ -13,6 +13,9 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 )
 
+// DefaultSegmentSize _
+const DefaultSegmentSize = 10
+
 // ContracterInstance _
 type ContracterInstance struct {
 	TempPath files.Pather
@@ -152,9 +155,6 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 
 	return order, nil
 }
-
-// DefaultSegmentSize _
-const DefaultSegmentSize = 60
 
 func splitRequestToSegments(
 	req *models.ConvertContracterRequest,

@@ -91,7 +91,7 @@ type IWorkDealer interface {
 	NotifyRawDownload(ISegment, Progresser) error
 	NotifyResultUpload(ISegment, Progresser) error
 	NotifyProcess(ISegment, Progresser) error
-	FinishSegment(ISegment, Progresser) error
+	FinishSegment(ISegment) error
 	AllocateOutputStorageClaim(segment ISegment) (IStorageClaim, error)
 }
 
@@ -112,6 +112,8 @@ type ISegment interface {
 	GetPayload() (string, error)
 	GetIsLocked() bool
 	GetLockedBy() string
+	// TODO: use specific type for segment state
+	GetState() string
 }
 
 // IRegistry _

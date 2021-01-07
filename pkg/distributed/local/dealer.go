@@ -45,6 +45,7 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 		OrderIdentity: convertReq.OrderIdentity,
 		Params:        convertReq.Params,
 		Muxer:         convertReq.Muxer,
+		State:         models.SegmentPreparedState,
 	}
 
 	// TODO: set state to @prepared
@@ -67,6 +68,9 @@ func (d *Dealer) FindFreeSegment(author string) (models.ISegment, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Looking for free segment")
 	}
+
+	fmt.Printf("d.registry: %#v\n", d.registry)
+	fmt.Printf("freeSegment: %#v\n", freeSegment)
 
 	err = d.registry.LockSegmentByID(freeSegment.GetID(), author)
 
@@ -193,8 +197,15 @@ func (d *Dealer) NotifyResultDownload(progresser models.Progresser) error {
 
 // PublishSegment _
 func (d *Dealer) PublishSegment(segment models.ISegment) error {
-	// TODO: set state to published
-	return d.registry.PersistSegment(segment)
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return models.ErrUnknownSegmentType
+	}
+
+	convertSegment.State = models.SegmentPublishedState
+
+	return d.registry.PersistSegment(convertSegment)
 }
 
 // Subscription _
@@ -203,8 +214,16 @@ func (d *Dealer) Subscription(segment models.ISegment) (models.Subscriber, error
 }
 
 // FinishSegment _
-func (d *Dealer) FinishSegment(models.ISegment, models.Progresser) error {
-	panic(models.ErrNotImplemented)
+func (d *Dealer) FinishSegment(segment models.ISegment) error {
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return models.ErrUnknownSegmentType
+	}
+
+	convertSegment.State = models.SegmentFinishedState
+
+	return d.registry.PersistSegment(convertSegment)
 }
 
 // NotifyProcess _
