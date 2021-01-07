@@ -3,6 +3,7 @@ package local
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/wailorman/fftb/pkg/files"
@@ -57,6 +58,8 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 
 	dSegments := make([]*models.ConvertSegment, 0)
 
+	muxer := strings.Trim(convertRequest.InFile.Extension(), ".")
+
 	for i := range segs {
 		dealerReq := &models.ConvertDealerRequest{
 			// Type:          "convert",
@@ -64,6 +67,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 			Identity:      uuid.New().String(),
 			OrderIdentity: order.Identity,
 			Params:        convertRequest.Params,
+			Muxer:         muxer,
 			// VideoCodec: convertRequest.VideoCodec,
 			// // HWAccel:          convertRequest.HWAccel,
 			// // VideoBitRate:     convertRequest.VideoBitRate,
@@ -91,7 +95,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	for i, seg := range segs {
 		dSeg := dSegments[i]
 		// seg := segs[i]
-		claim, err := c.Dealer.GetInputStorageClaim(dSeg)
+		claim, err := c.Dealer.AllocateInputStorageClaim(dSeg)
 
 		if err != nil {
 			errObj := errors.Wrap(

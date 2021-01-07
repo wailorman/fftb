@@ -1,51 +1,61 @@
 package registry
 
 import (
-	"encoding/json"
+	"fmt"
+
+	"github.com/wailorman/fftb/pkg/distributed/ukvs"
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	"gorm.io/gorm"
 )
 
 // Order _
 type Order struct {
-	ID      string
-	Kind    string
-	Payload string
+	ObjectType string `json:"object_type"`
+	ID         string `json:"id"`
+	Kind       string `json:"kind"`
+	Payload    string `json:"payload"`
 }
 
 // FindOrderByID _
-func (r *SqliteRegistry) FindOrderByID(id string) (models.IOrder, error) {
-	order := &Order{}
-	result := r.gdb.First(order, id)
+func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
+	data, err := r.store.Get(fmt.Sprintf("v1/orders/%s", id))
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, models.ErrNotFound
+	if err != nil {
+		if errors.Is(err, ukvs.ErrNotFound) {
+			return nil, models.ErrNotFound
+		}
+
+		return nil, errors.Wrap(err, "Accessing store for order")
 	}
 
-	if order.Kind != models.ConvertV1Type {
+	dbOrder := &Order{}
+	err = unmarshalObject(data, OrderObjectType, dbOrder)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Unmarshaling order")
+	}
+
+	if dbOrder.Kind != models.ConvertV1Type {
 		return nil, models.ErrUnknownOrderType
 	}
 
-	convertOrder := &models.ConvertOrder{}
+	modOrder := &models.ConvertOrder{}
 
-	err := json.Unmarshal([]byte(order.Payload), convertOrder)
+	// TODO: dealer tasks <- ??? we have FindSegmentsByOrderID
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Unmarshaling payload")
-	}
+	modOrder.Identity = dbOrder.ID
+	modOrder.Type = dbOrder.Kind
 
-	// TODO: dealer tasks
-
-	convertOrder.Identity = order.ID
-	convertOrder.Type = order.Kind
-
-	return convertOrder, nil
+	return modOrder, nil
 }
 
 // PersistOrder _
-func (r *SqliteRegistry) PersistOrder(order models.IOrder) error {
+func (r *Instance) PersistOrder(order models.IOrder) error {
+	if order == nil {
+		return models.ErrMissingOrder
+	}
+
 	if order.GetType() != models.ConvertV1Type {
 		return models.ErrUnknownOrderType
 	}
@@ -56,25 +66,46 @@ func (r *SqliteRegistry) PersistOrder(order models.IOrder) error {
 		return errors.Wrap(err, "Getting payload json string")
 	}
 
-	convertOrder := &Order{
-		ID:      order.GetID(),
-		Kind:    order.GetType(),
-		Payload: payloadStr,
+	dbOrder := &Order{
+		ID:         order.GetID(),
+		ObjectType: OrderObjectType,
+		Kind:       order.GetType(),
+		Payload:    payloadStr,
 	}
 
-	getResult := r.gdb.First(&Order{}, order.GetID())
+	data, err := marshalObject(dbOrder)
 
-	var result *gorm.DB
-
-	if errors.Is(getResult.Error, gorm.ErrRecordNotFound) {
-		result = r.gdb.Create(convertOrder)
-	} else {
-		result = r.gdb.Save(convertOrder)
+	if err != nil {
+		return errors.Wrap(err, "Marshaling db order for store")
 	}
 
-	if result.Error != nil {
-		return errors.Wrap(err, "Failed to persist order")
+	err = r.store.Set(fmt.Sprintf("v1/orders/%s", order.GetID()), data)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting order to store")
 	}
 
 	return nil
+
+	// convertOrder := &Order{
+	// 	ID:      order.GetID(),
+	// 	Kind:    order.GetType(),
+	// 	Payload: payloadStr,
+	// }
+
+	// getResult := r.gdb.First(&Order{}, order.GetID())
+
+	// var result *gorm.DB
+
+	// if errors.Is(getResult.Error, gorm.ErrRecordNotFound) {
+	// 	result = r.gdb.Create(convertOrder)
+	// } else {
+	// 	result = r.gdb.Save(convertOrder)
+	// }
+
+	// if result.Error != nil {
+	// 	return errors.Wrap(err, "Failed to persist order")
+	// }
+
+	// return nil
 }

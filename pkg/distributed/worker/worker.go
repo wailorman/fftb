@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"log"
 	"time"
@@ -13,40 +15,34 @@ import (
 )
 
 // FreeTaskDelay _
-const FreeTaskDelay = time.Duration(10) * time.Second
+const FreeTaskDelay = time.Duration(3) * time.Second
 
 // FreeTaskTimeout _
-const FreeTaskTimeout = time.Duration(10) * time.Second
+const FreeTaskTimeout = time.Duration(3) * time.Second
 
 // Instance _
 type Instance struct {
+	ctx     context.Context
 	tmpPath files.Pather
 	dealer  models.IWorkDealer
+	closed  chan struct{}
 }
 
 // NewWorker _
-func NewWorker(tmpPath files.Pather, dealer models.IWorkDealer) *Instance {
+func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkDealer) *Instance {
 	return &Instance{
+		ctx:     ctx,
 		tmpPath: tmpPath,
 		dealer:  dealer,
+		closed:  make(chan struct{}),
 	}
 }
 
 // Start _
 func (w *Instance) Start() error {
-	// done := make(chan struct{}, 0)
-	// progress := make(chan models.Progresser, 0)
-	// failures := make(chan error, 0)
-
-	// panic(models.ErrNotImplemented)
-	// TODO: stop polling delaer on cancel
-	// freeSegment, err := w.dealer.FindFreeSegment()
-
 	// go func() {
 	for {
 		freeSegment, err := w.dealer.FindFreeSegment("local")
-
-		convertSegment := freeSegment.(*models.ConvertSegment)
 
 		if err != nil {
 			if errors.Is(err, models.ErrNotFound) {
@@ -55,131 +51,117 @@ func (w *Instance) Start() error {
 			} else {
 				log.Printf("Searching free task error: %s\n", err)
 			}
+
+			continue
 		}
 
-		inputClaim, err := w.dealer.GetInputStorageClaim(freeSegment)
+		err = w.proceedSegment(freeSegment)
 
 		if err != nil {
-			// errF := errors.Wrap(err, "Getting output storage claim")
-			panic(errors.Wrap(err, "Getting input storage claim"))
+			return errors.Wrap(err, "Processing segment")
 		}
-
-		outputClaim, err := w.dealer.GetOutputStorageClaim(freeSegment)
-
-		if err != nil {
-			// errF := errors.Wrap(err, "Getting output storage claim")
-			panic(errors.Wrap(err, "Getting output storage claim"))
-		}
-
-		inputFile := w.tmpPath.BuildFile(inputClaim.GetID())
-
-		err = inputFile.Create()
-
-		if err != nil {
-			panic(errors.Wrap(err, "Getting output storage claim"))
-		}
-
-		inputFileWriter, err := inputFile.WriteContent()
-
-		if err != nil {
-			panic(errors.Wrap(err, "Building input file writer"))
-		}
-
-		inputClaimReader, err := inputClaim.GetReader()
-
-		if err != nil {
-			panic(errors.Wrap(err, "Building input claim reader"))
-		}
-
-		outputClaimWriter, err := outputClaim.GetWriter()
-
-		if err != nil {
-			panic(errors.Wrap(err, "Building output claim reader"))
-		}
-
-		_, err = io.Copy(inputFileWriter, inputClaimReader)
-
-		if err != nil {
-			panic(errors.Wrap(err, "Writing segment from storage claim"))
-		}
-
-		outputFile := w.tmpPath.BuildFile(outputClaim.GetID())
-
-		batchTask := convert.BatchTask{
-			Parallelism: 1,
-			Tasks: []convert.Task{
-				convert.Task{
-					InFile:  inputFile.FullPath(),
-					OutFile: outputFile.FullPath(),
-					Params: convert.Params{
-						// HWAccel:      c.String("hwa"),
-						VideoCodec: convertSegment.Params.VideoCodec,
-						// Preset:       c.String("preset"),
-						// VideoBitRate: c.String("video-bitrate"),
-						VideoQuality: convertSegment.Params.VideoQuality,
-						// Scale:        c.String("scale"),
-					},
-				},
-			},
-		}
-
-		infoGetter := info.New()
-		converter := convert.NewBatchConverter(infoGetter)
-		_, doneChan, errChan := converter.Convert(batchTask)
-
-		for {
-			select {
-			case <-doneChan:
-				outputFileReader, err := outputFile.ReadContent()
-
-				if err != nil {
-					panic(errors.Wrap(err, "Building output file reader"))
-				}
-
-				_, err = io.Copy(outputClaimWriter, outputFileReader)
-
-				if err != nil {
-					panic(errors.Wrap(err, "Writing result to output claim"))
-				}
-
-				log.Printf("segment %s is done!", freeSegment.GetID())
-				return nil
-			case bErr := <-errChan:
-				panic(errors.Wrap(bErr.Err, "Error processing convert task"))
-			}
-		}
-
 	}
-	// }()
-
-	// return nil
 }
 
-// Cancel _
-func (w *Instance) Cancel() {
-	panic(models.ErrNotImplemented)
-}
+// proceedSegment _
+func (w *Instance) proceedSegment(freeSegment models.ISegment) error {
+	convertSegment := freeSegment.(*models.ConvertSegment)
 
-func (w *Instance) findFreeTaskWithTimeout(timeout time.Duration) (models.ISegment, error) {
-	freeSegment := make(chan models.ISegment)
-	failures := make(chan error)
+	inputClaim, err := w.dealer.GetInputStorageClaim(freeSegment)
 
-	go func() {
-		fSeg, err := w.dealer.FindFreeSegment("local")
+	if err != nil {
+		panic(errors.Wrap(err, "Getting input storage claim"))
+	}
 
-		if err != nil {
-			failures <- err
-			return
+	outputClaim, err := w.dealer.AllocateOutputStorageClaim(freeSegment)
+
+	if err != nil {
+		panic(errors.Wrap(err, "Getting output storage claim"))
+	}
+
+	inputFile := w.tmpPath.BuildFile(fmt.Sprintf("%s.%s", inputClaim.GetID(), convertSegment.Muxer))
+
+	err = inputFile.Create()
+
+	if err != nil {
+		panic(errors.Wrap(err, "Getting output storage claim"))
+	}
+
+	inputFileWriter, err := inputFile.WriteContent()
+
+	if err != nil {
+		panic(errors.Wrap(err, "Building input file writer"))
+	}
+
+	inputClaimReader, err := inputClaim.GetReader()
+
+	if err != nil {
+		panic(errors.Wrap(err, "Building input claim reader"))
+	}
+
+	outputClaimWriter, err := outputClaim.GetWriter()
+
+	if err != nil {
+		panic(errors.Wrap(err, "Building output claim reader"))
+	}
+
+	_, err = io.Copy(inputFileWriter, inputClaimReader)
+
+	if err != nil {
+		panic(errors.Wrap(err, "Writing segment from storage claim"))
+	}
+
+	outputFile := w.tmpPath.BuildFile(fmt.Sprintf("%s.%s", outputClaim.GetID(), convertSegment.Muxer))
+
+	batchTask := convert.BatchTask{
+		Parallelism: 1,
+		Tasks: []convert.Task{
+			convert.Task{
+				InFile:  inputFile.FullPath(),
+				OutFile: outputFile.FullPath(),
+				Params:  convertSegment.Params,
+			},
+		},
+	}
+
+	infoGetter := info.New()
+	converter := convert.NewBatchConverter(infoGetter)
+	progressChan, doneChan, errChan := converter.Convert(batchTask)
+
+	for {
+		select {
+		case pmsg := <-progressChan:
+			fmt.Printf("pmsg: %#v\n", pmsg.Progress)
+
+		case bErr := <-errChan:
+			panic(errors.Wrap(bErr.Err, "Error processing convert task"))
+
+		case <-doneChan:
+			outputFileReader, err := outputFile.ReadContent()
+
+			if err != nil {
+				panic(errors.Wrap(err, "Building output file reader"))
+			}
+
+			_, err = io.Copy(outputClaimWriter, outputFileReader)
+
+			if err != nil {
+				panic(errors.Wrap(err, "Writing result to output claim"))
+			}
+
+			err = outputFile.Remove()
+
+			if err != nil {
+				panic(errors.Wrap(err, "Removing output file after uploading to storage"))
+			}
+
+			log.Printf("segment %s is done!", freeSegment.GetID())
+			return nil
 		}
+	}
+}
 
-		freeSegment <- fSeg
-	}()
-
-	// select {
-	// case fSeg := <-freeSegment:
-	// case failure := <-failures:
-	// case <-time.After(FreeTaskTimeout):
-	// }
-
-	return nil, nil // TODO:
+// Closed _
+func (w *Instance) Closed() <-chan struct{} {
+	return w.closed
 }

@@ -137,6 +137,12 @@ func (c *Client) Flush() error {
 
 	storageFile := files.NewFile(c.storagePath)
 
+	err := storageFile.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Truncating storage file")
+	}
+
 	bRegistry, err := json.Marshal(c.registry)
 
 	if err != nil {
@@ -209,12 +215,13 @@ func (c *Client) Set(key string, val []byte) error {
 }
 
 // GetAll _
-func (c *Client) GetAll(fctx context.Context) (chan []byte, chan error) {
+func (c *Client) GetAll(fctx context.Context) (chan struct{}, chan []byte, chan error) {
 	return c.FindAll(fctx, "*")
 }
 
 // FindAll _
-func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, chan error) {
+func (c *Client) FindAll(fctx context.Context, pattern string) (chan struct{}, chan []byte, chan error) {
+	done := make(chan struct{})
 	results := make(chan []byte)
 	failures := make(chan error)
 
@@ -252,9 +259,11 @@ func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, cha
 				continue
 			}
 		}
+
+		done <- struct{}{}
 	}()
 
-	return results, failures
+	return done, results, failures
 }
 
 // Destroy _

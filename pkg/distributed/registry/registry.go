@@ -1,89 +1,66 @@
 package registry
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/pkg/errors"
-
-	// "database/sql"
-
-	// "gorm.io/driver/sqlite"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
-	// "github.com/golang-migrate/migrate"
-	// "github.com/golang-migrate/migrate/database/sqlite3"
-
-	"database/sql"
-
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-
-	// ss
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/mattn/go-sqlite3"
-
-	// "database/sql"
-	// _ "github.com/mattn/go-sqlite3"
-	// "github.com/golang-migrate/migrate/v4"
-	// "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	// _ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/subchen/go-trylock/v2"
+	"github.com/wailorman/fftb/pkg/distributed/ukvs"
 )
 
-// SqliteRegistry _
-type SqliteRegistry struct {
-	db              *sql.DB
-	gdb             *gorm.DB
+// ErrUnexpectedObjectType _
+var ErrUnexpectedObjectType = errors.New("Unexpected Object Type")
+
+// SegmentObjectType _
+const SegmentObjectType = "segment"
+
+// OrderObjectType _
+const OrderObjectType = "order"
+
+// // OrdersStorePath _
+// const OrdersStorePath = "v1/orders"
+
+// // SegmentsStorePath _
+// const SegmentsStorePath = "v1/segments"
+
+// Instance _
+type Instance struct {
 	freeSegmentLock trylock.TryLocker
+	store           ukvs.IStore
 }
 
-// NewSqliteRegistry _
-func NewSqliteRegistry(databasePath, migrationsPath string) (*SqliteRegistry, error) {
-	var err error
+// TypeCheck _
+type TypeCheck struct {
+	ObjectType string `json:"object_type"`
+}
 
-	// TODO: migrations
-	// pkg/distributed/registry/migrations
-
-	r := &SqliteRegistry{
+// NewRegistry _
+func NewRegistry(store ukvs.IStore) (*Instance, error) {
+	r := &Instance{
 		freeSegmentLock: trylock.New(),
-	}
-
-	r.db, err = sql.Open("sqlite3", databasePath)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Initializing sqlite database file")
-	}
-
-	// -
-	driver, err := sqlite3.WithInstance(r.db, &sqlite3.Config{})
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Initializing sqlite migrations driver")
-	}
-
-	// -
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://"+migrationsPath,
-		"sqlite3",
-		driver,
-	)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Initializing migrator")
-	}
-
-	// -
-	err = m.Steps(1)
-
-	// -
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "Performing migrations")
-	// }
-
-	r.gdb, err = gorm.Open(sqlite.Open(databasePath), &gorm.Config{})
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Initializing sqlite gorm db")
+		store:           store,
 	}
 
 	return r, nil
+}
+
+func unmarshalObject(data []byte, expectedType string, v interface{}) error {
+	typedStruct := &TypeCheck{}
+
+	err := json.Unmarshal(data, typedStruct)
+
+	if err != nil {
+		return err
+	}
+
+	if typedStruct.ObjectType != expectedType {
+		return errors.Wrap(ErrUnexpectedObjectType, fmt.Sprint("Received type", typedStruct.ObjectType))
+	}
+
+	return json.Unmarshal(data, v)
+}
+
+func marshalObject(v interface{}) ([]byte, error) {
+	return json.Marshal(v)
 }

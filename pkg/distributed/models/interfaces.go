@@ -38,6 +38,12 @@ var ErrFreeSegmentLockTimeout = errors.New("Free segment lock timeout")
 // ErrMissingLockAuthor _
 var ErrMissingLockAuthor = errors.New("Missing lock author")
 
+// ErrMissingSegment _
+var ErrMissingSegment = errors.New("Missing Segment")
+
+// ErrMissingOrder _
+var ErrMissingOrder = errors.New("Missing Order")
+
 // IContracter _
 type IContracter interface {
 	PrepareOrder(req IContracterRequest) (IOrder, error)
@@ -74,6 +80,7 @@ type IContractDealer interface {
 	PublishSegment(ISegment) error
 	CancelSegment(ISegment) error
 	Subscription(ISegment) (Subscriber, error)
+	AllocateInputStorageClaim(segment ISegment) (IStorageClaim, error)
 }
 
 // IWorkDealer _
@@ -85,6 +92,7 @@ type IWorkDealer interface {
 	NotifyResultUpload(ISegment, Progresser) error
 	NotifyProcess(ISegment, Progresser) error
 	FinishSegment(ISegment, Progresser) error
+	AllocateOutputStorageClaim(segment ISegment) (IStorageClaim, error)
 }
 
 // IDealerRequest _

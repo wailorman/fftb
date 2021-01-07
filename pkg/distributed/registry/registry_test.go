@@ -18,7 +18,7 @@ package registry
 // 	assert.Nil(err, "Creating database tmp file")
 // 	defer dbPath.Remove()
 
-// 	_, err = NewSqliteRegistry(dbPath.FullPath())
+// 	_, err = NewInstance(dbPath.FullPath())
 
 // 	assert.Nil(err, "Creating registry")
 // }
@@ -31,7 +31,7 @@ package registry
 // 	assert.Nil(err, "Creating database tmp file")
 // 	defer dbPath.Remove()
 
-// 	registry, err := NewSqliteRegistry(dbPath.FullPath())
+// 	registry, err := NewInstance(dbPath.FullPath())
 
 // 	assert.Nil(err, "Creating registry")
 
@@ -66,7 +66,7 @@ package registry
 // 	assert.Nil(err, "Creating database tmp file")
 // 	defer dbPath.Remove()
 
-// 	registry, err := NewSqliteRegistry(dbPath.FullPath())
+// 	registry, err := NewInstance(dbPath.FullPath())
 
 // 	assert.Nil(err, "Creating registry")
 

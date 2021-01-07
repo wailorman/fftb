@@ -174,7 +174,15 @@ func (f *File) EnsureParentDirExists() error {
 
 // Create creates file
 func (f *File) Create() error {
-	_, err := os.Create(f.FullPath())
+	parentDir := f.BuildPath()
+
+	err := parentDir.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Creating parent directory")
+	}
+
+	_, err = os.Create(f.FullPath())
 
 	return err
 }

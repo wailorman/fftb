@@ -163,7 +163,7 @@ func Test__GetAll(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		values, _ := store.GetAll(ctx)
+		_, values, _ := store.GetAll(ctx)
 
 		val1, ok1 := <-values
 		cancel()
@@ -197,7 +197,7 @@ func Test__FindAll(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 
-		values, _ := store.FindAll(ctx, "orders/*")
+		_, values, _ := store.FindAll(ctx, "orders/*")
 
 		val1, ok1 := <-values
 		cancel()
@@ -245,20 +245,19 @@ func Test__Persistence(t *testing.T) {
 			continue
 		}
 
-		ctx2, cancel2 := context.WithCancel(context.TODO())
-
-		store1, err := tableItem.buildClient(ctx2)
+		ctx1, cancel1 := context.WithCancel(context.TODO())
+		store1, err := tableItem.buildClient(ctx1)
 		assert.Nil(t, err)
 
 		store1.Set("persistent_key", []byte("persistent_value"))
-		cancel2()
+		cancel1()
 		<-store1.Closed()
 
-		store2, err := tableItem.buildClient(gctx)
+		ctx2 := context.TODO()
+		store2, err := tableItem.buildClient(ctx2)
 		assert.Nil(t, err)
 
 		value2, _ := store2.Get("persistent_key")
-
 		assert.Equal(t, []byte("persistent_value"), value2)
 	}
 }

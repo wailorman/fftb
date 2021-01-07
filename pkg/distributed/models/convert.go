@@ -13,7 +13,7 @@ type ConvertContracterRequest struct {
 	InFile  files.Filer
 	OutFile files.Filer
 	Params  convert.Params
-	// Muxer      string
+	// Muxer   string
 	// VideoCodec string
 	// // HWAccel          string
 	// // VideoBitRate     string
@@ -36,7 +36,7 @@ type ConvertDealerRequest struct {
 	OrderIdentity string
 
 	Params convert.Params
-	// Muxer      string
+	Muxer  string
 	// VideoCodec string
 	// // HWAccel          string
 	// // VideoBitRate     string

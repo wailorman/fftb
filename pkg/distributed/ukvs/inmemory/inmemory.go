@@ -94,12 +94,13 @@ func (c *Client) Set(key string, val []byte) error {
 }
 
 // GetAll _
-func (c *Client) GetAll(fctx context.Context) (chan []byte, chan error) {
+func (c *Client) GetAll(fctx context.Context) (chan struct{}, chan []byte, chan error) {
 	return c.FindAll(fctx, "*")
 }
 
 // FindAll _
-func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, chan error) {
+func (c *Client) FindAll(fctx context.Context, pattern string) (chan struct{}, chan []byte, chan error) {
+	done := make(chan struct{})
 	results := make(chan []byte)
 	failures := make(chan error)
 
@@ -147,9 +148,11 @@ func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, cha
 				return true
 			}
 		})
+
+		failures <- nil
 	}()
 
-	return results, failures
+	return done, results, failures
 }
 
 // Destroy _

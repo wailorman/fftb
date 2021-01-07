@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"context"
+
 	"github.com/urfave/cli/v2"
 	"github.com/wailorman/fftb/pkg/files"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
+	"github.com/wailorman/fftb/pkg/distributed/ukvs/localfile"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
@@ -35,11 +38,13 @@ func DistributedCliConfig() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			ctx, cancel := context.WithCancel(context.Background())
 			storagePath := files.NewPath(".fftb/storage")
 
 			err := storagePath.Create()
 
 			if err != nil {
+				cancel()
 				panic(err)
 			}
 
@@ -48,6 +53,7 @@ func DistributedCliConfig() *cli.Command {
 			err = segmentsPath.Create()
 
 			if err != nil {
+				cancel()
 				panic(err)
 			}
 
@@ -56,13 +62,22 @@ func DistributedCliConfig() *cli.Command {
 			err = workerPath.Create()
 
 			if err != nil {
+				cancel()
 				panic(err)
 			}
 
 			storage := local.NewStorageControl(storagePath)
-			registry, err := registry.NewSqliteRegistry(".fftb/sqlite.db", "pkg/distributed/registry/migrations/")
+			store, err := localfile.NewClient(ctx, ".fftb/store.json")
 
 			if err != nil {
+				cancel()
+				panic(err)
+			}
+
+			registry, err := registry.NewRegistry(store)
+
+			if err != nil {
+				cancel()
 				panic(err)
 			}
 
@@ -87,11 +102,13 @@ func DistributedCliConfig() *cli.Command {
 					panic(err)
 				}
 			} else {
-				worker := worker.NewWorker(workerPath, dealer)
+				worker := worker.NewWorker(ctx, workerPath, dealer)
 
 				worker.Start()
 			}
 
+			cancel()
+			<-store.Closed()
 			return nil
 		},
 	}

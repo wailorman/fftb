@@ -18,7 +18,7 @@ type ConvertSegment struct {
 	Params      convert.Params
 	LockedUntil *time.Time
 	LockedBy    string
-	// Muxer      string
+	Muxer       string
 	// VideoCodec string
 	// // HWAccel          string
 	// // VideoBitRate     string

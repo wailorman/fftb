@@ -1,26 +1,29 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"time"
 
+	"github.com/wailorman/fftb/pkg/distributed/ukvs"
+
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	"gorm.io/gorm"
 )
 
 // Segment _
 type Segment struct {
-	ID                         string
-	OrderID                    string
-	Kind                       string
-	InputStorageClaimIdentity  string
-	OutputStorageClaimIdentity string
-	Payload                    string
-	LockedUntil                *time.Time
-	LockedBy                   string
+	ObjectType                 string     `json:"object_type"`
+	ID                         string     `json:"id"`
+	OrderID                    string     `json:"order_id"`
+	Kind                       string     `json:"kind"`
+	InputStorageClaimIdentity  string     `json:"input_storage_claim_identity"`
+	OutputStorageClaimIdentity string     `json:"output_storage_claim_identity"`
+	Payload                    string     `json:"payload"`
+	LockedUntil                *time.Time `json:"locked_until"`
+	LockedBy                   string     `json:"locked_by"`
 	// CreatedAt                  *time.Time
 	// UpdatedAt                  *time.Time
 }
@@ -29,117 +32,183 @@ type Segment struct {
 const LockSegmentTimeout = time.Duration(10 * time.Second)
 
 // FindSegmentByID _
-func (r *SqliteRegistry) FindSegmentByID(id string) (models.ISegment, error) {
-	dbSegment := &Segment{}
-	result := r.gdb.First(dbSegment, fmt.Sprintf("id = '%s'", id))
+func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
+	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", id))
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, models.ErrNotFound
+	if err != nil {
+		if errors.Is(err, ukvs.ErrNotFound) {
+			return nil, models.ErrNotFound
+		}
+
+		return nil, errors.Wrap(err, "Accessing store for segment")
 	}
 
-	if dbSegment.Kind != models.ConvertV1Type {
-		return nil, models.ErrUnknownOrderType
+	dbSeg := &Segment{}
+	err = unmarshalObject(result, SegmentObjectType, dbSeg)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return fromDbSegment(dbSegment)
+	segment, err := fromDbSegment(dbSeg)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return segment, nil
 }
 
 // FindNotLockedSegment _
-func (r *SqliteRegistry) FindNotLockedSegment() (models.ISegment, error) {
-	dbSegments := make([]*Segment, 0)
+func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
+	ctx, cancel := context.WithCancel(context.TODO())
+	done, results, failures := r.store.FindAll(ctx, "v1/segments/*")
 
-	locked := r.freeSegmentLock.TryLockTimeout(LockSegmentTimeout)
+	for {
+		select {
 
-	if !locked {
-		return nil, models.ErrFreeSegmentLockTimeout
-	}
+		case data := <-results:
+			dbSeg := &Segment{}
 
-	defer r.freeSegmentLock.Unlock()
+			err := unmarshalObject(data, SegmentObjectType, dbSeg)
 
-	r.gdb.Find(&dbSegments)
+			if err != nil {
+				// TODO: log unmarshaling errors
+				log.Println(err)
+				continue
+			}
 
-	for _, dbSeg := range dbSegments {
-		seg, err := fromDbSegment(dbSeg)
+			if dbSeg.LockedUntil == nil || time.Now().After(*dbSeg.LockedUntil) {
+				cancel()
 
-		if err != nil {
-			// log.Panicf("failed to parse segment from db: %s\n", err)
-			log.Printf("failed to parse segment from db: %s\n", err)
-			continue
+				modSeg, err := fromDbSegment(dbSeg)
+
+				if err != nil {
+					// TODO: log unmarshaling errors
+					log.Println(err)
+					continue
+				}
+
+				return modSeg, nil
+			}
+
+		case err := <-failures:
+			cancel()
+			return nil, err
+
+		case <-done:
+			cancel()
+			return nil, models.ErrNotFound
 		}
-
-		if !seg.GetIsLocked() {
-			return seg, nil
-		}
 	}
-
-	return nil, models.ErrNotFound
 }
 
 // LockSegmentByID _
-func (r *SqliteRegistry) LockSegmentByID(segmentID string, lockedBy string) error {
+func (r *Instance) LockSegmentByID(segmentID string, lockedBy string) error {
 	if lockedBy == "" {
 		return models.ErrMissingLockAuthor
 	}
 
-	result := r.gdb.Model(&Segment{ID: segmentID}).Updates(map[string]interface{}{"locked_until": time.Now(), "locked_by": lockedBy})
+	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", segmentID))
 
-	if result.RowsAffected == 0 {
-		return models.ErrNotFound
+	if err != nil {
+		if errors.Is(err, ukvs.ErrNotFound) {
+			return models.ErrNotFound
+		}
+
+		return errors.Wrap(err, "Accessing store for segment")
+	}
+
+	dbSeg := &Segment{}
+	err = unmarshalObject(result, SegmentObjectType, dbSeg)
+
+	if err != nil {
+		return err
+	}
+
+	lockedUntil := time.Now().Add(LockSegmentTimeout)
+	dbSeg.LockedUntil = &lockedUntil
+	dbSeg.LockedBy = lockedBy
+
+	data, err := marshalObject(dbSeg)
+
+	if err != nil {
+		return errors.Wrap(err, "Marshaling db segment for store")
+	}
+
+	err = r.store.Set(fmt.Sprintf("v1/segments/%s", dbSeg.ID), data)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting segment to store")
 	}
 
 	return nil
 }
 
 // FindSegmentsByOrderID _
-func (r *SqliteRegistry) FindSegmentsByOrderID(orderID string) ([]models.ISegment, error) {
-	dbSegments := make([]*Segment, 0)
+func (r *Instance) FindSegmentsByOrderID(orderID string) ([]models.ISegment, error) {
+	modSegs := make([]models.ISegment, 0)
 
-	getResults := r.gdb.Where("order_id = ?", orderID).Find(&dbSegments)
+	ctx, cancel := context.WithCancel(context.TODO())
+	done, results, failures := r.store.FindAll(ctx, "v1/segments/*")
 
-	if getResults.Error != nil {
-		return nil, errors.Wrap(getResults.Error, "Retrieving segments")
-	}
+	for {
+		select {
+		case data := <-results:
+			dbSeg := &Segment{}
+			err := unmarshalObject(data, SegmentObjectType, dbSeg)
 
-	segments := make([]models.ISegment, 0)
+			if err != nil {
+				// TODO: log unmarshaling errors
+				continue
+			}
 
-	for _, dbSegment := range dbSegments {
-		segment, err := fromDbSegment(dbSegment)
+			if dbSeg.OrderID != orderID {
+				continue
+			}
 
-		if err != nil {
-			return nil, errors.Wrap(err, "")
+			modSeg, err := fromDbSegment(dbSeg)
+
+			if err != nil {
+				// TODO: log unmarshaling errors
+				continue
+			}
+
+			modSegs = append(modSegs, modSeg)
+
+		case err := <-failures:
+			cancel()
+			return nil, errors.Wrap(err, "Failed to list segments")
+
+		case <-done:
+			cancel()
+			return modSegs, nil
 		}
-
-		segments = append(segments, segment)
 	}
-
-	return segments, nil
 }
 
 // PersistSegment _
-func (r *SqliteRegistry) PersistSegment(segment models.ISegment) error {
-	if segment.GetType() != models.ConvertV1Type {
-		return models.ErrUnknownSegmentType
+func (r *Instance) PersistSegment(segment models.ISegment) error {
+	if segment == nil {
+		return models.ErrMissingSegment
 	}
 
-	dbSegment, err := toDbSegment(segment)
+	dbSeg, err := toDbSegment(segment)
 
-	// getResult := r.gdb.First(&Segment{}, segment.GetID())
-	getResult := r.gdb.First(&Segment{}, fmt.Sprintf("id = '%s'", segment.GetID()))
-
-	var result *gorm.DB
-
-	// fmt.Printf("errors.Is(getResult.Error, gorm.ErrRecordNotFound): %#v\n", errors.Is(getResult.Error, gorm.ErrRecordNotFound))
-
-	if errors.Is(getResult.Error, gorm.ErrRecordNotFound) {
-		result = r.gdb.Create(dbSegment)
-	} else {
-		result = r.gdb.Save(dbSegment)
+	if err != nil {
+		return errors.Wrap(err, "Converting segment model to registry format")
 	}
 
-	// fmt.Printf("result: %#v\n", result)
+	data, err := marshalObject(dbSeg)
 
-	if result.Error != nil {
-		return errors.Wrap(err, "Failed to persist order")
+	if err != nil {
+		return errors.Wrap(err, "Marshaling db segment for store")
+	}
+
+	err = r.store.Set(fmt.Sprintf("v1/segments/%s", segment.GetID()), data)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting segment to store")
 	}
 
 	return nil
@@ -161,6 +230,7 @@ func toDbSegment(segment models.ISegment) (*Segment, error) {
 	}
 
 	dbSegment.OrderID = segment.GetOrderID()
+	dbSegment.ObjectType = SegmentObjectType
 	dbSegment.Kind = segment.GetType()
 	dbSegment.InputStorageClaimIdentity = segment.GetInputStorageClaimIdentity()
 	dbSegment.OutputStorageClaimIdentity = segment.GetOutputStorageClaimIdentity()
@@ -168,26 +238,26 @@ func toDbSegment(segment models.ISegment) (*Segment, error) {
 	return dbSegment, nil
 }
 
-func fromDbSegment(dbSegment *Segment) (models.ISegment, error) {
-	if dbSegment.Kind != models.ConvertV1Type {
+func fromDbSegment(dbSeg *Segment) (models.ISegment, error) {
+	if dbSeg.Kind != models.ConvertV1Type {
 		return nil, models.ErrUnknownSegmentType
 	}
 
-	convertSegment := &models.ConvertSegment{}
+	modSeg := &models.ConvertSegment{}
 
-	// fmt.Printf("dbSegment.Payload: %#v\n", dbSegment.Payload)
+	// fmt.Printf("dbSeg.Payload: %#v\n", dbSeg.Payload)
 
-	err := json.Unmarshal([]byte(dbSegment.Payload), convertSegment)
+	err := json.Unmarshal([]byte(dbSeg.Payload), modSeg)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Unmarshaling payload")
 	}
 
-	convertSegment.Identity = dbSegment.ID
-	convertSegment.Type = dbSegment.Kind
-	convertSegment.OrderIdentity = dbSegment.OrderID
-	convertSegment.InputStorageClaimIdentity = dbSegment.InputStorageClaimIdentity
-	convertSegment.OutputStorageClaimIdentity = dbSegment.OutputStorageClaimIdentity
+	modSeg.Identity = dbSeg.ID
+	modSeg.Type = dbSeg.Kind
+	modSeg.OrderIdentity = dbSeg.OrderID
+	modSeg.InputStorageClaimIdentity = dbSeg.InputStorageClaimIdentity
+	modSeg.OutputStorageClaimIdentity = dbSeg.OutputStorageClaimIdentity
 
-	return convertSegment, nil
+	return modSeg, nil
 }

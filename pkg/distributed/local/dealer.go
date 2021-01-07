@@ -40,39 +40,14 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 		return nil, models.ErrUnknownRequestType
 	}
 
-	// fmt.Printf("convertReq.Identity: %#v\n", convertReq.Identity)
-	// id := fmt.Sprintf("%s/%s", convertReq.Identity, uuid.New().String())
-	// claimIdentity := fmt.Sprintf("%s.%s", id, convertReq.Params.Muxer)
-	// claimIdentity := fmt.Sprintf("%s.%s", id, "mp4")
-	id := uuid.New().String()
-	inputClaimIdentity := fmt.Sprintf("%s/%s/%s_input", convertReq.OrderIdentity, convertReq.Identity, id)
-	outputClaimIdentity := fmt.Sprintf("%s/%s/%s_output", convertReq.OrderIdentity, convertReq.Identity, id)
-
-	inputClaim, err := d.storageController.AllocateStorageClaim(inputClaimIdentity)
-	outputClaim, err := d.storageController.AllocateStorageClaim(outputClaimIdentity)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Allocating storage claim for task")
-	}
-
 	convertSegment := &models.ConvertSegment{
-		Identity:                   convertReq.Identity,
-		OrderIdentity:              convertReq.OrderIdentity,
-		InputStorageClaimIdentity:  inputClaim.GetID(),
-		OutputStorageClaimIdentity: outputClaim.GetID(),
-		Params:                     convertReq.Params,
-
-		// Muxer:      convertReq.Muxer,
-		// VideoCodec: convertReq.VideoCodec,
-		// // HWAccel:          convertReq.HWAccel,
-		// // VideoBitRate:     convertReq.VideoBitRate,
-		// VideoQuality: convertReq.VideoQuality,
-		// // Preset:           convertReq.Preset,
-		// // Scale:            convertReq.Scale,
-		// // KeyframeInterval: convertReq.KeyframeInterval,
+		Identity:      convertReq.Identity,
+		OrderIdentity: convertReq.OrderIdentity,
+		Params:        convertReq.Params,
+		Muxer:         convertReq.Muxer,
 	}
 
-	// set state to @prepared
+	// TODO: set state to @prepared
 
 	return convertSegment, nil
 }
@@ -110,6 +85,10 @@ func (d *Dealer) GetInputStorageClaim(segment models.ISegment) (models.IStorageC
 		return nil, models.ErrUnknownSegmentType
 	}
 
+	if convertSegment.InputStorageClaimIdentity == "" {
+		return nil, errors.Wrap(models.ErrMissingStorageClaim, "Getting input storage claim identity")
+	}
+
 	claim, err := d.storageController.BuildStorageClaim(convertSegment.InputStorageClaimIdentity)
 
 	if err != nil {
@@ -127,6 +106,10 @@ func (d *Dealer) GetOutputStorageClaim(segment models.ISegment) (models.IStorage
 		return nil, models.ErrUnknownSegmentType
 	}
 
+	if convertSegment.OutputStorageClaimIdentity == "" {
+		return nil, errors.Wrap(models.ErrMissingStorageClaim, "Getting output storage claim identity")
+	}
+
 	claim, err := d.storageController.BuildStorageClaim(convertSegment.OutputStorageClaimIdentity)
 
 	if err != nil {
@@ -134,6 +117,58 @@ func (d *Dealer) GetOutputStorageClaim(segment models.ISegment) (models.IStorage
 	}
 
 	return claim, nil
+}
+
+// AllocateInputStorageClaim _
+func (d *Dealer) AllocateInputStorageClaim(segment models.ISegment) (models.IStorageClaim, error) {
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return nil, models.ErrUnknownSegmentType
+	}
+
+	iClaimID := fmt.Sprintf("%s/%s/input_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
+	iClaim, err := d.storageController.AllocateStorageClaim(iClaimID)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Allocating input storage claim")
+	}
+
+	convertSegment.InputStorageClaimIdentity = iClaimID
+
+	err = d.registry.PersistSegment(convertSegment)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Persisting input claim identity")
+	}
+
+	return iClaim, nil
+}
+
+// AllocateOutputStorageClaim _
+func (d *Dealer) AllocateOutputStorageClaim(segment models.ISegment) (models.IStorageClaim, error) {
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return nil, models.ErrUnknownSegmentType
+	}
+
+	oClaimID := fmt.Sprintf("%s/%s/output_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
+	oClaim, err := d.storageController.AllocateStorageClaim(oClaimID)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Allocating output storage claim")
+	}
+
+	convertSegment.OutputStorageClaimIdentity = oClaimID
+
+	err = d.registry.PersistSegment(convertSegment)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Persisting output claim identity")
+	}
+
+	return oClaim, nil
 }
 
 // CancelSegment _
@@ -158,8 +193,8 @@ func (d *Dealer) NotifyResultDownload(progresser models.Progresser) error {
 
 // PublishSegment _
 func (d *Dealer) PublishSegment(segment models.ISegment) error {
+	// TODO: set state to published
 	return d.registry.PersistSegment(segment)
-	// panic(models.ErrNotImplemented)
 }
 
 // Subscription _
