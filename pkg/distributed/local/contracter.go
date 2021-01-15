@@ -40,22 +40,27 @@ func NewContracter(params *ContracterParameters) *ContracterInstance {
 func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models.IOrder, error) {
 	convertRequest, ok := req.(*models.ConvertContracterRequest)
 
+	if req.GetAuthor() == nil {
+		return nil, models.ErrMissingPublisher
+	}
+
+	publisher := req.GetAuthor()
+
 	if !ok {
 		return nil, errors.Wrap(models.ErrUnknownRequestType, fmt.Sprintf("Received request with type `%s`", req.GetType()))
 	}
 
 	order := &models.ConvertOrder{
-		Identity: uuid.New().String(),
-		Params:   convertRequest.Params,
-		// Request:  convertRequest,
-		// MessageBus: models.NewMessageBus(),
+		Identity:  uuid.New().String(),
+		Params:    convertRequest.Params,
+		Publisher: req.GetAuthor(),
 	}
 
 	segs, err := splitRequestToSegments(convertRequest, c.TempPath)
 
 	if err != nil {
 		errObj := errors.Wrap(err, "Splitting to segs")
-		order.Failed(errObj)
+		// order.Failed(errObj)
 		return nil, errObj
 	}
 
@@ -65,26 +70,19 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 
 	for i := range segs {
 		dealerReq := &models.ConvertDealerRequest{
-			// Type:          "convert",
 			Type:          models.ConvertV1Type,
 			Identity:      uuid.New().String(),
 			OrderIdentity: order.Identity,
 			Params:        convertRequest.Params,
 			Muxer:         muxer,
-			// VideoCodec: convertRequest.VideoCodec,
-			// // HWAccel:          convertRequest.HWAccel,
-			// // VideoBitRate:     convertRequest.VideoBitRate,
-			// VideoQuality: convertRequest.VideoQuality,
-			// // Preset:           convertRequest.Preset,
-			// // Scale:            convertRequest.Scale,
-			// // KeyframeInterval: convertRequest.KeyframeInterval,
+			Author:        publisher,
 		}
 
 		dealerSegment, err := c.Dealer.AllocateSegment(dealerReq)
 
 		if err != nil {
 			errObj := errors.Wrap(err, fmt.Sprintf("Allocating dealer segment #%d", i))
-			order.Failed(errObj)
+			// order.Failed(errObj)
 			return nil, errObj
 		}
 
@@ -98,7 +96,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	for i, seg := range segs {
 		dSeg := dSegments[i]
 		// seg := segs[i]
-		claim, err := c.Dealer.AllocateInputStorageClaim(dSeg)
+		claim, err := c.Dealer.AllocateInputStorageClaim(publisher, dSeg)
 
 		if err != nil {
 			errObj := errors.Wrap(
@@ -106,7 +104,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 				fmt.Sprintf("Getting storage claim for dealer segment #%d (%s)", i, dSeg.GetID()),
 			)
 
-			order.Failed(errObj)
+			// order.Failed(errObj)
 			// TODO: cancel dealer task
 			return nil, errObj
 		}
@@ -115,7 +113,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 
 		if err != nil {
 			errObj := errors.Wrap(err, "Getting storage claim writer")
-			order.Failed(errObj)
+			// order.Failed(errObj)
 			// TODO: cancel dealer task
 			return nil, errObj
 		}
@@ -124,7 +122,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 
 		if err != nil {
 			errObj := errors.Wrap(err, "Getting segment file reader")
-			order.Failed(errObj)
+			// order.Failed(errObj)
 			// TODO: cancel dealer task
 			return nil, errObj
 		}
@@ -143,11 +141,11 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	}
 
 	for _, dSeg := range dSegments {
-		err := c.Dealer.PublishSegment(dSeg)
+		err := c.Dealer.PublishSegment(publisher, dSeg)
 
 		if err != nil {
 			errObj := errors.Wrap(err, "Publishing segment")
-			order.Failed(errObj)
+			// order.Failed(errObj)
 			// TODO: cancel dealer task
 			return nil, errObj
 		}

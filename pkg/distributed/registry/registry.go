@@ -1,11 +1,14 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/subchen/go-trylock/v2"
+	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs"
 )
 
@@ -26,8 +29,10 @@ const OrderObjectType = "order"
 
 // Instance _
 type Instance struct {
+	ctx             context.Context
 	freeSegmentLock trylock.TryLocker
 	store           ukvs.IStore
+	logger          logrus.FieldLogger
 }
 
 // TypeCheck _
@@ -36,10 +41,17 @@ type TypeCheck struct {
 }
 
 // NewRegistry _
-func NewRegistry(store ukvs.IStore) (*Instance, error) {
+func NewRegistry(ctx context.Context, store ukvs.IStore) (*Instance, error) {
+	var logger logrus.FieldLogger
+	if logger = ctxlog.FromContext(ctx, "fftb.distributed.registry"); logger == nil {
+		logger = ctxlog.New("fftb.distributed.worker")
+	}
+
 	r := &Instance{
+		ctx:             ctx,
 		freeSegmentLock: trylock.New(),
 		store:           store,
+		logger:          logger,
 	}
 
 	return r, nil

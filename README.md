@@ -7,7 +7,13 @@ It can:
 * convert it to HEVC or H.264 using ffmpeg & hardware acceleration
 * split it to parts by filesize (alpha version)
 
+## ⚠️ WARNING
+
+Project is under development, wasn't tested in production and will have many breaking changes
+
 ## Installation
+
+TODO
 
 ## Usage
 

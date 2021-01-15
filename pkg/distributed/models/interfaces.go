@@ -1,8 +1,10 @@
 package models
 
 import (
+	"context"
 	"errors"
 	"io"
+	"time"
 )
 
 // ErrUnknownRequestType _
@@ -29,9 +31,6 @@ var ErrNotFound = errors.New("Not found")
 // ErrTimeoutReached _
 var ErrTimeoutReached = errors.New("Timeout reached")
 
-// // ErrNoFreeSegments _
-// var ErrNoFreeSegments = errors.New("No free segments")
-
 // ErrFreeSegmentLockTimeout _
 var ErrFreeSegmentLockTimeout = errors.New("Free segment lock timeout")
 
@@ -44,6 +43,51 @@ var ErrMissingSegment = errors.New("Missing Segment")
 // ErrMissingOrder _
 var ErrMissingOrder = errors.New("Missing Order")
 
+// ErrMissingPublisher _
+var ErrMissingPublisher = errors.New("Missing publisher")
+
+// ErrMissingPerformer _
+var ErrMissingPerformer = errors.New("Missing performer")
+
+// ProgressStep _
+type ProgressStep string
+
+// UploadingInputStep _
+const UploadingInputStep ProgressStep = "uploading_input"
+
+// DownloadingInputStep _
+const DownloadingInputStep ProgressStep = "downloading_input"
+
+// ProcessingStep _
+const ProcessingStep ProgressStep = "processing"
+
+// UploadingOutputStep _
+const UploadingOutputStep ProgressStep = "uploading_output"
+
+// DownloadingOutputStep _
+const DownloadingOutputStep ProgressStep = "downloading_output"
+
+// // LocalAuthorName _
+// var LocalAuthorName = "local"
+
+// // LocalAuthor _
+// var LocalAuthor = &Author{name: LocalAuthorName}
+
+// Author _
+type Author struct {
+	Name string
+}
+
+// GetName _
+func (a *Author) GetName() string {
+	return a.Name
+}
+
+// IsEqual _
+func (a *Author) IsEqual(anotherAuthor IAuthor) bool {
+	return a.Name == anotherAuthor.GetName()
+}
+
 // IContracter _
 type IContracter interface {
 	PrepareOrder(req IContracterRequest) (IOrder, error)
@@ -52,6 +96,7 @@ type IContracter interface {
 // IContracterRequest _
 type IContracterRequest interface {
 	GetType() string
+	GetAuthor() IAuthor
 }
 
 // IOrder _
@@ -60,7 +105,7 @@ type IOrder interface {
 	GetType() string
 	GetSegments() []ISegment
 	GetPayload() (string, error)
-	Failed(error)
+	GetPublisher() IAuthor
 }
 
 // InputOutputStorageClaimer _
@@ -71,34 +116,38 @@ type InputOutputStorageClaimer interface {
 
 // IContractDealer _
 type IContractDealer interface {
-	InputOutputStorageClaimer
-
+	GetOutputStorageClaim(publisher IAuthor, seg ISegment) (IStorageClaim, error)
+	AllocatePublisherAuthority(name string) (IAuthor, error)
 	AllocateSegment(req IDealerRequest) (ISegment, error)
+	AllocateInputStorageClaim(publisher IAuthor, seg ISegment) (IStorageClaim, error)
 	FindSegmentByID(id string) (ISegment, error)
-	NotifyRawUpload(Progresser) error
-	NotifyResultDownload(Progresser) error
-	PublishSegment(ISegment) error
-	CancelSegment(ISegment) error
-	Subscription(ISegment) (Subscriber, error)
-	AllocateInputStorageClaim(segment ISegment) (IStorageClaim, error)
+	NotifyRawUpload(publisher IAuthor, seg ISegment, p Progresser) error
+	NotifyResultDownload(publisher IAuthor, seg ISegment, p Progresser) error
+	PublishSegment(publisher IAuthor, seg ISegment) error
+	CancelSegment(publisher IAuthor, seg ISegment) error
+	WaitOnSegmentFinished(context.Context, ISegment) <-chan struct{}
+	WaitOnSegmentFailed(context.Context, ISegment) <-chan error
 }
 
 // IWorkDealer _
 type IWorkDealer interface {
-	InputOutputStorageClaimer
-
-	FindFreeSegment(author string) (ISegment, error)
-	NotifyRawDownload(ISegment, Progresser) error
-	NotifyResultUpload(ISegment, Progresser) error
-	NotifyProcess(ISegment, Progresser) error
-	FinishSegment(ISegment) error
-	AllocateOutputStorageClaim(segment ISegment) (IStorageClaim, error)
+	GetInputStorageClaim(performer IAuthor, seg ISegment) (IStorageClaim, error)
+	AllocatePerformerAuthority(name string) (IAuthor, error)
+	FindFreeSegment() (ISegment, error)
+	NotifyRawDownload(performer IAuthor, seg ISegment, p Progresser) error
+	NotifyResultUpload(performer IAuthor, seg ISegment, p Progresser) error
+	NotifyProcess(performer IAuthor, seg ISegment, p Progresser) error
+	FinishSegment(performer IAuthor, seg ISegment) error
+	FailSegment(performer IAuthor, seg ISegment, err error) error
+	AllocateOutputStorageClaim(performer IAuthor, seg ISegment) (IStorageClaim, error)
+	WaitOnSegmentCancelled(context.Context, ISegment) <-chan struct{}
 }
 
 // IDealerRequest _
 type IDealerRequest interface {
 	GetID() string
 	GetType() string
+	GetAuthor() IAuthor
 }
 
 // ISegment _
@@ -111,9 +160,12 @@ type ISegment interface {
 	// GetStorageClaim() IStorageClaim // should be done by dealer
 	GetPayload() (string, error)
 	GetIsLocked() bool
-	GetLockedBy() string
+	GetLockedBy() IAuthor
+	GetLockedUntil() *time.Time
 	// TODO: use specific type for segment state
 	GetState() string
+	GetPublisher() IAuthor
+	GetPerformer() IAuthor
 }
 
 // IRegistry _
@@ -125,8 +177,8 @@ type IRegistry interface {
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(orderID string) ([]ISegment, error)
 	FindNotLockedSegment() (ISegment, error)
-	PersistSegment(segment ISegment) error
-	LockSegmentByID(segmentID string, lockedBy string) error
+	PersistSegment(ISegment) error
+	LockSegmentByID(segmentID string, lockedBy IAuthor) error
 }
 
 // IStorageController _
@@ -147,7 +199,7 @@ type IStorageClaim interface {
 
 // Progresser _
 type Progresser interface {
-	Step() string
+	Step() ProgressStep
 	Percent() float64
 }
 
@@ -161,4 +213,10 @@ type Subscriber interface {
 type PublishSubscriber interface {
 	Subscribe() Subscriber
 	Publish(Progresser)
+}
+
+// IAuthor _
+type IAuthor interface {
+	GetName() string
+	IsEqual(IAuthor) bool
 }

@@ -12,16 +12,8 @@ type ConvertOrder struct {
 	Type     string
 	Segments []*ConvertSegment
 
-	Params convert.Params
-
-	// Muxer      string
-	// VideoCodec string
-	// // HWAccel          string
-	// // VideoBitRate     string
-	// VideoQuality int
-	// // Preset           string
-	// // Scale            string
-	// // KeyframeInterval int
+	Params    convert.Params
+	Publisher IAuthor
 }
 
 // GetID _
@@ -52,8 +44,13 @@ func (co *ConvertOrder) GetSegments() []ISegment {
 	return segments
 }
 
-// Failed _
-func (co *ConvertOrder) Failed(err error) {
-	// TODO:
-	panic(err)
+// // Failed _
+// func (co *ConvertOrder) Failed(err error) {
+// 	// TODO:
+// 	panic(err)
+// }
+
+// GetPublisher _
+func (co *ConvertOrder) GetPublisher() IAuthor {
+	return co.Publisher
 }

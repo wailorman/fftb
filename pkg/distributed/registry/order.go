@@ -15,6 +15,7 @@ type Order struct {
 	ID         string `json:"id"`
 	Kind       string `json:"kind"`
 	Payload    string `json:"payload"`
+	Publisher  string `json:"publisher"`
 }
 
 // FindOrderByID _
@@ -47,6 +48,10 @@ func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
 	modOrder.Identity = dbOrder.ID
 	modOrder.Type = dbOrder.Kind
 
+	if dbOrder.Publisher != "" {
+		modOrder.Publisher = &models.Author{Name: dbOrder.Publisher}
+	}
+
 	return modOrder, nil
 }
 
@@ -71,6 +76,10 @@ func (r *Instance) PersistOrder(order models.IOrder) error {
 		ObjectType: OrderObjectType,
 		Kind:       order.GetType(),
 		Payload:    payloadStr,
+	}
+
+	if order.GetPublisher() != nil {
+		dbOrder.Publisher = order.GetPublisher().GetName()
 	}
 
 	data, err := marshalObject(dbOrder)

@@ -3,15 +3,17 @@ package convert
 import (
 	"context"
 
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
-	"github.com/wailorman/fftb/pkg/files"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 
-	// "github.com/wailorman/fftb/pkg/distributed/local"
+	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs/localfile"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
+	"github.com/wailorman/fftb/pkg/files"
 )
 
 // DistributedCliConfig _
@@ -27,7 +29,13 @@ func DistributedCliConfig() *cli.Command {
 		Aliases: []string{"dconv"},
 		Flags:   flags,
 		Action: func(c *cli.Context) error {
-			ctx, cancel := context.WithCancel(context.Background())
+			logger := logrus.New()
+			logger.SetLevel(logrus.DebugLevel)
+			logger.Formatter = new(prefixed.TextFormatter)
+			loggerInstance := logger.WithField("prefix", "fftb.distributed")
+
+			ctx, cancel := context.WithCancel(context.WithValue(context.Background(), ctxlog.LoggerContextKey, loggerInstance))
+
 			storagePath := files.NewPath(".fftb/storage")
 
 			err := storagePath.Create()
@@ -63,14 +71,14 @@ func DistributedCliConfig() *cli.Command {
 				panic(err)
 			}
 
-			registry, err := registry.NewRegistry(store)
+			registry, err := registry.NewRegistry(ctx, store)
 
 			if err != nil {
 				cancel()
 				panic(err)
 			}
 
-			dealer := local.NewDealer(storage, registry)
+			dealer := local.NewDealer(ctx, storage, registry)
 			contracter := local.NewContracter(&local.ContracterParameters{
 				TempPath: segmentsPath,
 				Dealer:   dealer,

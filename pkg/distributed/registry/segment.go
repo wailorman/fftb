@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs"
 
 	"github.com/pkg/errors"
@@ -25,8 +25,7 @@ type Segment struct {
 	LockedUntil                *time.Time `json:"locked_until"`
 	LockedBy                   string     `json:"locked_by"`
 	State                      string     `json:"state"`
-	// CreatedAt                  *time.Time
-	// UpdatedAt                  *time.Time
+	Publisher                  string     `json:"publisher"`
 }
 
 // LockSegmentTimeout _
@@ -63,7 +62,7 @@ func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
 // FindNotLockedSegment _
 func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 	// TODO: receive cancellation context
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithCancel(r.ctx)
 	results, failures := r.store.FindAll(ctx, "v1/segments/*")
 
 	for {
@@ -75,10 +74,6 @@ func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 			}
 
 		case data := <-results:
-			fmt.Printf("FindNotLockedSegment data: %#v\n", data)
-			fmt.Printf("FindNotLockedSegment string(data): %#v\n", string(data))
-			// fmt.Printf("FindNotLockedSegment ok: %#v\n", ok)
-
 			if len(data) == 0 {
 				cancel()
 				return nil, models.ErrNotFound
@@ -89,8 +84,9 @@ func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 			err := unmarshalObject(data, SegmentObjectType, dbSeg)
 
 			if err != nil {
-				// TODO: log unmarshaling errors
-				log.Println(err)
+				r.logger.WithError(err).
+					Trace("Unmarshalling error")
+
 				continue
 			}
 
@@ -98,13 +94,18 @@ func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 				modSeg, err := fromDbSegment(dbSeg)
 
 				if err != nil {
-					// TODO: log unmarshaling errors
-					log.Println(err)
+					r.logger.WithField(dlog.KeySegmentID, dbSeg.ID).
+						WithError(err).
+						Trace("Serializing from db segment model")
+
 					continue
 				}
 
 				if modSeg.GetState() != models.SegmentPublishedState {
-					// TODO: log debug info about segment if not published
+					r.logger.WithField(dlog.KeySegmentID, modSeg.GetID()).
+						WithField(dlog.KeySegmentState, modSeg.GetState()).
+						Trace("Segment is not published")
+
 					continue
 				}
 
@@ -121,8 +122,8 @@ func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 }
 
 // LockSegmentByID _
-func (r *Instance) LockSegmentByID(segmentID string, lockedBy string) error {
-	if lockedBy == "" {
+func (r *Instance) LockSegmentByID(segmentID string, lockedBy models.IAuthor) error {
+	if lockedBy == nil || lockedBy.GetName() == "" {
 		return models.ErrMissingLockAuthor
 	}
 
@@ -145,7 +146,7 @@ func (r *Instance) LockSegmentByID(segmentID string, lockedBy string) error {
 
 	lockedUntil := time.Now().Add(LockSegmentTimeout)
 	dbSeg.LockedUntil = &lockedUntil
-	dbSeg.LockedBy = lockedBy
+	dbSeg.LockedBy = lockedBy.GetName()
 
 	data, err := marshalObject(dbSeg)
 
@@ -253,6 +254,15 @@ func toDbSegment(segment models.ISegment) (*Segment, error) {
 	dbSegment.Kind = segment.GetType()
 	dbSegment.InputStorageClaimIdentity = segment.GetInputStorageClaimIdentity()
 	dbSegment.OutputStorageClaimIdentity = segment.GetOutputStorageClaimIdentity()
+	dbSegment.LockedUntil = segment.GetLockedUntil()
+
+	if lockedBy := segment.GetLockedBy(); lockedBy != nil {
+		dbSegment.LockedBy = lockedBy.GetName()
+	}
+
+	if publisher := segment.GetPublisher(); publisher != nil {
+		dbSegment.Publisher = publisher.GetName()
+	}
 
 	return dbSegment, nil
 }
@@ -263,8 +273,6 @@ func fromDbSegment(dbSeg *Segment) (models.ISegment, error) {
 	}
 
 	modSeg := &models.ConvertSegment{}
-
-	// fmt.Printf("dbSeg.Payload: %#v\n", dbSeg.Payload)
 
 	err := json.Unmarshal([]byte(dbSeg.Payload), modSeg)
 
@@ -278,6 +286,16 @@ func fromDbSegment(dbSeg *Segment) (models.ISegment, error) {
 	modSeg.State = dbSeg.State
 	modSeg.InputStorageClaimIdentity = dbSeg.InputStorageClaimIdentity
 	modSeg.OutputStorageClaimIdentity = dbSeg.OutputStorageClaimIdentity
+
+	modSeg.LockedUntil = dbSeg.LockedUntil
+
+	if dbSeg.LockedBy != "" {
+		modSeg.LockedBy = &models.Author{Name: dbSeg.LockedBy}
+	}
+
+	if dbSeg.Publisher != "" {
+		modSeg.Publisher = &models.Author{Name: dbSeg.Publisher}
+	}
 
 	return modSeg, nil
 }

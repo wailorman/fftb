@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -225,21 +224,11 @@ func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, cha
 	results := make(chan []byte, 1)
 	failures := make(chan error, 1)
 
-	fmt.Printf("___FindAll called\n")
-
 	go func() {
-		defer func() {
-			fmt.Printf("close results\n")
-			close(results)
-		}()
-		defer func() {
-			fmt.Printf("close failures\n")
-			close(failures)
-		}()
+		defer close(results)
+		defer close(failures)
 
 		for key, cont := range c.registry.Data {
-			fmt.Printf("_FindAll key: %#v\n", key)
-			fmt.Printf("_FindAll string(cont.Val): %#v\n", string(cont.Val))
 			val, extractionErr := c.extractContainer(cont)
 
 			keyMatches, matchErr := filepath.Match(pattern, key)
@@ -252,41 +241,23 @@ func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, cha
 			if !keyMatches || extractionErr != nil {
 				select {
 				case <-c.ctx.Done():
-					fmt.Printf("ctx done\n")
 					return
 				case <-fctx.Done():
-					fmt.Printf("fctx done\n")
 					return
 				default:
 					continue
 				}
 			}
 
-			fmt.Printf("localfile key: %#v\n", key)
-
 			select {
 			case <-c.ctx.Done():
-				fmt.Printf("ctx done\n")
 				return
 			case <-fctx.Done():
-				fmt.Printf("fctx done\n")
 				return
 			default:
-				fmt.Printf("sending val: %#v\n", val)
 				results <- val
 			}
 		}
-
-		fmt.Printf("___FindAll finished\n")
-
-		// func() {
-		// 	fmt.Printf("close results\n")
-		// 	close(results)
-		// }()
-		// func() {
-		// 	fmt.Printf("close failures\n")
-		// 	close(failures)
-		// }()
 	}()
 
 	return results, failures

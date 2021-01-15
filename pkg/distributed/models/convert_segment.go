@@ -25,17 +25,12 @@ type ConvertSegment struct {
 	OutputStorageClaimIdentity string
 	State                      string
 
-	Params      convert.Params
+	Params convert.Params
+	Muxer  string
+
+	Publisher   IAuthor
 	LockedUntil *time.Time
-	LockedBy    string
-	Muxer       string
-	// VideoCodec string
-	// // HWAccel          string
-	// // VideoBitRate     string
-	// VideoQuality int
-	// // Preset           string
-	// // Scale            string
-	// // KeyframeInterval int
+	LockedBy    IAuthor
 }
 
 // GetID _
@@ -72,20 +67,29 @@ func (ct *ConvertSegment) GetPayload() (string, error) {
 
 // GetIsLocked _
 func (ct *ConvertSegment) GetIsLocked() bool {
-	if ct.LockedUntil == nil {
+	if ct.LockedUntil == nil || ct.LockedBy == nil {
 		return false
 	}
 
-	return time.Now().After(*ct.LockedUntil) && ct.LockedBy != ""
+	return time.Now().After(*ct.LockedUntil)
 }
 
 // GetLockedBy _
-func (ct *ConvertSegment) GetLockedBy() string {
+func (ct *ConvertSegment) GetLockedBy() IAuthor {
 	if !ct.GetIsLocked() {
-		return ""
+		return nil
 	}
 
 	return ct.LockedBy
+}
+
+// GetLockedUntil _
+func (ct *ConvertSegment) GetLockedUntil() *time.Time {
+	if !ct.GetIsLocked() {
+		return nil
+	}
+
+	return ct.LockedUntil
 }
 
 // // GetStorageClaim _
@@ -94,14 +98,24 @@ func (ct *ConvertSegment) GetLockedBy() string {
 // }
 
 // Failed _
-func (ct *ConvertSegment) Failed(err error) {
-	// TODO:
-	// panic(ErrNotImplemented)
-	panic(err)
-	// return
-}
+// func (ct *ConvertSegment) Failed(err error) {
+// 	// TODO:
+// 	// panic(ErrNotImplemented)
+// 	panic(err)
+// 	// return
+// }
 
 // GetState _
 func (ct *ConvertSegment) GetState() string {
 	return ct.State
+}
+
+// GetPublisher _
+func (ct *ConvertSegment) GetPublisher() IAuthor {
+	return ct.Publisher
+}
+
+// GetPerformer _
+func (ct *ConvertSegment) GetPerformer() IAuthor {
+	return ct.LockedBy
 }

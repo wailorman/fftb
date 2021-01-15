@@ -193,6 +193,7 @@ func getSegmentFromFile(file files.Filer) *Segment {
 	number, err := strconv.Atoi(foundStrNum)
 
 	if err != nil {
+		// TODO:
 		fmt.Printf("err: %#v\n", err)
 		return nil
 	}
