@@ -78,11 +78,22 @@ func DistributedCliConfig() *cli.Command {
 				panic(err)
 			}
 
-			dealer := local.NewDealer(ctx, storage, registry)
-			contracter := local.NewContracter(&local.ContracterParameters{
+			dealer, err := local.NewDealer(ctx, storage, registry)
+
+			if err != nil {
+				cancel()
+				panic(err)
+			}
+
+			contracter, err := local.NewContracter(&local.ContracterParameters{
 				TempPath: segmentsPath,
 				Dealer:   dealer,
 			})
+
+			if err != nil {
+				cancel()
+				panic(err)
+			}
 
 			if !c.Bool("worker") {
 				inFile := files.NewFile(c.Args().Get(0))
@@ -96,7 +107,12 @@ func DistributedCliConfig() *cli.Command {
 					panic(err)
 				}
 			} else {
-				worker := worker.NewWorker(ctx, workerPath, dealer)
+				worker, err := worker.NewWorker(ctx, workerPath, dealer)
+
+				if err != nil {
+					cancel()
+					panic(err)
+				}
 
 				worker.Start()
 			}

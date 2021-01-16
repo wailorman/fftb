@@ -19,6 +19,9 @@ const KeySegmentState = "segment_state"
 // KeyPercent _
 const KeyPercent = "percent"
 
+// KeyPerformer _
+const KeyPerformer = "performer"
+
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
 	entry := logger.

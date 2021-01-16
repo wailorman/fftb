@@ -88,13 +88,15 @@ func (a *Author) IsEqual(anotherAuthor IAuthor) bool {
 	return a.Name == anotherAuthor.GetName()
 }
 
-// IContracter _
-type IContracter interface {
-	PrepareOrder(req IContracterRequest) (IOrder, error)
-}
-
 // IContracterRequest _
 type IContracterRequest interface {
+	GetType() string
+	// GetAuthor() IAuthor
+}
+
+// IDealerRequest _
+type IDealerRequest interface {
+	GetID() string
 	GetType() string
 	GetAuthor() IAuthor
 }
@@ -104,50 +106,8 @@ type IOrder interface {
 	GetID() string
 	GetType() string
 	GetSegments() []ISegment
-	GetPayload() (string, error)
+	// GetPayload() (string, error)
 	GetPublisher() IAuthor
-}
-
-// InputOutputStorageClaimer _
-type InputOutputStorageClaimer interface {
-	GetInputStorageClaim(ISegment) (IStorageClaim, error)
-	GetOutputStorageClaim(ISegment) (IStorageClaim, error)
-}
-
-// IContractDealer _
-type IContractDealer interface {
-	GetOutputStorageClaim(publisher IAuthor, seg ISegment) (IStorageClaim, error)
-	AllocatePublisherAuthority(name string) (IAuthor, error)
-	AllocateSegment(req IDealerRequest) (ISegment, error)
-	AllocateInputStorageClaim(publisher IAuthor, seg ISegment) (IStorageClaim, error)
-	FindSegmentByID(id string) (ISegment, error)
-	NotifyRawUpload(publisher IAuthor, seg ISegment, p Progresser) error
-	NotifyResultDownload(publisher IAuthor, seg ISegment, p Progresser) error
-	PublishSegment(publisher IAuthor, seg ISegment) error
-	CancelSegment(publisher IAuthor, seg ISegment) error
-	WaitOnSegmentFinished(context.Context, ISegment) <-chan struct{}
-	WaitOnSegmentFailed(context.Context, ISegment) <-chan error
-}
-
-// IWorkDealer _
-type IWorkDealer interface {
-	GetInputStorageClaim(performer IAuthor, seg ISegment) (IStorageClaim, error)
-	AllocatePerformerAuthority(name string) (IAuthor, error)
-	FindFreeSegment() (ISegment, error)
-	NotifyRawDownload(performer IAuthor, seg ISegment, p Progresser) error
-	NotifyResultUpload(performer IAuthor, seg ISegment, p Progresser) error
-	NotifyProcess(performer IAuthor, seg ISegment, p Progresser) error
-	FinishSegment(performer IAuthor, seg ISegment) error
-	FailSegment(performer IAuthor, seg ISegment, err error) error
-	AllocateOutputStorageClaim(performer IAuthor, seg ISegment) (IStorageClaim, error)
-	WaitOnSegmentCancelled(context.Context, ISegment) <-chan struct{}
-}
-
-// IDealerRequest _
-type IDealerRequest interface {
-	GetID() string
-	GetType() string
-	GetAuthor() IAuthor
 }
 
 // ISegment _
@@ -158,7 +118,7 @@ type ISegment interface {
 	GetInputStorageClaimIdentity() string
 	GetOutputStorageClaimIdentity() string
 	// GetStorageClaim() IStorageClaim // should be done by dealer
-	GetPayload() (string, error)
+	// GetPayload() (string, error)
 	GetIsLocked() bool
 	GetLockedBy() IAuthor
 	GetLockedUntil() *time.Time
@@ -166,6 +126,40 @@ type ISegment interface {
 	GetState() string
 	GetPublisher() IAuthor
 	GetPerformer() IAuthor
+}
+
+// IContracter _
+type IContracter interface {
+	PrepareOrder(req IContracterRequest) (IOrder, error)
+}
+
+// IContractDealer _
+type IContractDealer interface {
+	GetOutputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
+	AllocatePublisherAuthority(name string) (IAuthor, error)
+	AllocateSegment(req IDealerRequest) (ISegment, error)
+	AllocateInputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
+	// FindSegmentByID(id string) (ISegment, error)
+	NotifyRawUpload(publisher IAuthor, id string, p Progresser) error
+	NotifyResultDownload(publisher IAuthor, id string, p Progresser) error
+	PublishSegment(publisher IAuthor, id string) error
+	CancelSegment(publisher IAuthor, id string) error
+	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
+	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
+}
+
+// IWorkDealer _
+type IWorkDealer interface {
+	GetInputStorageClaim(performer IAuthor, id string) (IStorageClaim, error)
+	AllocatePerformerAuthority(name string) (IAuthor, error)
+	FindFreeSegment(performer IAuthor) (ISegment, error)
+	NotifyRawDownload(performer IAuthor, id string, p Progresser) error
+	NotifyResultUpload(performer IAuthor, id string, p Progresser) error
+	NotifyProcess(performer IAuthor, id string, p Progresser) error
+	FinishSegment(performer IAuthor, id string) error
+	FailSegment(performer IAuthor, id string, err error) error
+	AllocateOutputStorageClaim(performer IAuthor, id string) (IStorageClaim, error)
+	WaitOnSegmentCancelled(ctx context.Context, id string) <-chan struct{}
 }
 
 // IRegistry _

@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
+	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // Segment _
@@ -26,6 +27,12 @@ type Segment struct {
 	LockedBy                   string     `json:"locked_by"`
 	State                      string     `json:"state"`
 	Publisher                  string     `json:"publisher"`
+}
+
+// ConvertSegmentPayload _
+type ConvertSegmentPayload struct {
+	Params convert.Params `json:"params"`
+	Muxer  string         `json:"muxer"`
 }
 
 // LockSegmentTimeout _
@@ -242,10 +249,10 @@ func toDbSegment(segment models.ISegment) (*Segment, error) {
 		return dbSegment, models.ErrUnknownSegmentType
 	}
 
-	dbSegment.Payload, err = segment.GetPayload()
+	dbSegment.Payload, err = serializeSegmentPayload(segment)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Getting segment payload")
+		return nil, errors.Wrap(err, "Serializing segment payload")
 	}
 
 	dbSegment.OrderID = segment.GetOrderID()
@@ -274,10 +281,10 @@ func fromDbSegment(dbSeg *Segment) (models.ISegment, error) {
 
 	modSeg := &models.ConvertSegment{}
 
-	err := json.Unmarshal([]byte(dbSeg.Payload), modSeg)
+	err := deserializeSegmentPayload(dbSeg, modSeg)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Unmarshaling payload")
+		return nil, errors.Wrap(err, "Deserializing segment payload")
 	}
 
 	modSeg.Identity = dbSeg.ID
@@ -298,4 +305,50 @@ func fromDbSegment(dbSeg *Segment) (models.ISegment, error) {
 	}
 
 	return modSeg, nil
+}
+
+func serializeSegmentPayload(modSeg models.ISegment) (string, error) {
+	convSeg, ok := modSeg.(*models.ConvertSegment)
+
+	if !ok {
+		return "", models.ErrUnknownSegmentType
+	}
+
+	payload := &ConvertSegmentPayload{
+		Params: convSeg.Params,
+		Muxer:  convSeg.Muxer,
+	}
+
+	bPayload, err := json.Marshal(payload)
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(bPayload), nil
+}
+
+func deserializeSegmentPayload(dbSeg *Segment, modSeg models.ISegment) error {
+	if dbSeg.Kind != models.ConvertV1Type {
+		return models.ErrUnknownSegmentType
+	}
+
+	convSeg, ok := modSeg.(*models.ConvertSegment)
+
+	if !ok {
+		return models.ErrUnknownSegmentType
+	}
+
+	convPayload := &ConvertSegmentPayload{}
+
+	err := json.Unmarshal([]byte(dbSeg.Payload), convPayload)
+
+	if err != nil {
+		return err
+	}
+
+	convSeg.Params = convPayload.Params
+	convSeg.Muxer = convPayload.Muxer
+
+	return nil
 }

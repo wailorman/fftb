@@ -18,8 +18,9 @@ const DefaultSegmentSize = 10
 
 // ContracterInstance _
 type ContracterInstance struct {
-	TempPath files.Pather
-	Dealer   models.IContractDealer
+	TempPath  files.Pather
+	Dealer    models.IContractDealer
+	Publisher models.IAuthor
 }
 
 // ContracterParameters _
@@ -29,22 +30,23 @@ type ContracterParameters struct {
 }
 
 // NewContracter _
-func NewContracter(params *ContracterParameters) *ContracterInstance {
-	return &ContracterInstance{
-		TempPath: params.TempPath,
-		Dealer:   params.Dealer,
+func NewContracter(params *ContracterParameters) (*ContracterInstance, error) {
+	publisher, err := params.Dealer.AllocatePublisherAuthority("local")
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Allocating publisher authority")
 	}
+
+	return &ContracterInstance{
+		TempPath:  params.TempPath,
+		Dealer:    params.Dealer,
+		Publisher: publisher,
+	}, nil
 }
 
 // PrepareOrder _
 func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models.IOrder, error) {
 	convertRequest, ok := req.(*models.ConvertContracterRequest)
-
-	if req.GetAuthor() == nil {
-		return nil, models.ErrMissingPublisher
-	}
-
-	publisher := req.GetAuthor()
 
 	if !ok {
 		return nil, errors.Wrap(models.ErrUnknownRequestType, fmt.Sprintf("Received request with type `%s`", req.GetType()))
@@ -53,7 +55,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	order := &models.ConvertOrder{
 		Identity:  uuid.New().String(),
 		Params:    convertRequest.Params,
-		Publisher: req.GetAuthor(),
+		Publisher: c.Publisher,
 	}
 
 	segs, err := splitRequestToSegments(convertRequest, c.TempPath)
@@ -75,7 +77,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 			OrderIdentity: order.Identity,
 			Params:        convertRequest.Params,
 			Muxer:         muxer,
-			Author:        publisher,
+			Author:        c.Publisher,
 		}
 
 		dealerSegment, err := c.Dealer.AllocateSegment(dealerReq)
@@ -96,12 +98,12 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	for i, seg := range segs {
 		dSeg := dSegments[i]
 		// seg := segs[i]
-		claim, err := c.Dealer.AllocateInputStorageClaim(publisher, dSeg)
+		claim, err := c.Dealer.AllocateInputStorageClaim(c.Publisher, dSeg.Identity)
 
 		if err != nil {
 			errObj := errors.Wrap(
 				err,
-				fmt.Sprintf("Getting storage claim for dealer segment #%d (%s)", i, dSeg.GetID()),
+				fmt.Sprintf("Allocating storage claim for dealer segment #%d (%s)", i, dSeg.GetID()),
 			)
 
 			// order.Failed(errObj)
@@ -141,10 +143,10 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	}
 
 	for _, dSeg := range dSegments {
-		err := c.Dealer.PublishSegment(publisher, dSeg)
+		err := c.Dealer.PublishSegment(c.Publisher, dSeg.Identity)
 
 		if err != nil {
-			errObj := errors.Wrap(err, "Publishing segment")
+			errObj := errors.Wrap(err, fmt.Sprintf("Publishing segment %s", dSeg.Identity))
 			// order.Failed(errObj)
 			// TODO: cancel dealer task
 			return nil, errObj

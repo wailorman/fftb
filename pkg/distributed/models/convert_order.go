@@ -12,7 +12,8 @@ type ConvertOrder struct {
 	Type     string
 	Segments []*ConvertSegment
 
-	Params    convert.Params
+	Params convert.Params
+
 	Publisher IAuthor
 }
 

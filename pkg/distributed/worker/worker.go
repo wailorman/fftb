@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/machinebox/progress"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/throttle"
@@ -31,34 +31,42 @@ const FreeTaskTimeout = time.Duration(3) * time.Second
 
 // Instance _
 type Instance struct {
-	ctx     context.Context
-	tmpPath files.Pather
-	dealer  models.IWorkDealer
-	logger  logrus.FieldLogger
-	closed  chan struct{}
+	ctx       context.Context
+	tmpPath   files.Pather
+	dealer    models.IWorkDealer
+	logger    logrus.FieldLogger
+	closed    chan struct{}
+	performer models.IAuthor
 }
 
 // NewWorker _
-func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkDealer) *Instance {
+func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkDealer) (*Instance, error) {
 	var logger logrus.FieldLogger
 	if logger = ctxlog.FromContext(ctx, "fftb.distributed.worker"); logger == nil {
 		logger = ctxlog.New("fftb.distributed.worker")
 	}
 
-	return &Instance{
-		ctx:     ctx,
-		tmpPath: tmpPath,
-		dealer:  dealer,
-		logger:  logger,
-		closed:  make(chan struct{}),
+	performer, err := dealer.AllocatePerformerAuthority(uuid.New().String())
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Obtaining performer authority")
 	}
+
+	return &Instance{
+		ctx:       ctx,
+		tmpPath:   tmpPath,
+		dealer:    dealer,
+		logger:    logger,
+		performer: performer,
+		closed:    make(chan struct{}),
+	}, nil
 }
 
 // Start _
 func (w *Instance) Start() error {
 	// go func() {
 	for {
-		freeSegment, err := w.dealer.FindFreeSegment()
+		freeSegment, err := w.dealer.FindFreeSegment(w.performer)
 
 		if err != nil {
 			if errors.Is(err, models.ErrNotFound) {
@@ -71,11 +79,13 @@ func (w *Instance) Start() error {
 			continue
 		}
 
-		w.logger.
-			WithField(dlog.KeySegmentID, freeSegment.GetID()).
-			Info("Found free segment")
+		slog := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID()).
+			WithField(dlog.KeyOrderID, freeSegment.GetOrderID()).
+			WithField(dlog.KeyPerformer, w.performer.GetName())
 
-		err = w.proceedSegment(freeSegment)
+		slog.Info("Found free segment")
+
+		err = w.proceedSegment(slog, freeSegment)
 
 		if err != nil {
 			return errors.Wrap(err, "Processing segment")
@@ -84,16 +94,16 @@ func (w *Instance) Start() error {
 }
 
 // proceedSegment _
-func (w *Instance) proceedSegment(freeSegment models.ISegment) error {
+func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegment) error {
 	convertSegment := freeSegment.(*models.ConvertSegment)
 
-	inputClaim, err := w.dealer.GetInputStorageClaim(freeSegment)
+	inputClaim, err := w.dealer.GetInputStorageClaim(w.performer, freeSegment.GetID())
 
 	if err != nil {
 		panic(errors.Wrap(err, "Getting input storage claim"))
 	}
 
-	outputClaim, err := w.dealer.AllocateOutputStorageClaim(freeSegment)
+	outputClaim, err := w.dealer.AllocateOutputStorageClaim(w.performer, freeSegment.GetID())
 
 	if err != nil {
 		panic(errors.Wrap(err, "Getting output storage claim"))
@@ -132,11 +142,15 @@ func (w *Instance) proceedSegment(freeSegment models.ISegment) error {
 	}
 
 	iopInputClaimReader := progress.NewReader(inputClaimReader)
-	iopProgressChan := progress.NewTicker(w.ctx, iopInputClaimReader, int64(inputSize), 100*time.Millisecond)
+	iopProgressChan := progress.NewTicker(w.ctx, iopInputClaimReader, int64(inputSize), 1*time.Second)
 
 	go func() {
 		for p := range iopProgressChan {
-			w.dealer.NotifyRawDownload(freeSegment, makeIoProgresser(p, models.DownloadingInputStep))
+			err = w.dealer.NotifyRawDownload(w.performer, freeSegment.GetID(), makeIoProgresser(p, models.DownloadingInputStep))
+
+			if err != nil {
+				slog.WithError(err).Warn("Problem with notifying raw download")
+			}
 		}
 	}()
 
@@ -172,7 +186,12 @@ func (w *Instance) proceedSegment(freeSegment models.ISegment) error {
 			throttled(func() {
 				modProgress := makeProgresserFromConvert(pmsg)
 
-				w.dealer.NotifyProcess(freeSegment, modProgress)
+				err = w.dealer.NotifyProcess(w.performer, freeSegment.GetID(), modProgress)
+
+				if err != nil {
+					slog.WithError(err).Warn("Problem with notifying process")
+				}
+
 				dlog.SegmentProgress(w.logger, freeSegment, modProgress)
 			})
 
@@ -198,9 +217,9 @@ func (w *Instance) proceedSegment(freeSegment models.ISegment) error {
 				panic(errors.Wrap(err, "Removing output file after uploading to storage"))
 			}
 
-			log.Printf("segment %s is done!", freeSegment.GetID())
+			slog.Info("Segment is done")
 
-			err = w.dealer.FinishSegment(freeSegment)
+			err = w.dealer.FinishSegment(w.performer, freeSegment.GetID())
 
 			if err != nil {
 				panic(errors.Wrap(err, "Sending segment finish notification"))

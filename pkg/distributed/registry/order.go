@@ -1,9 +1,11 @@
 package registry
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/wailorman/fftb/pkg/distributed/ukvs"
+	"github.com/wailorman/fftb/pkg/media/convert"
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
@@ -16,6 +18,11 @@ type Order struct {
 	Kind       string `json:"kind"`
 	Payload    string `json:"payload"`
 	Publisher  string `json:"publisher"`
+}
+
+// ConvertOrderPayload _
+type ConvertOrderPayload struct {
+	Params convert.Params `json:"params"`
 }
 
 // FindOrderByID _
@@ -45,6 +52,12 @@ func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
 
 	// TODO: dealer tasks <- ??? we have FindSegmentsByOrderID
 
+	err = deserializeOrderPayload(dbOrder, modOrder)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Deserializing order payload")
+	}
+
 	modOrder.Identity = dbOrder.ID
 	modOrder.Type = dbOrder.Kind
 
@@ -65,10 +78,10 @@ func (r *Instance) PersistOrder(order models.IOrder) error {
 		return models.ErrUnknownOrderType
 	}
 
-	payloadStr, err := order.GetPayload()
+	payloadStr, err := serializeOrderPayload(order)
 
 	if err != nil {
-		return errors.Wrap(err, "Getting payload json string")
+		return errors.Wrap(err, "Serializing order payload")
 	}
 
 	dbOrder := &Order{
@@ -95,26 +108,48 @@ func (r *Instance) PersistOrder(order models.IOrder) error {
 	}
 
 	return nil
+}
 
-	// convertOrder := &Order{
-	// 	ID:      order.GetID(),
-	// 	Kind:    order.GetType(),
-	// 	Payload: payloadStr,
-	// }
+func serializeOrderPayload(modOrder models.IOrder) (string, error) {
+	convOrder, ok := modOrder.(*models.ConvertOrder)
 
-	// getResult := r.gdb.First(&Order{}, order.GetID())
+	if !ok {
+		return "", models.ErrUnknownOrderType
+	}
 
-	// var result *gorm.DB
+	payload := &ConvertOrderPayload{
+		Params: convOrder.Params,
+	}
 
-	// if errors.Is(getResult.Error, gorm.ErrRecordNotFound) {
-	// 	result = r.gdb.Create(convertOrder)
-	// } else {
-	// 	result = r.gdb.Save(convertOrder)
-	// }
+	bPayload, err := json.Marshal(payload)
 
-	// if result.Error != nil {
-	// 	return errors.Wrap(err, "Failed to persist order")
-	// }
+	if err != nil {
+		return "", err
+	}
 
-	// return nil
+	return string(bPayload), nil
+}
+
+func deserializeOrderPayload(dbOrder *Order, modOrder models.IOrder) error {
+	if dbOrder.Kind != models.ConvertV1Type {
+		return models.ErrUnknownOrderType
+	}
+
+	convOrder, ok := modOrder.(*models.ConvertOrder)
+
+	if !ok {
+		return models.ErrUnknownOrderType
+	}
+
+	convPayload := &ConvertOrderPayload{}
+
+	err := json.Unmarshal([]byte(dbOrder.Payload), convPayload)
+
+	if err != nil {
+		return err
+	}
+
+	convOrder.Params = convPayload.Params
+
+	return nil
 }
