@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
@@ -23,7 +25,7 @@ type Converter struct {
 
 // NewConverter _
 func NewConverter(infoGetter mediaInfo.Getter) *Converter {
-	ffworker := ff.New()
+	ffworker := ff.New(context.TODO())
 
 	return &Converter{
 		infoGetter:         infoGetter,

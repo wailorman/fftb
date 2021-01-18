@@ -1,6 +1,8 @@
 package ff
 
 import (
+	"context"
+
 	"github.com/wailorman/fftb/pkg/files"
 	goffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 	goffmpegTranscoder "github.com/wailorman/fftb/pkg/goffmpeg/transcoder"
@@ -12,16 +14,20 @@ type Instance struct {
 	Stopping chan bool
 	Stopped  chan bool
 
-	stop       chan struct{}
+	ctx        context.Context
+	cancel     func()
 	inFile     files.Filer
 	outFile    files.Filer
 	transcoder *goffmpegTranscoder.Transcoder
 }
 
 // New just initializing & configuring instance before start up
-func New() *Instance {
+func New(ctx context.Context) *Instance {
+	cctx, cancel := context.WithCancel(ctx)
+
 	return &Instance{
-		stop: make(chan struct{}),
+		ctx:    cctx,
+		cancel: cancel,
 	}
 }
 
@@ -47,9 +53,7 @@ func (c *Instance) MediaFile() *goffmpegModels.Mediafile {
 // Stopping
 // Stopped
 func (c *Instance) Stop() {
-	c.stop = make(chan struct{})
-	// broadcast to all channel receivers
-	close(c.stop)
+	c.cancel()
 }
 
 func (c *Instance) initChannels() {
@@ -96,7 +100,7 @@ func (c *Instance) Start() (
 
 		for {
 			select {
-			case <-c.stop:
+			case <-c.ctx.Done():
 				c.Stopping <- true
 				c.transcoder.Stop()
 				c.Stopped <- true

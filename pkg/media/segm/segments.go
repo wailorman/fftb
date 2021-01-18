@@ -1,6 +1,7 @@
 package segm
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -62,7 +63,7 @@ func (s *Instance) Init(req Request) error {
 		return errors.Wrap(err, "Create temp path for segments")
 	}
 
-	s.ffworker = ff.New()
+	s.ffworker = ff.New(context.TODO())
 	err = s.ffworker.Init(req.InFile, s.tmpPath.BuildFile(segmentPrefix+"%03d"+req.InFile.Extension()))
 
 	if err != nil {
