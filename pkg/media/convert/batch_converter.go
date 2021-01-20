@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"context"
 	"strconv"
 	"sync"
 
@@ -16,25 +17,25 @@ type BatchConverter struct {
 	ConversionStopping      chan Task
 	ConversionStopped       chan Task
 
-	infoGetter           info.Getter
-	stopConversion       chan struct{}
-	conversionWasStopped bool
+	ctx        context.Context
+	cancel     func()
+	infoGetter info.Getter
 }
 
 // NewBatchConverter _
 func NewBatchConverter(infoGetter info.Getter) *BatchConverter {
-	return &BatchConverter{
-		infoGetter:     infoGetter,
-		stopConversion: make(chan struct{}),
+	bc := &BatchConverter{
+		infoGetter: infoGetter,
 	}
+
+	bc.ctx, bc.cancel = context.WithCancel(context.TODO())
+
+	return bc
 }
 
 // Stop _
 func (bc *BatchConverter) Stop() {
-	bc.stopConversion = make(chan struct{})
-	bc.conversionWasStopped = true
-	// broadcast to all channel receivers
-	close(bc.stopConversion)
+	bc.cancel()
 }
 
 // initChannels _
@@ -80,7 +81,11 @@ func (bc *BatchConverter) Convert(batchTask BatchTask) (
 		for i := 0; i < batchTask.Parallelism; i++ {
 			go func() {
 				for task := range taskQueue {
-					if !bc.conversionWasStopped {
+					select {
+					case <-bc.ctx.Done():
+						wg.Done()
+						return
+					default:
 						err := bc.convertOne(task, progress)
 
 						if err != nil {
@@ -131,7 +136,7 @@ func (bc *BatchConverter) convertOne(task Task, progress chan BatchProgressMessa
 
 	for {
 		select {
-		case <-bc.stopConversion:
+		case <-bc.ctx.Done():
 			sConv.Stop()
 
 		case <-sConv.ConversionStarted:
