@@ -94,7 +94,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 		dSegments = append(dSegments, dealerConvertSegment)
 	}
 
-	order.Segments = dSegments
+	// order.Segments = dSegments
 
 	for i, seg := range segs {
 		dSeg := dSegments[i]

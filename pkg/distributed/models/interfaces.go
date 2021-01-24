@@ -108,7 +108,7 @@ type IDealerRequest interface {
 type IOrder interface {
 	GetID() string
 	GetType() string
-	GetSegments() []ISegment
+	// GetSegments() []ISegment
 	// GetPayload() (string, error)
 	GetPublisher() IAuthor
 	// TODO: use specific type for state
