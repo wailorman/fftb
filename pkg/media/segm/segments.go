@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -20,6 +22,7 @@ var ErrNotInitialized = errors.New("Segmentor have not been initialized")
 
 // Instance _
 type Instance struct {
+	ctx            context.Context
 	inFile         files.Filer
 	outPath        files.Pather
 	tmpPath        files.Pather
@@ -29,8 +32,10 @@ type Instance struct {
 }
 
 // New _
-func New() *Instance {
-	return &Instance{}
+func New(ctx context.Context) *Instance {
+	return &Instance{
+		ctx: ctx,
+	}
 }
 
 // createTmpPath _
@@ -73,6 +78,7 @@ func (s *Instance) Init(req Request) error {
 	mediaFile := s.ffworker.MediaFile()
 
 	// https://askubuntu.com/a/948449
+	// https://trac.ffmpeg.org/wiki/Concatenate
 	mediaFile.SetMap("0")
 	mediaFile.SetVideoCodec("copy")
 	mediaFile.SetAudioCodec("copy")
@@ -163,6 +169,23 @@ func (s *Instance) Purge() error {
 	}
 
 	return s.tmpPath.Destroy()
+}
+
+// CreateSegmentsList _
+func (s *Instance) CreateSegmentsList(segs []*Segment) string {
+	sort.SliceStable(segs, func(i, j int) bool {
+		return segs[i].Position < segs[j].Position
+	})
+
+	textSegs := make([]string, 0)
+
+	for _, seg := range segs {
+		textSegs = append(textSegs, fmt.Sprintf("file '%s'", seg.File.FullPath()))
+	}
+
+	list := strings.Join(textSegs, "\n")
+
+	return list
 }
 
 func collectSegments(files []files.Filer) []*Segment {
