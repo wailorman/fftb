@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 // Instance _
 type Instance struct {
+	ctx        context.Context
 	mainFile   files.Filer
 	resultPath files.Pather
 	req        Request
@@ -49,8 +51,9 @@ type Result struct {
 }
 
 // New _
-func New(segmenter Segmenter) *Instance {
+func New(ctx context.Context, segmenter Segmenter) *Instance {
 	return &Instance{
+		ctx:         ctx,
 		segmenter:   segmenter,
 		middlewares: make([]Middleware, 0),
 	}
@@ -75,7 +78,7 @@ func (c *Instance) Use(m Middleware) {
 
 // Init _
 func (c *Instance) Init(req Request) error {
-	c.segmenter = segm.New()
+	c.segmenter = segm.New(c.ctx)
 	c.req = req
 
 	err := c.segmenter.Init(segm.Request{

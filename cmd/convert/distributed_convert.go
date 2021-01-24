@@ -22,16 +22,9 @@ import (
 
 // DistributedCliConfig _
 func DistributedCliConfig() *cli.Command {
-	flags := convertParamsFlags()
-
-	flags = append(flags, &cli.BoolFlag{
-		Name: "worker",
-	})
-
 	return &cli.Command{
 		Name:    "distributed-convert",
 		Aliases: []string{"dconv"},
-		Flags:   flags,
 		Subcommands: []*cli.Command{
 			&cli.Command{
 				Name:  "add",
@@ -153,10 +146,7 @@ func (a *DistributedConvertApp) StartContracter(c *cli.Context) error {
 
 	inFile := files.NewFile(c.Args().Get(0))
 
-	a.contracter, err = local.NewContracter(&local.ContracterParameters{
-		TempPath: segmentsPath,
-		Dealer:   a.dealer,
-	})
+	a.contracter, err = local.NewContracter(a.ctx, a.dealer, segmentsPath)
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing contracter")

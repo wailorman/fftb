@@ -1,6 +1,7 @@
 package split
 
 import (
+	"context"
 	"os"
 
 	"github.com/pkg/errors"
@@ -32,6 +33,7 @@ func CliConfig() *cli.Command {
 
 		Action: func(c *cli.Context) error {
 			pwd, err := os.Getwd()
+			ctx := context.Background()
 
 			if err != nil {
 				return errors.Wrap(err, "Getting current working directory")
@@ -49,12 +51,12 @@ func CliConfig() *cli.Command {
 				return errors.New("Missing output path argument")
 			}
 
-			return splitToChunks(pwd, inputFilePath, c.Int("chunk-size"), outputPath)
+			return splitToChunks(ctx, pwd, inputFilePath, c.Int("chunk-size"), outputPath)
 		},
 	}
 }
 
-func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) error {
+func splitToChunks(ctx context.Context, pwd, path string, chunkSize int, relativeChunksPath string) error {
 	mainFile := files.NewFile(path)
 	outPath := files.NewPath(relativeChunksPath)
 
@@ -66,8 +68,8 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 
 	log.Info("Splitting to chunks...")
 
-	segmenter := segm.New()
-	chunker := chunk.New(segmenter)
+	segmenter := segm.New(ctx)
+	chunker := chunk.New(ctx, segmenter)
 	chunker.Init(chunk.Request{
 		InFile:             mainFile,
 		OutPath:            outPath,

@@ -1,9 +1,11 @@
 package local
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/wailorman/fftb/pkg/files"
@@ -18,29 +20,27 @@ const DefaultSegmentSize = 10
 
 // ContracterInstance _
 type ContracterInstance struct {
-	TempPath  files.Pather
-	Dealer    models.IContractDealer
-	Publisher models.IAuthor
-}
-
-// ContracterParameters _
-type ContracterParameters struct {
-	TempPath files.Pather
-	Dealer   models.IContractDealer
+	ctx       context.Context
+	tempPath  files.Pather
+	dealer    models.IContractDealer
+	publisher models.IAuthor
+	wg        *sync.WaitGroup
 }
 
 // NewContracter _
-func NewContracter(params *ContracterParameters) (*ContracterInstance, error) {
-	publisher, err := params.Dealer.AllocatePublisherAuthority("local")
+func NewContracter(ctx context.Context, dealer models.IContractDealer, tempPath files.Pather) (*ContracterInstance, error) {
+	publisher, err := dealer.AllocatePublisherAuthority("local")
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Allocating publisher authority")
 	}
 
 	return &ContracterInstance{
-		TempPath:  params.TempPath,
-		Dealer:    params.Dealer,
-		Publisher: publisher,
+		ctx:       ctx,
+		tempPath:  tempPath,
+		dealer:    dealer,
+		publisher: publisher,
+		wg:        &sync.WaitGroup{},
 	}, nil
 }
 
@@ -52,21 +52,22 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 		return nil, errors.Wrap(models.ErrUnknownRequestType, fmt.Sprintf("Received request with type `%s`", req.GetType()))
 	}
 
+	segs := make([]*segm.Segment, 0)
+	dSegments := make([]*models.ConvertSegment, 0)
+
 	order := &models.ConvertOrder{
 		Identity:  uuid.New().String(),
 		Params:    convertRequest.Params,
-		Publisher: c.Publisher,
+		Publisher: c.publisher,
 	}
 
-	segs, err := splitRequestToSegments(convertRequest, c.TempPath)
+	segs, err := splitRequestToSegments(c.ctx, convertRequest, c.tempPath)
 
 	if err != nil {
 		errObj := errors.Wrap(err, "Splitting to segs")
 		// order.Failed(errObj)
 		return nil, errObj
 	}
-
-	dSegments := make([]*models.ConvertSegment, 0)
 
 	muxer := strings.Trim(convertRequest.InFile.Extension(), ".")
 
@@ -77,10 +78,10 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 			OrderIdentity: order.Identity,
 			Params:        convertRequest.Params,
 			Muxer:         muxer,
-			Author:        c.Publisher,
+			Author:        c.publisher,
 		}
 
-		dealerSegment, err := c.Dealer.AllocateSegment(dealerReq)
+		dealerSegment, err := c.dealer.AllocateSegment(dealerReq)
 
 		if err != nil {
 			errObj := errors.Wrap(err, fmt.Sprintf("Allocating dealer segment #%d", i))
@@ -98,7 +99,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	for i, seg := range segs {
 		dSeg := dSegments[i]
 		// seg := segs[i]
-		claim, err := c.Dealer.AllocateInputStorageClaim(c.Publisher, dSeg.Identity)
+		claim, err := c.dealer.AllocateInputStorageClaim(c.publisher, dSeg.Identity)
 
 		if err != nil {
 			errObj := errors.Wrap(
@@ -143,7 +144,7 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 	}
 
 	for _, dSeg := range dSegments {
-		err := c.Dealer.PublishSegment(c.Publisher, dSeg.Identity)
+		err := c.dealer.PublishSegment(c.publisher, dSeg.Identity)
 
 		if err != nil {
 			errObj := errors.Wrap(err, fmt.Sprintf("Publishing segment %s", dSeg.Identity))
@@ -157,11 +158,12 @@ func (c *ContracterInstance) PrepareOrder(req models.IContracterRequest) (models
 }
 
 func splitRequestToSegments(
+	ctx context.Context,
 	req *models.ConvertContracterRequest,
 	// mb *models.MessageBus,
 	tmpPath files.Pather,
 ) ([]*segm.Segment, error) {
-	segmenter := segm.New()
+	segmenter := segm.New(ctx)
 	segmenter.Init(segm.Request{
 		InFile:         req.InFile,
 		KeepTimestamps: false,
