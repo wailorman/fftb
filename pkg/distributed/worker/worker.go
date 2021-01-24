@@ -63,34 +63,45 @@ func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkDea
 }
 
 // Start _
-func (w *Instance) Start() error {
-	// go func() {
-	for {
-		freeSegment, err := w.dealer.FindFreeSegment(w.performer)
+func (w *Instance) Start() (done chan struct{}) {
+	go func() {
+		for {
+			select {
+			case <-w.ctx.Done():
+				close(w.closed)
+				return
+			default:
+				freeSegment, err := w.dealer.FindFreeSegment(w.performer)
 
-		if err != nil {
-			if errors.Is(err, models.ErrNotFound) {
-				w.logger.Debug("Free segment not found")
-				time.Sleep(FreeTaskDelay)
-			} else {
-				w.logger.WithError(err).Warn("Searching free segment error")
+				if err != nil {
+					if errors.Is(err, models.ErrNotFound) {
+						w.logger.Debug("Free segment not found")
+						time.Sleep(FreeTaskDelay)
+					} else {
+						w.logger.WithError(err).Warn("Searching free segment error")
+					}
+
+					continue
+				}
+
+				slog := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID()).
+					WithField(dlog.KeyOrderID, freeSegment.GetOrderID()).
+					WithField(dlog.KeyPerformer, w.performer.GetName())
+
+				slog.Info("Found free segment")
+
+				err = w.proceedSegment(slog, freeSegment)
+
+				if err != nil {
+					slog.WithError(err).Warn("Processing segment error")
+				}
 			}
+			// freeSegment, err := w.dealer.FindFreeSegment(w.performer)
 
-			continue
 		}
+	}()
 
-		slog := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID()).
-			WithField(dlog.KeyOrderID, freeSegment.GetOrderID()).
-			WithField(dlog.KeyPerformer, w.performer.GetName())
-
-		slog.Info("Found free segment")
-
-		err = w.proceedSegment(slog, freeSegment)
-
-		if err != nil {
-			return errors.Wrap(err, "Processing segment")
-		}
-	}
+	return w.closed
 }
 
 // proceedSegment _
@@ -174,7 +185,7 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 	}
 
 	infoGetter := info.New()
-	converter := convert.NewBatchConverter(infoGetter)
+	converter := convert.NewBatchConverter(w.ctx, infoGetter)
 
 	throttled := throttle.New(2000 * time.Millisecond)
 
@@ -182,21 +193,50 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 
 	for {
 		select {
-		case pmsg := <-progressChan:
-			throttled(func() {
-				modProgress := makeProgresserFromConvert(pmsg)
+		case <-w.ctx.Done():
+			w.logger.Info("Terminating worker thread")
 
-				err = w.dealer.NotifyProcess(w.performer, freeSegment.GetID(), modProgress)
+			<-converter.Closed()
 
-				if err != nil {
-					slog.WithError(err).Warn("Problem with notifying process")
-				}
+			err = w.dealer.QuitSegment(w.performer, freeSegment.GetID())
 
-				dlog.SegmentProgress(w.logger, freeSegment, modProgress)
-			})
+			if err != nil {
+				slog.WithError(err).Warn("Problem with quiting segment")
+			}
 
-		case bErr := <-errChan:
-			panic(errors.Wrap(bErr.Err, "Error processing convert task"))
+			err = inputFile.Remove()
+
+			if err != nil {
+				slog.WithError(err).Warn("Problem with removing input file")
+			}
+
+			err = outputFile.Remove()
+
+			if err != nil {
+				slog.WithError(err).Warn("Problem with removing output file")
+			}
+
+			close(w.closed)
+
+		case pmsg, ok := <-progressChan:
+			if ok {
+				throttled(func() {
+					modProgress := makeProgresserFromConvert(pmsg)
+
+					err = w.dealer.NotifyProcess(w.performer, freeSegment.GetID(), modProgress)
+
+					if err != nil {
+						slog.WithError(err).Warn("Problem with notifying process")
+					}
+
+					dlog.SegmentProgress(w.logger, freeSegment, modProgress)
+				})
+			}
+
+		case bErr, ok := <-errChan:
+			if ok {
+				panic(errors.Wrap(bErr.Err, "Error processing convert task"))
+			}
 
 		case <-doneChan:
 			outputFileReader, err := outputFile.ReadContent()
@@ -215,6 +255,12 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 
 			if err != nil {
 				panic(errors.Wrap(err, "Removing output file after uploading to storage"))
+			}
+
+			err = inputFile.Remove()
+
+			if err != nil {
+				panic(errors.Wrap(err, "Removing input file after processing it"))
 			}
 
 			slog.Info("Segment is done")

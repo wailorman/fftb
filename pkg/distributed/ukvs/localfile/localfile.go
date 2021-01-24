@@ -65,6 +65,7 @@ func NewClient(ctx context.Context, storagePath string) (*Client, error) {
 		for range time.Tick(autoFlushFrequency) {
 			select {
 			case <-c.ctx.Done():
+				c.Flush()
 				return
 			default:
 				c.Flush()
@@ -76,6 +77,7 @@ func NewClient(ctx context.Context, storagePath string) (*Client, error) {
 		for range time.Tick(autoPruneFrequency) {
 			select {
 			case <-c.ctx.Done():
+				c.Prune()
 				return
 			default:
 				c.Prune()

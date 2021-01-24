@@ -17,18 +17,20 @@ type BatchConverter struct {
 	ConversionStopping      chan Task
 	ConversionStopped       chan Task
 
+	closed     chan struct{}
 	ctx        context.Context
 	cancel     func()
 	infoGetter info.Getter
 }
 
 // NewBatchConverter _
-func NewBatchConverter(infoGetter info.Getter) *BatchConverter {
+func NewBatchConverter(ctx context.Context, infoGetter info.Getter) *BatchConverter {
 	bc := &BatchConverter{
 		infoGetter: infoGetter,
+		closed:     make(chan struct{}),
 	}
 
-	bc.ctx, bc.cancel = context.WithCancel(context.TODO())
+	bc.ctx, bc.cancel = context.WithCancel(ctx)
 
 	return bc
 }
@@ -118,7 +120,14 @@ func (bc *BatchConverter) Convert(batchTask BatchTask) (
 
 	go func() {
 		wg.Wait()
-		finished <- true
+
+		close(bc.closed)
+
+		select {
+		case <-bc.ctx.Done():
+		default:
+			finished <- true
+		}
 
 		close(progress)
 		close(finished)
@@ -174,4 +183,9 @@ func (bc *BatchConverter) convertOne(task Task, progress chan BatchProgressMessa
 
 		}
 	}
+}
+
+// Closed _
+func (bc *BatchConverter) Closed() <-chan struct{} {
+	return bc.closed
 }

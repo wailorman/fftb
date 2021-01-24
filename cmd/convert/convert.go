@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/wailorman/fftb/pkg/files"
@@ -109,6 +110,8 @@ func CliConfig() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+			ctx := context.Background()
+
 			infoGetter := info.New()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
@@ -195,7 +198,7 @@ func CliConfig() *cli.Command {
 				return nil
 			}
 
-			converter := mediaConvert.NewBatchConverter(infoGetter)
+			converter := mediaConvert.NewBatchConverter(ctx, infoGetter)
 
 			progressChan, doneChan, errChan = converter.Convert(batchTask)
 

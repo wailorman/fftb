@@ -57,6 +57,11 @@ func NewRegistry(ctx context.Context, store ukvs.IStore) (*Instance, error) {
 	return r, nil
 }
 
+// Closed _
+func (r *Instance) Closed() <-chan struct{} {
+	return r.store.Closed()
+}
+
 func unmarshalObject(data []byte, expectedType string, v interface{}) error {
 	typedStruct := &TypeCheck{}
 

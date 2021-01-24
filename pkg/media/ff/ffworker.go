@@ -14,6 +14,7 @@ type Instance struct {
 	Stopping chan bool
 	Stopped  chan bool
 
+	closed     chan struct{}
 	ctx        context.Context
 	cancel     func()
 	inFile     files.Filer
@@ -26,6 +27,7 @@ func New(ctx context.Context) *Instance {
 	cctx, cancel := context.WithCancel(ctx)
 
 	return &Instance{
+		closed: make(chan struct{}),
 		ctx:    cctx,
 		cancel: cancel,
 	}
@@ -105,6 +107,7 @@ func (c *Instance) Start() (
 				c.transcoder.Stop()
 				c.Stopped <- true
 				finished <- true
+				close(c.closed)
 				return
 
 			case progressMessage := <-_progress:
@@ -126,10 +129,16 @@ func (c *Instance) Start() (
 				}
 
 				finished <- true
+				close(c.closed)
 				return
 			}
 		}
 	}()
 
 	return progress, finished, failed
+}
+
+// Closed _
+func (c *Instance) Closed() <-chan struct{} {
+	return c.closed
 }

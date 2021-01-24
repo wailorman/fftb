@@ -172,3 +172,24 @@ func (d *Dealer) WaitOnSegmentCancelled(ctx context.Context, id string) <-chan s
 func (d *Dealer) FailSegment(performer models.IAuthor, id string, err error) error {
 	panic("not implemented")
 }
+
+// QuitSegment _
+func (d *Dealer) QuitSegment(performer models.IAuthor, id string) error {
+	d.logger.Debug("Quitting segment")
+
+	seg, err := d.registry.FindSegmentByID(id)
+
+	if err != nil {
+		return err
+	}
+
+	if seg.GetPerformer() == nil {
+		return nil
+	}
+
+	if !seg.GetPerformer().IsEqual(performer) {
+		return errors.Wrap(models.ErrPerformerMismatch, fmt.Sprintf("Received performer `%s`, locked by performer `%s`", performer, seg.GetPerformer()))
+	}
+
+	return d.registry.UnlockSegmentByID(id)
+}

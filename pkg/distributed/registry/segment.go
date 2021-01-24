@@ -240,6 +240,39 @@ func (r *Instance) PersistSegment(segment models.ISegment) error {
 	return nil
 }
 
+// UnlockSegmentByID _
+func (r *Instance) UnlockSegmentByID(segmentID string) error {
+	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", segmentID))
+
+	if err != nil {
+		if errors.Is(err, ukvs.ErrNotFound) {
+			return models.ErrNotFound
+		}
+
+		return errors.Wrap(err, "Accessing store for segment")
+	}
+
+	dbSeg := &Segment{}
+	err = unmarshalObject(result, SegmentObjectType, dbSeg)
+
+	if err != nil {
+		return err
+	}
+
+	dbSeg.LockedBy = ""
+	dbSeg.LockedUntil = nil
+
+	data, err := marshalObject(dbSeg)
+
+	if err != nil {
+		return errors.Wrap(err, "Marshaling db segment for store")
+	}
+
+	err = r.store.Set(fmt.Sprintf("v1/segments/%s", dbSeg.ID), data)
+
+	return err
+}
+
 func toDbSegment(segment models.ISegment) (*Segment, error) {
 	var err error
 

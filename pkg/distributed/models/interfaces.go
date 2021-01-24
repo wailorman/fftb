@@ -49,6 +49,9 @@ var ErrMissingPublisher = errors.New("Missing publisher")
 // ErrMissingPerformer _
 var ErrMissingPerformer = errors.New("Missing performer")
 
+// ErrPerformerMismatch _
+var ErrPerformerMismatch = errors.New("Performer mismatch")
+
 // ProgressStep _
 type ProgressStep string
 
@@ -133,6 +136,12 @@ type IContracter interface {
 	PrepareOrder(req IContracterRequest) (IOrder, error)
 }
 
+// IDealer _
+type IDealer interface {
+	IContractDealer
+	IWorkDealer
+}
+
 // IContractDealer _
 type IContractDealer interface {
 	GetOutputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
@@ -157,6 +166,7 @@ type IWorkDealer interface {
 	NotifyResultUpload(performer IAuthor, id string, p Progresser) error
 	NotifyProcess(performer IAuthor, id string, p Progresser) error
 	FinishSegment(performer IAuthor, id string) error
+	QuitSegment(performer IAuthor, id string) error
 	FailSegment(performer IAuthor, id string, err error) error
 	AllocateOutputStorageClaim(performer IAuthor, id string) (IStorageClaim, error)
 	WaitOnSegmentCancelled(ctx context.Context, id string) <-chan struct{}
@@ -173,6 +183,8 @@ type IRegistry interface {
 	FindNotLockedSegment() (ISegment, error)
 	PersistSegment(ISegment) error
 	LockSegmentByID(segmentID string, lockedBy IAuthor) error
+	UnlockSegmentByID(segmentID string) error
+	Closed() <-chan struct{}
 }
 
 // IStorageController _
