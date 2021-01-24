@@ -175,7 +175,9 @@ func (d *Dealer) FailSegment(performer models.IAuthor, id string, err error) err
 
 // QuitSegment _
 func (d *Dealer) QuitSegment(performer models.IAuthor, id string) error {
-	d.logger.Debug("Quitting segment")
+	d.logger.WithField(dlog.KeyPerformer, performer.GetName()).
+		WithField(dlog.KeySegmentID, id).
+		Debug("Quitting segment")
 
 	seg, err := d.registry.FindSegmentByID(id)
 

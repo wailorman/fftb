@@ -184,6 +184,7 @@ type IRegistry interface {
 	PersistSegment(ISegment) error
 	LockSegmentByID(segmentID string, lockedBy IAuthor) error
 	UnlockSegmentByID(segmentID string) error
+	Flush() error
 	Closed() <-chan struct{}
 }
 

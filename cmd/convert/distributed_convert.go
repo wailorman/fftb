@@ -112,7 +112,7 @@ func (a *DistributedConvertApp) Init() error {
 		FullTimestamp: true,
 		SpacePadding:  10,
 	}
-	a.logger = logger.WithField("prefix", "fftb.distributed")
+	a.logger = logger.WithField("prefix", "fftb")
 
 	a.ctx, a.cancel = context.WithCancel(context.WithValue(context.Background(), ctxlog.LoggerContextKey, a.logger))
 
@@ -215,6 +215,12 @@ func (a *DistributedConvertApp) Wait() <-chan struct{} {
 					a.logger.Debug("Worker terminated")
 				}
 
+				err := a.registry.Flush()
+
+				if err != nil {
+					a.logger.WithError(err).Warn("Registry flushing problem")
+				}
+
 				<-a.registry.Closed()
 				close(a.closed)
 				return
@@ -226,19 +232,6 @@ func (a *DistributedConvertApp) Wait() <-chan struct{} {
 	}()
 
 	return a.closed
-}
-
-func (a *DistributedConvertApp) terminateApp() {
-	a.logger.Info("Terminating")
-	a.cancel()
-
-	if a.workerInstance != nil {
-		<-a.workerInstance.Closed()
-		a.logger.Debug("Worker terminated")
-	}
-
-	<-a.registry.Closed()
-	close(a.closed)
 }
 
 func initStorage(ctx context.Context) (models.IStorageController, error) {

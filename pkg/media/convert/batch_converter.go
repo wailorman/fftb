@@ -57,6 +57,7 @@ func (bc *BatchConverter) Convert(batchTask BatchTask) (
 					case <-bc.ctx.Done():
 						wg.Done()
 						return
+
 					default:
 						err := bc.convertOne(task, progress)
 
@@ -109,13 +110,14 @@ func (bc *BatchConverter) Convert(batchTask BatchTask) (
 }
 
 func (bc *BatchConverter) convertOne(task Task, progress chan BatchProgressMessage) error {
-	sConv := NewConverter(bc.infoGetter)
+	sConv := NewConverter(bc.ctx, bc.infoGetter)
 	_progress, _finished, _failed := sConv.Convert(task)
 
 	for {
 		select {
 		case <-bc.ctx.Done():
-			sConv.Stop()
+			<-sConv.Closed()
+			return nil
 
 		case progressMessage := <-_progress:
 			progress <- BatchProgressMessage{

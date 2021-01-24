@@ -197,3 +197,8 @@ func (c *Client) ExpireAt(key string, t time.Time) error {
 func (c *Client) Closed() <-chan struct{} {
 	return c.closed
 }
+
+// Flush _
+func (c *Client) Flush() error {
+	return nil
+}

@@ -12,23 +12,22 @@ import (
 
 // Converter _
 type Converter struct {
+	closed     chan struct{}
+	ctx        context.Context
 	infoGetter mediaInfo.Getter
 	ffworker   *ff.Instance
 }
 
 // NewConverter _
-func NewConverter(infoGetter mediaInfo.Getter) *Converter {
-	ffworker := ff.New(context.TODO())
+func NewConverter(ctx context.Context, infoGetter mediaInfo.Getter) *Converter {
+	ffworker := ff.New(ctx)
 
 	return &Converter{
+		closed:     make(chan struct{}),
+		ctx:        ctx,
 		infoGetter: infoGetter,
 		ffworker:   ffworker,
 	}
-}
-
-// Stop _
-func (c *Converter) Stop() {
-	c.ffworker.Stop()
 }
 
 // Convert _
@@ -104,6 +103,11 @@ func (c *Converter) Convert(task Task) (
 
 		for {
 			select {
+			case <-c.ctx.Done():
+				<-c.ffworker.Closed()
+				close(c.closed)
+				return
+
 			case <-_finished:
 				finished <- true
 				return
@@ -119,4 +123,9 @@ func (c *Converter) Convert(task Task) (
 	}()
 
 	return progress, finished, failed
+}
+
+// Closed _
+func (c *Converter) Closed() <-chan struct{} {
+	return c.closed
 }

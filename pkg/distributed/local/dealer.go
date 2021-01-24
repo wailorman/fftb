@@ -25,8 +25,8 @@ type Dealer struct {
 // NewDealer _
 func NewDealer(ctx context.Context, sc models.IStorageController, r models.IRegistry) (*Dealer, error) {
 	var logger logrus.FieldLogger
-	if logger = ctxlog.FromContext(ctx, "fftb.distributed.dealer"); logger == nil {
-		logger = ctxlog.New("fftb.distributed.dealer")
+	if logger = ctxlog.FromContext(ctx, "fftb.dealer"); logger == nil {
+		logger = ctxlog.New("fftb.dealer")
 	}
 
 	return &Dealer{

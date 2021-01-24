@@ -43,8 +43,8 @@ type TypeCheck struct {
 // NewRegistry _
 func NewRegistry(ctx context.Context, store ukvs.IStore) (*Instance, error) {
 	var logger logrus.FieldLogger
-	if logger = ctxlog.FromContext(ctx, "fftb.distributed.registry"); logger == nil {
-		logger = ctxlog.New("fftb.distributed.worker")
+	if logger = ctxlog.FromContext(ctx, "fftb.registry"); logger == nil {
+		logger = ctxlog.New("fftb.worker")
 	}
 
 	r := &Instance{
@@ -60,6 +60,13 @@ func NewRegistry(ctx context.Context, store ukvs.IStore) (*Instance, error) {
 // Closed _
 func (r *Instance) Closed() <-chan struct{} {
 	return r.store.Closed()
+}
+
+// Flush _
+func (r *Instance) Flush() error {
+	r.logger.Debug("Flushing registry")
+
+	return r.store.Flush()
 }
 
 func unmarshalObject(data []byte, expectedType string, v interface{}) error {

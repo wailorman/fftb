@@ -12,7 +12,6 @@ import (
 type Instance struct {
 	closed     chan struct{}
 	ctx        context.Context
-	cancel     func()
 	inFile     files.Filer
 	outFile    files.Filer
 	transcoder *goffmpegTranscoder.Transcoder
@@ -20,12 +19,9 @@ type Instance struct {
 
 // New just initializing & configuring instance before start up
 func New(ctx context.Context) *Instance {
-	cctx, cancel := context.WithCancel(ctx)
-
 	return &Instance{
 		closed: make(chan struct{}),
-		ctx:    cctx,
-		cancel: cancel,
+		ctx:    ctx,
 	}
 }
 
@@ -44,14 +40,6 @@ func (c *Instance) Init(inFile, outFile files.Filer) error {
 // MediaFile returns goffmpeg's MediaFile object for configuring transcoder input & output
 func (c *Instance) MediaFile() *goffmpegModels.Mediafile {
 	return c.transcoder.MediaFile()
-}
-
-// Stop stops transcoding proccess & sends two messages to two channels
-// in respecive order:
-// Stopping
-// Stopped
-func (c *Instance) Stop() {
-	c.cancel()
 }
 
 // Start starts ffmpeg process & returns 3 channels.
@@ -82,7 +70,6 @@ func (c *Instance) Start() (
 			select {
 			case <-c.ctx.Done():
 				c.transcoder.Stop()
-				finished <- true
 				close(c.closed)
 				return
 

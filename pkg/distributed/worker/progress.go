@@ -3,7 +3,7 @@ package worker
 import (
 	"github.com/machinebox/progress"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	"github.com/wailorman/fftb/pkg/media/convert"
+	"github.com/wailorman/fftb/pkg/media/ff"
 )
 
 // ProgressMessage _
@@ -12,10 +12,10 @@ type ProgressMessage struct {
 	percent float64
 }
 
-func makeProgresserFromConvert(bpm convert.BatchProgressMessage) models.Progresser {
+func makeProgresserFromConvert(pm ff.Progressable) models.Progresser {
 	return &ProgressMessage{
 		step:    models.ProcessingStep,
-		percent: bpm.Progress.Percent(),
+		percent: pm.Percent(),
 	}
 }
 

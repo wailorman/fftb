@@ -42,8 +42,8 @@ type Instance struct {
 // NewWorker _
 func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkDealer) (*Instance, error) {
 	var logger logrus.FieldLogger
-	if logger = ctxlog.FromContext(ctx, "fftb.distributed.worker"); logger == nil {
-		logger = ctxlog.New("fftb.distributed.worker")
+	if logger = ctxlog.FromContext(ctx, "fftb.worker"); logger == nil {
+		logger = ctxlog.New("fftb.worker")
 	}
 
 	performer, err := dealer.AllocatePerformerAuthority(uuid.New().String())
@@ -173,23 +173,18 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 
 	outputFile := w.tmpPath.BuildFile(fmt.Sprintf("%s.%s", outputClaim.GetID(), convertSegment.Muxer))
 
-	batchTask := convert.BatchTask{
-		Parallelism: 1,
-		Tasks: []convert.Task{
-			convert.Task{
-				InFile:  inputFile.FullPath(),
-				OutFile: outputFile.FullPath(),
-				Params:  convertSegment.Params,
-			},
-		},
+	task := convert.Task{
+		InFile:  inputFile.FullPath(),
+		OutFile: outputFile.FullPath(),
+		Params:  convertSegment.Params,
 	}
 
 	infoGetter := info.New()
-	converter := convert.NewBatchConverter(w.ctx, infoGetter)
+	converter := convert.NewConverter(w.ctx, infoGetter)
 
 	throttled := throttle.New(2000 * time.Millisecond)
 
-	progressChan, doneChan, errChan := converter.Convert(batchTask)
+	progressChan, doneChan, errChan := converter.Convert(task)
 
 	for {
 		select {
@@ -216,7 +211,7 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 				slog.WithError(err).Warn("Problem with removing output file")
 			}
 
-			close(w.closed)
+			return nil
 
 		case pmsg, ok := <-progressChan:
 			if ok {
@@ -233,9 +228,9 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 				})
 			}
 
-		case bErr, ok := <-errChan:
+		case cErr, ok := <-errChan:
 			if ok {
-				panic(errors.Wrap(bErr.Err, "Error processing convert task"))
+				panic(errors.Wrap(cErr, "Error processing convert task"))
 			}
 
 		case <-doneChan:
