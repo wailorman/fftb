@@ -198,7 +198,7 @@ func (c *Client) Closed() <-chan struct{} {
 	return c.closed
 }
 
-// Flush _
-func (c *Client) Flush() error {
+// Persist _
+func (c *Client) Persist() error {
 	return nil
 }

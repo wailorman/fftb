@@ -17,6 +17,6 @@ type IStore interface {
 	FindAll(ctx context.Context, pattern string) (results chan []byte, failures chan error)
 	Destroy(key string) error
 	ExpireAt(key string, time time.Time) error
-	Flush() error
+	Persist() error
 	Closed() <-chan struct{}
 }

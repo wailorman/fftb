@@ -62,11 +62,11 @@ func (r *Instance) Closed() <-chan struct{} {
 	return r.store.Closed()
 }
 
-// Flush _
-func (r *Instance) Flush() error {
-	r.logger.Debug("Flushing registry")
+// Persist writes data to disk
+func (r *Instance) Persist() error {
+	r.logger.Debug("Persisting registry")
 
-	return r.store.Flush()
+	return r.store.Persist()
 }
 
 func unmarshalObject(data []byte, expectedType string, v interface{}) error {

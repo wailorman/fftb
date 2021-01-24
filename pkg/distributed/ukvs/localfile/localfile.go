@@ -16,7 +16,7 @@ import (
 	"github.com/wailorman/fftb/pkg/files"
 )
 
-var autoFlushFrequency = time.Duration(5 * time.Second)
+var autoPersistFrequency = time.Duration(5 * time.Second)
 var autoPruneFrequency = time.Duration(30 * time.Second)
 
 var errExpired = errors.New("Container expired")
@@ -24,12 +24,12 @@ var errEmptyValue = errors.New("Container has empty value")
 
 // Client _
 type Client struct {
-	storagePath          string
-	registry             *Registry
-	lock                 sync.Mutex
-	ctx                  context.Context
-	changedFromLastFlush bool
-	closed               chan struct{}
+	storagePath            string
+	registry               *Registry
+	lock                   sync.Mutex
+	ctx                    context.Context
+	changedFromLastPersist bool
+	closed                 chan struct{}
 }
 
 // Container _
@@ -62,13 +62,13 @@ func NewClient(ctx context.Context, storagePath string) (*Client, error) {
 	}
 
 	go func() {
-		for range time.Tick(autoFlushFrequency) {
+		for range time.Tick(autoPersistFrequency) {
 			select {
 			case <-c.ctx.Done():
-				c.Flush()
+				c.Persist()
 				return
 			default:
-				c.Flush()
+				c.Persist()
 			}
 		}
 	}()
@@ -87,7 +87,7 @@ func NewClient(ctx context.Context, storagePath string) (*Client, error) {
 
 	go func() {
 		<-c.ctx.Done()
-		c.Flush()
+		c.Persist()
 		close(c.closed)
 		return
 	}()
@@ -104,7 +104,7 @@ func (c *Client) Init() error {
 			return errors.Wrap(err, "Creating storage file")
 		}
 
-		if err := c.Flush(); err != nil {
+		if err := c.Persist(); err != nil {
 			return errors.Wrap(err, "Writing initial state to storage file")
 		}
 	} else {
@@ -128,12 +128,12 @@ func (c *Client) Init() error {
 	return nil
 }
 
-// Flush _
-func (c *Client) Flush() error {
+// Persist writes data to disk
+func (c *Client) Persist() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if !c.changedFromLastFlush {
+	if !c.changedFromLastPersist {
 		return nil
 	}
 
@@ -161,7 +161,7 @@ func (c *Client) Flush() error {
 		return errors.Wrap(err, "Writing registry content to file")
 	}
 
-	c.changedFromLastFlush = false
+	c.changedFromLastPersist = false
 
 	return nil
 }
@@ -211,7 +211,7 @@ func (c *Client) Set(key string, val []byte) error {
 		Val: val,
 	}
 
-	c.changedFromLastFlush = true
+	c.changedFromLastPersist = true
 
 	return nil
 }
@@ -272,7 +272,7 @@ func (c *Client) Destroy(key string) error {
 
 	delete(c.registry.Data, key)
 
-	c.changedFromLastFlush = true
+	c.changedFromLastPersist = true
 
 	return nil
 }
@@ -295,7 +295,7 @@ func (c *Client) ExpireAt(key string, t time.Time) error {
 	}
 
 	cont.ExpiresAt = &t
-	c.changedFromLastFlush = true
+	c.changedFromLastPersist = true
 
 	return nil
 }

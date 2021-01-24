@@ -215,10 +215,10 @@ func (a *DistributedConvertApp) Wait() <-chan struct{} {
 					a.logger.Debug("Worker terminated")
 				}
 
-				err := a.registry.Flush()
+				err := a.registry.Persist()
 
 				if err != nil {
-					a.logger.WithError(err).Warn("Registry flushing problem")
+					a.logger.WithError(err).Warn("Registry persisting problem")
 				}
 
 				<-a.registry.Closed()
