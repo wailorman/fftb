@@ -10,10 +10,6 @@ import (
 
 // Instance _
 type Instance struct {
-	Started  chan bool
-	Stopping chan bool
-	Stopped  chan bool
-
 	closed     chan struct{}
 	ctx        context.Context
 	cancel     func()
@@ -58,18 +54,6 @@ func (c *Instance) Stop() {
 	c.cancel()
 }
 
-func (c *Instance) initChannels() {
-	c.Stopping = make(chan bool, 1)
-	c.Stopped = make(chan bool, 1)
-	c.Started = make(chan bool, 1)
-}
-
-func (c *Instance) closeChannels() {
-	close(c.Stopping)
-	close(c.Stopped)
-	close(c.Started)
-}
-
 // Start starts ffmpeg process & returns 3 channels.
 // progress channel will send progress message ~every 1 sec.
 // finished — once.
@@ -85,27 +69,19 @@ func (c *Instance) Start() (
 	finished = make(chan bool)
 	failed = make(chan error)
 
-	c.initChannels()
-
 	go func() {
 		defer close(progress)
 		defer close(finished)
 		defer close(failed)
 
-		defer c.closeChannels()
-
 		done := c.transcoder.Run(true)
-
-		c.Started <- true
 
 		_progress := c.transcoder.Output()
 
 		for {
 			select {
 			case <-c.ctx.Done():
-				c.Stopping <- true
 				c.transcoder.Stop()
-				c.Stopped <- true
 				finished <- true
 				close(c.closed)
 				return

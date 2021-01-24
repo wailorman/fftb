@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
-	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 	"github.com/wailorman/fftb/pkg/media/ff"
 	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
@@ -13,12 +12,6 @@ import (
 
 // Converter _
 type Converter struct {
-	ConversionStarted       chan bool
-	MetadataReceived        chan ffmpegModels.Metadata
-	InputVideoCodecDetected chan string
-	ConversionStopping      chan bool
-	ConversionStopped       chan bool
-
 	infoGetter mediaInfo.Getter
 	ffworker   *ff.Instance
 }
@@ -28,28 +21,9 @@ func NewConverter(infoGetter mediaInfo.Getter) *Converter {
 	ffworker := ff.New(context.TODO())
 
 	return &Converter{
-		infoGetter:         infoGetter,
-		ffworker:           ffworker,
-		ConversionStarted:  ffworker.Started,
-		ConversionStopping: ffworker.Stopping,
-		ConversionStopped:  ffworker.Stopped,
+		infoGetter: infoGetter,
+		ffworker:   ffworker,
 	}
-}
-
-func (c *Converter) initChannels() {
-	c.ConversionStopping = make(chan bool, 1)
-	c.ConversionStopped = make(chan bool, 1)
-	c.ConversionStarted = make(chan bool, 1)
-	c.MetadataReceived = make(chan ffmpegModels.Metadata, 1)
-	c.InputVideoCodecDetected = make(chan string, 1)
-}
-
-func (c *Converter) closeChannels() {
-	close(c.ConversionStopping)
-	close(c.ConversionStopped)
-	close(c.ConversionStarted)
-	close(c.MetadataReceived)
-	close(c.InputVideoCodecDetected)
 }
 
 // Stop _
@@ -67,16 +41,12 @@ func (c *Converter) Convert(task Task) (
 	finished = make(chan bool)
 	failed = make(chan error)
 
-	c.initChannels()
-
 	go func() {
 		var err error
 
 		defer close(progress)
 		defer close(finished)
 		defer close(failed)
-
-		defer c.closeChannels()
 
 		inFile := files.NewFile(task.InFile)
 		outFile := files.NewFile(task.OutFile)
@@ -97,14 +67,10 @@ func (c *Converter) Convert(task Task) (
 			return
 		}
 
-		c.MetadataReceived <- metadata
-
 		if !mediaUtils.IsVideo(metadata) {
 			failed <- errors.Wrap(err, "Input file is not video")
 			return
 		}
-
-		c.InputVideoCodecDetected <- mediaUtils.GetVideoCodec(metadata)
 
 		codec, err := chooseCodec(task, metadata)
 

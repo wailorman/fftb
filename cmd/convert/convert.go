@@ -118,9 +118,6 @@ func CliConfig() *cli.Command {
 			var doneChan chan bool
 			var errChan chan mediaConvert.BatchErrorMessage
 
-			var conversionStarted chan bool
-			var inputVideoCodecDetected chan mediaConvert.InputVideoCodecDetectedBatchMessage
-
 			var batchTask mediaConvert.BatchTask
 
 			if c.String("config") != "" {
@@ -202,9 +199,6 @@ func CliConfig() *cli.Command {
 
 			progressChan, doneChan, errChan = converter.Convert(batchTask)
 
-			conversionStarted = converter.ConversionStarted
-			inputVideoCodecDetected = converter.InputVideoCodecDetected
-
 			for {
 				select {
 				case progressMessage := <-progressChan:
@@ -216,15 +210,6 @@ func CliConfig() *cli.Command {
 				case <-doneChan:
 					logDone()
 					return nil
-
-				case <-conversionStarted:
-					logConversionStarted()
-
-				case msg := <-converter.TaskConversionStarted:
-					logTaskConversionStarted(msg)
-
-				case inputVideoCodec := <-inputVideoCodecDetected:
-					logInputVideoCodec(inputVideoCodec)
 				}
 			}
 		},
