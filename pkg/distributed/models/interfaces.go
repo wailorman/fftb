@@ -111,6 +111,8 @@ type IOrder interface {
 	GetSegments() []ISegment
 	// GetPayload() (string, error)
 	GetPublisher() IAuthor
+	// TODO: use specific type for state
+	GetState() string
 }
 
 // ISegment _
@@ -125,7 +127,7 @@ type ISegment interface {
 	GetIsLocked() bool
 	GetLockedBy() IAuthor
 	GetLockedUntil() *time.Time
-	// TODO: use specific type for segment state
+	// TODO: use specific type for state
 	GetState() string
 	GetPublisher() IAuthor
 	GetPerformer() IAuthor

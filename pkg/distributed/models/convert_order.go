@@ -10,7 +10,8 @@ import (
 type ConvertOrder struct {
 	Identity string
 	Type     string
-	Segments []*ConvertSegment
+	State    string
+	// Segments []*ConvertSegment
 
 	Params convert.Params
 
@@ -34,16 +35,21 @@ func (co *ConvertOrder) GetPayload() (string, error) {
 	return string(b), err
 }
 
-// GetSegments _
-func (co *ConvertOrder) GetSegments() []ISegment {
-	segments := make([]ISegment, 0)
-
-	for _, task := range co.Segments {
-		segments = append(segments, task)
-	}
-
-	return segments
+// GetState _
+func (co *ConvertOrder) GetState() string {
+	return co.State
 }
+
+// // GetSegments _
+// func (co *ConvertOrder) GetSegments() []ISegment {
+// 	segments := make([]ISegment, 0)
+
+// 	for _, task := range co.Segments {
+// 		segments = append(segments, task)
+// 	}
+
+// 	return segments
+// }
 
 // // Failed _
 // func (co *ConvertOrder) Failed(err error) {

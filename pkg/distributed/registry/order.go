@@ -18,6 +18,7 @@ type Order struct {
 	Kind       string `json:"kind"`
 	Payload    string `json:"payload"`
 	Publisher  string `json:"publisher"`
+	State      string `json:"state"`
 }
 
 // ConvertOrderPayload _
@@ -60,6 +61,7 @@ func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
 
 	modOrder.Identity = dbOrder.ID
 	modOrder.Type = dbOrder.Kind
+	modOrder.State = dbOrder.State
 
 	if dbOrder.Publisher != "" {
 		modOrder.Publisher = &models.Author{Name: dbOrder.Publisher}
@@ -88,6 +90,7 @@ func (r *Instance) PersistOrder(order models.IOrder) error {
 		ID:         order.GetID(),
 		ObjectType: OrderObjectType,
 		Kind:       order.GetType(),
+		State:      order.GetState(),
 		Payload:    payloadStr,
 	}
 
