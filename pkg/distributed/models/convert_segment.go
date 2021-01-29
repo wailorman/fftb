@@ -7,14 +7,14 @@ import (
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
-// SegmentPreparedState _
-const SegmentPreparedState = "prepared"
+// SegmentStatePrepared _
+const SegmentStatePrepared = "prepared"
 
-// SegmentPublishedState _
-const SegmentPublishedState = "published"
+// SegmentStatePublished _
+const SegmentStatePublished = "published"
 
-// SegmentFinishedState _
-const SegmentFinishedState = "finished"
+// SegmentStateFinished _
+const SegmentStateFinished = "finished"
 
 // ConvertSegment _
 type ConvertSegment struct {

@@ -37,7 +37,7 @@ func (c *ContracterInstance) AddOrderToQueue(req models.IContracterRequest) (mod
 	order := &models.ConvertOrder{
 		Identity:  uuid.New().String(),
 		Type:      models.ConvertV1Type,
-		State:     models.OrderQueuedState,
+		State:     models.OrderStateQueued,
 		Params:    convertRequest.Params,
 		Publisher: c.publisher,
 	}

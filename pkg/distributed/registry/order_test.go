@@ -18,7 +18,7 @@ var testTable = []struct{ order models.IOrder }{
 		&models.ConvertOrder{
 			Identity:  "some_id_1",
 			Type:      models.ConvertV1Type,
-			State:     models.OrderQueuedState,
+			State:     models.OrderStateQueued,
 			Publisher: &models.Author{Name: "testing"},
 			Params: convert.Params{
 				HWAccel:          "nvenc",

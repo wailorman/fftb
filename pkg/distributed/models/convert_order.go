@@ -18,14 +18,14 @@ type ConvertOrder struct {
 	Publisher IAuthor
 }
 
-// OrderQueuedState _
-const OrderQueuedState = "queued"
+// OrderStateQueued _
+const OrderStateQueued = "queued"
 
-// OrderInProgressState _
-const OrderInProgressState = "in_progress"
+// OrderStateInProgress _
+const OrderStateInProgress = "in_progress"
 
-// OrderFinishedState _
-const OrderFinishedState = "finished"
+// OrderStateFinished _
+const OrderStateFinished = "finished"
 
 // GetID _
 func (co *ConvertOrder) GetID() string {

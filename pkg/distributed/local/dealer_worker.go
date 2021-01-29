@@ -108,7 +108,7 @@ func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error
 		return models.ErrUnknownSegmentType
 	}
 
-	convertSegment.State = models.SegmentFinishedState
+	convertSegment.State = models.SegmentStateFinished
 
 	return d.registry.PersistSegment(convertSegment)
 }

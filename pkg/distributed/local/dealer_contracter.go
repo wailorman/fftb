@@ -23,7 +23,7 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 		OrderIdentity: convertReq.OrderIdentity,
 		Params:        convertReq.Params,
 		Muxer:         convertReq.Muxer,
-		State:         models.SegmentPreparedState,
+		State:         models.SegmentStatePrepared,
 		Publisher:     req.GetAuthor(),
 	}
 
@@ -126,7 +126,7 @@ func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) erro
 		return models.ErrUnknownSegmentType
 	}
 
-	convertSegment.State = models.SegmentPublishedState
+	convertSegment.State = models.SegmentStatePublished
 
 	return d.registry.PersistSegment(convertSegment)
 }

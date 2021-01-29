@@ -61,7 +61,7 @@ func (r *Instance) PickOrderFromQueue(fctx context.Context) (models.IOrder, erro
 	}
 
 	return r.SearchOrder(fctx, func(modOrder models.IOrder) bool {
-		return modOrder.GetState() == models.OrderQueuedState
+		return modOrder.GetState() == models.OrderStateQueued
 	})
 }
 

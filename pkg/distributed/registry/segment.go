@@ -114,7 +114,7 @@ func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
 					continue
 				}
 
-				if modSeg.GetState() != models.SegmentPublishedState {
+				if modSeg.GetState() != models.SegmentStatePublished {
 					r.logger.WithField(dlog.KeySegmentID, modSeg.GetID()).
 						WithField(dlog.KeySegmentState, modSeg.GetState()).
 						Trace("Segment is not published")
