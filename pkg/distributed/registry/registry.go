@@ -31,6 +31,7 @@ const OrderObjectType = "order"
 type Instance struct {
 	ctx             context.Context
 	freeSegmentLock trylock.TryLocker
+	orderQueueLock  trylock.TryLocker
 	store           ukvs.IStore
 	logger          logrus.FieldLogger
 }
@@ -50,6 +51,7 @@ func NewRegistry(ctx context.Context, store ukvs.IStore) (*Instance, error) {
 	r := &Instance{
 		ctx:             ctx,
 		freeSegmentLock: trylock.New(),
+		orderQueueLock:  trylock.New(),
 		store:           store,
 		logger:          logger,
 	}
@@ -79,7 +81,7 @@ func unmarshalObject(data []byte, expectedType string, v interface{}) error {
 	}
 
 	if typedStruct.ObjectType != expectedType {
-		return errors.Wrap(ErrUnexpectedObjectType, fmt.Sprint("Received type", typedStruct.ObjectType))
+		return errors.Wrap(ErrUnexpectedObjectType, fmt.Sprintf("Received type `%s`", typedStruct.ObjectType))
 	}
 
 	return json.Unmarshal(data, v)

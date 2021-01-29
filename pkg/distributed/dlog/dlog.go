@@ -22,6 +22,9 @@ const KeyPercent = "percent"
 // KeyPerformer _
 const KeyPerformer = "performer"
 
+// KeyStorePayload _
+const KeyStorePayload = "store_payload"
+
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
 	entry := logger.

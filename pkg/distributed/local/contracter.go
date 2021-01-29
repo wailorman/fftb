@@ -24,11 +24,12 @@ type ContracterInstance struct {
 	tempPath  files.Pather
 	dealer    models.IContractDealer
 	publisher models.IAuthor
+	registry  models.IRegistry
 	wg        *sync.WaitGroup
 }
 
 // NewContracter _
-func NewContracter(ctx context.Context, dealer models.IContractDealer, tempPath files.Pather) (*ContracterInstance, error) {
+func NewContracter(ctx context.Context, dealer models.IContractDealer, registry models.IRegistry, tempPath files.Pather) (*ContracterInstance, error) {
 	publisher, err := dealer.AllocatePublisherAuthority("local")
 
 	if err != nil {
@@ -40,6 +41,7 @@ func NewContracter(ctx context.Context, dealer models.IContractDealer, tempPath 
 		tempPath:  tempPath,
 		dealer:    dealer,
 		publisher: publisher,
+		registry:  registry,
 		wg:        &sync.WaitGroup{},
 	}, nil
 }

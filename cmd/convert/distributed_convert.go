@@ -146,7 +146,7 @@ func (a *DistributedConvertApp) StartContracter(c *cli.Context) error {
 
 	inFile := files.NewFile(c.Args().Get(0))
 
-	a.contracter, err = local.NewContracter(a.ctx, a.dealer, segmentsPath)
+	a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, segmentsPath)
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing contracter")

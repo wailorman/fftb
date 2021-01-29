@@ -6,6 +6,7 @@ require (
 	github.com/bep/debounce v1.2.0
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang-migrate/migrate/v4 v4.13.0
+	github.com/google/go-cmp v0.5.1
 	github.com/google/uuid v1.1.2
 	github.com/machinebox/progress v0.2.0
 	github.com/mattn/go-sqlite3 v1.14.3

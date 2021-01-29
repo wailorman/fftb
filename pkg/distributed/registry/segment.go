@@ -38,6 +38,9 @@ type ConvertSegmentPayload struct {
 // LockSegmentTimeout _
 const LockSegmentTimeout = time.Duration(10 * time.Second)
 
+// FreeSegmentTimeout _
+const FreeSegmentTimeout = time.Duration(20 * time.Second)
+
 // FindSegmentByID _
 func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
 	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", id))
@@ -68,7 +71,10 @@ func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
 
 // FindNotLockedSegment _
 func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
-	// TODO: receive cancellation context
+	if !r.freeSegmentLock.TryLockTimeout(FreeSegmentTimeout) {
+		return nil, models.ErrTimeoutReached
+	}
+
 	ctx, cancel := context.WithCancel(r.ctx)
 	results, failures := r.store.FindAll(ctx, "v1/segments/*")
 

@@ -18,15 +18,34 @@ type ConvertOrder struct {
 	Publisher IAuthor
 }
 
+// OrderQueuedState _
+const OrderQueuedState = "queued"
+
+// OrderInProgressState _
+const OrderInProgressState = "in_progress"
+
+// OrderFinishedState _
+const OrderFinishedState = "finished"
+
 // GetID _
 func (co *ConvertOrder) GetID() string {
 	return co.Identity
 }
 
+// // SetID _
+// func (co *ConvertOrder) SetID(id string) {
+// 	co.Identity = id
+// }
+
 // GetType _
 func (co *ConvertOrder) GetType() string {
 	return ConvertV1Type
 }
+
+// // SetType _
+// func (co *ConvertOrder) SetType(orderType string) {
+// 	co.Type = orderType
+// }
 
 // GetPayload _
 func (co *ConvertOrder) GetPayload() (string, error) {
@@ -39,6 +58,11 @@ func (co *ConvertOrder) GetPayload() (string, error) {
 func (co *ConvertOrder) GetState() string {
 	return co.State
 }
+
+// // SetState _
+// func (co *ConvertOrder) SetState(state string) {
+// 	co.State = state
+// }
 
 // // GetSegments _
 // func (co *ConvertOrder) GetSegments() []ISegment {
@@ -61,3 +85,8 @@ func (co *ConvertOrder) GetState() string {
 func (co *ConvertOrder) GetPublisher() IAuthor {
 	return co.Publisher
 }
+
+// // SetPublisher _
+// func (co *ConvertOrder) SetPublisher(publisher IAuthor) {
+// 	co.Publisher = publisher
+// }

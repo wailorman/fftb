@@ -52,6 +52,9 @@ var ErrMissingPerformer = errors.New("Missing performer")
 // ErrPerformerMismatch _
 var ErrPerformerMismatch = errors.New("Performer mismatch")
 
+// ErrCancelled _
+var ErrCancelled = errors.New("Cancelled")
+
 // ProgressStep _
 type ProgressStep string
 
@@ -107,12 +110,16 @@ type IDealerRequest interface {
 // IOrder _
 type IOrder interface {
 	GetID() string
+	// SetID(string)
 	GetType() string
+	// SetType(string)
 	// GetSegments() []ISegment
 	// GetPayload() (string, error)
 	GetPublisher() IAuthor
+	// SetPublisher(IAuthor)
 	// TODO: use specific type for state
 	GetState() string
+	// SetState(string)
 }
 
 // ISegment _
@@ -179,6 +186,10 @@ type IRegistry interface {
 	// Persist(ISegment) error
 	// FindByID(string) (ISegment, error)
 	// Destroy(string) (errors)
+
+	FindOrderByID(id string) (IOrder, error)
+	PersistOrder(order IOrder) error
+	PickOrderFromQueue(context.Context) (IOrder, error)
 
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(orderID string) ([]ISegment, error)
