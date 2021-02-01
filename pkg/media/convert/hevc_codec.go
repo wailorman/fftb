@@ -31,7 +31,7 @@ func (c *HevcCodec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	mediaFile.SetVideoTag("hvc1")
 
 	if c.task.VideoQuality > 0 {
-		mediaFile.SetLibx265Params(&ffmpegModels.Libx265Params{CRF: uint32(c.task.VideoQuality)})
+		mediaFile.SetLibx265Params(&ffmpegModels.Libx265Params{QP: uint32(c.task.VideoQuality)})
 	} else {
 		mediaFile.SetVideoBitRate(c.task.VideoBitRate)
 	}
