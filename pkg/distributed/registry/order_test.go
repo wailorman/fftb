@@ -13,7 +13,7 @@ import (
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
-var testTable = []struct{ order models.IOrder }{
+var ordersTestTable = []struct{ order models.IOrder }{
 	{
 		&models.ConvertOrder{
 			Identity:  "some_id_1",
@@ -34,7 +34,7 @@ var testTable = []struct{ order models.IOrder }{
 }
 
 func Test__Order__Marshalling(t *testing.T) {
-	for i, testItem := range testTable {
+	for i, testItem := range ordersTestTable {
 		originalOrder := testItem.order
 
 		orderBytes, err := marshalOrderModel(originalOrder)
@@ -46,29 +46,6 @@ func Test__Order__Marshalling(t *testing.T) {
 		assert.Nil(t, err, fmt.Sprintf("item %d: unmarshalOrderModel", i))
 
 		assert.Equal(t, "", cmp.Diff(newOrder, originalOrder), fmt.Sprintf("item %d: diff", i))
-
-		// originalDbOrder := &Order{}
-		// err := originalDbOrder.pullModel(originalOrder)
-
-		// assert.Nil(t, err, fmt.Sprintf("item %d: originalDbOrder.pullModel", i))
-
-		// orderBytes, err := originalDbOrder.marshal()
-
-		// assert.Nil(t, err, fmt.Sprintf("item %d: originalDbOrder.marshal", i))
-
-		// newDbOrder := &Order{}
-
-		// err = newDbOrder.unmarshal(orderBytes)
-
-		// assert.Nil(t, err, fmt.Sprintf("item %d: newDbOrder.unmarshal", i))
-
-		// newOrder := &models.ConvertOrder{}
-
-		// err = newDbOrder.populateModel(newOrder)
-
-		// assert.Nil(t, err, fmt.Sprintf("item %d: newDbOrder.populateModel", i))
-
-		// assert.Equal(t, "", cmp.Diff(newOrder, originalOrder), fmt.Sprintf("item %d: diff", i))
 	}
 }
 
@@ -82,7 +59,7 @@ func Test__Order__Persisting(t *testing.T) {
 
 	assert.Nil(t, err, "registry initialization")
 
-	for i, testItem := range testTable {
+	for i, testItem := range ordersTestTable {
 		originalOrder := testItem.order
 
 		err := registry.PersistOrder(originalOrder)

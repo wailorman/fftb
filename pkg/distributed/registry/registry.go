@@ -15,11 +15,11 @@ import (
 // ErrUnexpectedObjectType _
 var ErrUnexpectedObjectType = errors.New("Unexpected Object Type")
 
-// SegmentObjectType _
-const SegmentObjectType = "segment"
+// ObjectTypeSegment _
+const ObjectTypeSegment = "segment"
 
-// OrderObjectType _
-const OrderObjectType = "order"
+// ObjectTypeOrder _
+const ObjectTypeOrder = "order"
 
 // // OrdersStorePath _
 // const OrdersStorePath = "v1/orders"

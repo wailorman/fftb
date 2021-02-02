@@ -119,3 +119,47 @@ func (ct *ConvertSegment) GetPublisher() IAuthor {
 func (ct *ConvertSegment) GetPerformer() IAuthor {
 	return ct.LockedBy
 }
+
+// MatchPublisher _
+func (ct *ConvertSegment) MatchPublisher(publisher IAuthor) bool {
+	if ct.Publisher == nil {
+		return false
+	}
+
+	if publisher == nil {
+		return false
+	}
+
+	return ct.Publisher == publisher
+}
+
+// MatchPerformer _
+func (ct *ConvertSegment) MatchPerformer(performer IAuthor) bool {
+	if ct.LockedBy == nil {
+		return false
+	}
+
+	if !ct.GetIsLocked() {
+		return false
+	}
+
+	if performer == nil {
+		return false
+	}
+
+	return ct.LockedBy == performer
+}
+
+// Lock _
+func (ct *ConvertSegment) Lock(performer IAuthor) {
+	lockedUntil := time.Now().Add(SegmentLockDuration)
+
+	ct.LockedBy = performer
+	ct.LockedUntil = &lockedUntil
+}
+
+// Unlock _
+func (ct *ConvertSegment) Unlock() {
+	ct.LockedBy = nil
+	ct.LockedUntil = nil
+}

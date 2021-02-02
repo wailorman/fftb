@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -26,8 +27,6 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 		State:         models.SegmentStatePrepared,
 		Publisher:     req.GetAuthor(),
 	}
-
-	// TODO: persist
 
 	err := d.registry.PersistSegment(convertSegment)
 
@@ -136,4 +135,9 @@ func (d *Dealer) AllocatePublisherAuthority(name string) (models.IAuthor, error)
 	authorName := fmt.Sprintf("v1/publishers/%s", name)
 
 	return &models.Author{Name: authorName}, nil
+}
+
+// GetQueuedSegmentsCount _
+func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context) (int, error) {
+	return 0, nil
 }

@@ -65,31 +65,31 @@ func (r *Instance) PickOrderFromQueue(fctx context.Context) (models.IOrder, erro
 	})
 }
 
-// SearchOrder _
-func (r *Instance) SearchOrder(fctx context.Context, check func(models.IOrder) bool) (models.IOrder, error) {
+func (r *Instance) searchOrders(fctx context.Context, multiple bool, check func(models.IOrder) bool) ([]models.IOrder, error) {
 	ffctx, ffcancel := context.WithCancel(fctx)
 	defer ffcancel()
 
 	results, failures := r.store.FindAll(ffctx, "v1/orders/*")
+	orders := make([]models.IOrder, 0)
 
 	for {
 		select {
 		case <-r.ctx.Done():
-			return nil, models.ErrNotFound
+			return orders, nil
 
 		case <-fctx.Done():
-			return nil, models.ErrNotFound
+			return orders, nil
 
 		case err := <-failures:
 			if err != nil {
 				return nil, errors.Wrap(err, "Searching for free order")
 			}
 
-			return nil, models.ErrNotFound
+			return orders, nil
 
 		case res, ok := <-results:
 			if !ok {
-				return nil, models.ErrNotFound
+				return orders, nil
 			}
 
 			modOrder, err := unmarshalOrderModel(res)
@@ -103,13 +103,43 @@ func (r *Instance) SearchOrder(fctx context.Context, check func(models.IOrder) b
 			}
 
 			if check(modOrder) {
-				return modOrder, nil
+				orders = append(orders, modOrder)
+
+				if !multiple {
+					return orders, nil
+				}
 			}
 
-		default:
-			return nil, models.ErrNotFound
+		case <-time.After(SearchTimeout):
+			return nil, models.ErrTimeoutReached
 		}
 	}
+}
+
+// SearchOrder _
+func (r *Instance) SearchOrder(fctx context.Context, check func(models.IOrder) bool) (models.IOrder, error) {
+	orders, err := r.searchOrders(fctx, false, check)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(orders) == 0 {
+		return nil, models.ErrNotFound
+	}
+
+	return orders[0], nil
+}
+
+// SearchAllOrders _
+func (r *Instance) SearchAllOrders(fctx context.Context, check func(models.IOrder) bool) ([]models.IOrder, error) {
+	orders, err := r.searchOrders(fctx, false, check)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
 
 // PersistOrder _
@@ -156,7 +186,7 @@ func marshalOrderModel(modOrder models.IOrder) ([]byte, error) {
 }
 
 func (dbOrder *Order) unmarshal(data []byte) error {
-	return unmarshalObject(data, OrderObjectType, dbOrder)
+	return unmarshalObject(data, ObjectTypeOrder, dbOrder)
 }
 
 func (dbOrder *Order) marshal() ([]byte, error) {
@@ -193,7 +223,7 @@ func (dbOrder *Order) toModel() (models.IOrder, error) {
 }
 
 func (dbOrder *Order) fromModel(modOrder models.IOrder) error {
-	dbOrder.ObjectType = OrderObjectType
+	dbOrder.ObjectType = ObjectTypeOrder
 	dbOrder.ID = modOrder.GetID()
 	dbOrder.Kind = modOrder.GetType()
 	dbOrder.State = modOrder.GetState()

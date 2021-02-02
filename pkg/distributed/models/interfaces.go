@@ -73,6 +73,9 @@ const UploadingOutputStep ProgressStep = "uploading_output"
 // DownloadingOutputStep _
 const DownloadingOutputStep ProgressStep = "downloading_output"
 
+// SegmentLockDuration _
+const SegmentLockDuration = time.Duration(1 * time.Minute)
+
 // // LocalAuthorName _
 // var LocalAuthorName = "local"
 
@@ -120,6 +123,7 @@ type IOrder interface {
 	// TODO: use specific type for state
 	GetState() string
 	// SetState(string)
+	MatchPublisher(IAuthor) bool
 }
 
 // ISegment _
@@ -138,6 +142,10 @@ type ISegment interface {
 	GetState() string
 	GetPublisher() IAuthor
 	GetPerformer() IAuthor
+	MatchPublisher(IAuthor) bool
+	MatchPerformer(IAuthor) bool
+	Lock(performer IAuthor)
+	Unlock()
 }
 
 // IContracter _
@@ -164,6 +172,7 @@ type IContractDealer interface {
 	CancelSegment(publisher IAuthor, id string) error
 	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
 	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
+	GetQueuedSegmentsCount(ctx context.Context) (int, error)
 }
 
 // IWorkDealer _
@@ -192,8 +201,8 @@ type IRegistry interface {
 	PickOrderFromQueue(context.Context) (IOrder, error)
 
 	FindSegmentByID(id string) (ISegment, error)
-	FindSegmentsByOrderID(orderID string) ([]ISegment, error)
-	FindNotLockedSegment() (ISegment, error)
+	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
+	FindNotLockedSegment(ctx context.Context) (ISegment, error)
 	PersistSegment(ISegment) error
 	LockSegmentByID(segmentID string, lockedBy IAuthor) error
 	UnlockSegmentByID(segmentID string) error

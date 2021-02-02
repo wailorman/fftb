@@ -90,3 +90,16 @@ func (co *ConvertOrder) GetPublisher() IAuthor {
 // func (co *ConvertOrder) SetPublisher(publisher IAuthor) {
 // 	co.Publisher = publisher
 // }
+
+// MatchPublisher _
+func (co *ConvertOrder) MatchPublisher(publisher IAuthor) bool {
+	if co.Publisher == nil {
+		return false
+	}
+
+	if publisher == nil {
+		return false
+	}
+
+	return co.Publisher == publisher
+}

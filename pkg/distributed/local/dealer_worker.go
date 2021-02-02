@@ -20,7 +20,7 @@ func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, err
 
 	defer d.freeSegmentLock.Unlock()
 
-	freeSegment, err := d.registry.FindNotLockedSegment()
+	freeSegment, err := d.registry.FindNotLockedSegment(d.ctx)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Looking for free segment")

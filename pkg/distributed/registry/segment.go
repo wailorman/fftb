@@ -41,6 +41,9 @@ const LockSegmentTimeout = time.Duration(10 * time.Second)
 // FreeSegmentTimeout _
 const FreeSegmentTimeout = time.Duration(20 * time.Second)
 
+// SearchTimeout _
+const SearchTimeout = time.Duration(10 * time.Second)
+
 // FindSegmentByID _
 func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
 	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", id))
@@ -53,304 +56,236 @@ func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
 		return nil, errors.Wrap(err, "Accessing store for segment")
 	}
 
-	dbSeg := &Segment{}
-	err = unmarshalObject(result, SegmentObjectType, dbSeg)
+	return unmarshalSegmentModel(result)
+}
+
+func (r *Instance) searchSegments(fctx context.Context, multiple bool, check func(models.ISegment) bool) ([]models.ISegment, error) {
+	ffctx, ffcancel := context.WithCancel(fctx)
+	defer ffcancel()
+
+	results, failures := r.store.FindAll(ffctx, "v1/segments/*")
+	segments := make([]models.ISegment, 0)
+
+	for {
+		select {
+		case <-r.ctx.Done():
+			return segments, nil
+
+		case <-fctx.Done():
+			return segments, nil
+
+		case err := <-failures:
+			if err != nil {
+				return nil, errors.Wrap(err, "Searching for free order")
+			}
+
+			return segments, nil
+
+		case res, ok := <-results:
+			if !ok {
+				return segments, nil
+			}
+
+			modSegment, err := unmarshalSegmentModel(res)
+
+			if err != nil {
+				r.logger.WithError(err).
+					WithField(dlog.KeyStorePayload, string(res)).
+					Warn("Unmarshalling order model from store")
+
+				continue
+			}
+
+			if check(modSegment) {
+				segments = append(segments, modSegment)
+
+				if !multiple {
+					return segments, nil
+				}
+			}
+
+		case <-time.After(SearchTimeout):
+			return nil, models.ErrTimeoutReached
+		}
+	}
+}
+
+// SearchSegment _
+func (r *Instance) SearchSegment(fctx context.Context, check func(models.ISegment) bool) (models.ISegment, error) {
+	segments, err := r.searchSegments(fctx, false, check)
 
 	if err != nil {
 		return nil, err
 	}
 
-	segment, err := fromDbSegment(dbSeg)
+	if len(segments) == 0 {
+		return nil, models.ErrNotFound
+	}
+
+	return segments[0], nil
+}
+
+// SearchAllSegments _
+func (r *Instance) SearchAllSegments(fctx context.Context, check func(models.ISegment) bool) ([]models.ISegment, error) {
+	segments, err := r.searchSegments(fctx, false, check)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return segment, nil
+	return segments, nil
 }
 
 // FindNotLockedSegment _
-func (r *Instance) FindNotLockedSegment() (models.ISegment, error) {
+func (r *Instance) FindNotLockedSegment(fctx context.Context) (models.ISegment, error) {
 	if !r.freeSegmentLock.TryLockTimeout(FreeSegmentTimeout) {
 		return nil, models.ErrTimeoutReached
 	}
 
-	ctx, cancel := context.WithCancel(r.ctx)
-	results, failures := r.store.FindAll(ctx, "v1/segments/*")
+	return r.SearchSegment(fctx, func(segment models.ISegment) bool {
+		return !segment.GetIsLocked()
+	})
+}
 
-	for {
-		select {
-		case err := <-failures:
-			if err != nil {
-				cancel()
-				return nil, err
-			}
+// FindSegmentsByOrderID _
+func (r *Instance) FindSegmentsByOrderID(fctx context.Context, orderID string) ([]models.ISegment, error) {
+	return r.SearchAllSegments(fctx, func(segment models.ISegment) bool {
+		return segment.GetOrderID() == orderID
+	})
+}
 
-		case data := <-results:
-			if len(data) == 0 {
-				cancel()
-				return nil, models.ErrNotFound
-			}
-
-			dbSeg := &Segment{}
-
-			err := unmarshalObject(data, SegmentObjectType, dbSeg)
-
-			if err != nil {
-				r.logger.WithError(err).
-					Trace("Unmarshalling error")
-
-				continue
-			}
-
-			if dbSeg.LockedUntil == nil || time.Now().After(*dbSeg.LockedUntil) {
-				modSeg, err := fromDbSegment(dbSeg)
-
-				if err != nil {
-					r.logger.WithField(dlog.KeySegmentID, dbSeg.ID).
-						WithError(err).
-						Trace("Serializing from db segment model")
-
-					continue
-				}
-
-				if modSeg.GetState() != models.SegmentStatePublished {
-					r.logger.WithField(dlog.KeySegmentID, modSeg.GetID()).
-						WithField(dlog.KeySegmentState, modSeg.GetState()).
-						Trace("Segment is not published")
-
-					continue
-				}
-
-				cancel()
-				return modSeg, nil
-			}
-
-			// TODO: log
-			continue
-		default:
-			continue
-		}
+// PersistSegment _
+func (r *Instance) PersistSegment(modSegment models.ISegment) error {
+	if modSegment == nil {
+		return models.ErrMissingSegment
 	}
+
+	data, err := marshalSegmentModel(modSegment)
+
+	if err != nil {
+		return errors.Wrap(err, "Marshaling db segment for store")
+	}
+
+	err = r.store.Set(fmt.Sprintf("v1/segments/%s", modSegment.GetID()), data)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting segment to store")
+	}
+
+	return nil
 }
 
 // LockSegmentByID _
 func (r *Instance) LockSegmentByID(segmentID string, lockedBy models.IAuthor) error {
-	if lockedBy == nil || lockedBy.GetName() == "" {
-		return models.ErrMissingLockAuthor
-	}
-
-	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", segmentID))
-
-	if err != nil {
-		if errors.Is(err, ukvs.ErrNotFound) {
-			return models.ErrNotFound
-		}
-
-		return errors.Wrap(err, "Accessing store for segment")
-	}
-
-	dbSeg := &Segment{}
-	err = unmarshalObject(result, SegmentObjectType, dbSeg)
-
-	if err != nil {
-		return err
-	}
-
-	lockedUntil := time.Now().Add(LockSegmentTimeout)
-	dbSeg.LockedUntil = &lockedUntil
-	dbSeg.LockedBy = lockedBy.GetName()
-
-	data, err := marshalObject(dbSeg)
-
-	if err != nil {
-		return errors.Wrap(err, "Marshaling db segment for store")
-	}
-
-	err = r.store.Set(fmt.Sprintf("v1/segments/%s", dbSeg.ID), data)
-
-	if err != nil {
-		return errors.Wrap(err, "Persisting segment to store")
-	}
-
-	return nil
-}
-
-// FindSegmentsByOrderID _
-func (r *Instance) FindSegmentsByOrderID(orderID string) ([]models.ISegment, error) {
-	modSegs := make([]models.ISegment, 0)
-
-	ctx, cancel := context.WithCancel(context.TODO())
-	results, failures := r.store.FindAll(ctx, "v1/segments/*")
-
-	for {
-		select {
-		case data := <-results:
-			if data == nil || len(data) == 0 {
-				cancel()
-				return nil, models.ErrNotFound
-			}
-
-			dbSeg := &Segment{}
-			err := unmarshalObject(data, SegmentObjectType, dbSeg)
-
-			if err != nil {
-				// TODO: log unmarshaling errors
-				continue
-			}
-
-			if dbSeg.OrderID != orderID {
-				continue
-			}
-
-			modSeg, err := fromDbSegment(dbSeg)
-
-			if err != nil {
-				// TODO: log unmarshaling errors
-				continue
-			}
-
-			modSegs = append(modSegs, modSeg)
-
-		case err := <-failures:
-			cancel()
-			return nil, errors.Wrap(err, "Failed to list segments")
-		}
-	}
-}
-
-// PersistSegment _
-func (r *Instance) PersistSegment(segment models.ISegment) error {
-	if segment == nil {
-		return models.ErrMissingSegment
-	}
-
-	dbSeg, err := toDbSegment(segment)
-
-	if err != nil {
-		return errors.Wrap(err, "Converting segment model to registry format")
-	}
-
-	data, err := marshalObject(dbSeg)
-
-	if err != nil {
-		return errors.Wrap(err, "Marshaling db segment for store")
-	}
-
-	err = r.store.Set(fmt.Sprintf("v1/segments/%s", segment.GetID()), data)
-
-	if err != nil {
-		return errors.Wrap(err, "Persisting segment to store")
-	}
-
-	return nil
+	panic("deprecated")
 }
 
 // UnlockSegmentByID _
 func (r *Instance) UnlockSegmentByID(segmentID string) error {
-	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", segmentID))
-
-	if err != nil {
-		if errors.Is(err, ukvs.ErrNotFound) {
-			return models.ErrNotFound
-		}
-
-		return errors.Wrap(err, "Accessing store for segment")
-	}
-
-	dbSeg := &Segment{}
-	err = unmarshalObject(result, SegmentObjectType, dbSeg)
-
-	if err != nil {
-		return err
-	}
-
-	dbSeg.LockedBy = ""
-	dbSeg.LockedUntil = nil
-
-	data, err := marshalObject(dbSeg)
-
-	if err != nil {
-		return errors.Wrap(err, "Marshaling db segment for store")
-	}
-
-	err = r.store.Set(fmt.Sprintf("v1/segments/%s", dbSeg.ID), data)
-
-	return err
+	panic("deprecated")
 }
 
-func toDbSegment(segment models.ISegment) (*Segment, error) {
-	var err error
-
-	dbSegment := &Segment{ID: segment.GetID()}
-
-	if segment.GetType() != models.ConvertV1Type {
-		return dbSegment, models.ErrUnknownSegmentType
-	}
-
-	dbSegment.Payload, err = serializeSegmentPayload(segment)
+func unmarshalSegmentModel(data []byte) (models.ISegment, error) {
+	dbSegment := &Segment{}
+	err := dbSegment.unmarshal(data)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Serializing segment payload")
+		return nil, errors.Wrap(err, "Unmarshaling")
 	}
 
-	dbSegment.OrderID = segment.GetOrderID()
-	dbSegment.ObjectType = SegmentObjectType
-	dbSegment.State = segment.GetState()
-	dbSegment.Kind = segment.GetType()
-	dbSegment.InputStorageClaimIdentity = segment.GetInputStorageClaimIdentity()
-	dbSegment.OutputStorageClaimIdentity = segment.GetOutputStorageClaimIdentity()
-	dbSegment.LockedUntil = segment.GetLockedUntil()
-
-	if lockedBy := segment.GetLockedBy(); lockedBy != nil {
-		dbSegment.LockedBy = lockedBy.GetName()
-	}
-
-	if publisher := segment.GetPublisher(); publisher != nil {
-		dbSegment.Publisher = publisher.GetName()
-	}
-
-	return dbSegment, nil
+	return dbSegment.toModel()
 }
 
-func fromDbSegment(dbSeg *Segment) (models.ISegment, error) {
-	if dbSeg.Kind != models.ConvertV1Type {
+func marshalSegmentModel(modSegment models.ISegment) ([]byte, error) {
+	dbSegment := &Segment{}
+	err := dbSegment.fromModel(modSegment)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Converting from model")
+	}
+
+	return dbSegment.marshal()
+}
+
+func (dbSegment *Segment) unmarshal(data []byte) error {
+	return unmarshalObject(data, ObjectTypeSegment, dbSegment)
+}
+
+func (dbSegment *Segment) marshal() ([]byte, error) {
+	return marshalObject(dbSegment)
+}
+
+func (dbSegment *Segment) toModel() (models.ISegment, error) {
+	if dbSegment.Kind != models.ConvertV1Type {
 		return nil, models.ErrUnknownSegmentType
 	}
 
 	modSeg := &models.ConvertSegment{}
 
-	err := deserializeSegmentPayload(dbSeg, modSeg)
+	err := deserializeSegmentPayload(dbSegment, modSeg)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Deserializing segment payload")
 	}
 
-	modSeg.Identity = dbSeg.ID
-	modSeg.Type = dbSeg.Kind
-	modSeg.OrderIdentity = dbSeg.OrderID
-	modSeg.State = dbSeg.State
-	modSeg.InputStorageClaimIdentity = dbSeg.InputStorageClaimIdentity
-	modSeg.OutputStorageClaimIdentity = dbSeg.OutputStorageClaimIdentity
+	modSeg.Identity = dbSegment.ID
+	modSeg.Type = dbSegment.Kind
+	modSeg.OrderIdentity = dbSegment.OrderID
+	modSeg.State = dbSegment.State
+	modSeg.InputStorageClaimIdentity = dbSegment.InputStorageClaimIdentity
+	modSeg.OutputStorageClaimIdentity = dbSegment.OutputStorageClaimIdentity
 
-	modSeg.LockedUntil = dbSeg.LockedUntil
+	modSeg.LockedUntil = dbSegment.LockedUntil
 
-	if dbSeg.LockedBy != "" {
-		modSeg.LockedBy = &models.Author{Name: dbSeg.LockedBy}
+	if dbSegment.LockedBy != "" {
+		modSeg.LockedBy = &models.Author{Name: dbSegment.LockedBy}
 	}
 
-	if dbSeg.Publisher != "" {
-		modSeg.Publisher = &models.Author{Name: dbSeg.Publisher}
+	if dbSegment.Publisher != "" {
+		modSeg.Publisher = &models.Author{Name: dbSegment.Publisher}
 	}
 
 	return modSeg, nil
 }
 
-func serializeSegmentPayload(modSeg models.ISegment) (string, error) {
+func (dbSegment *Segment) fromModel(modSegment models.ISegment) error {
+	var err error
+
+	if modSegment.GetType() != models.ConvertV1Type {
+		return models.ErrUnknownSegmentType
+	}
+
+	err = serializeSegmentPayload(modSegment, dbSegment)
+
+	if err != nil {
+		return errors.Wrap(err, "Serializing segment payload")
+	}
+
+	dbSegment.ID = modSegment.GetID()
+	dbSegment.OrderID = modSegment.GetOrderID()
+	dbSegment.ObjectType = ObjectTypeSegment
+	dbSegment.State = modSegment.GetState()
+	dbSegment.Kind = modSegment.GetType()
+	dbSegment.InputStorageClaimIdentity = modSegment.GetInputStorageClaimIdentity()
+	dbSegment.OutputStorageClaimIdentity = modSegment.GetOutputStorageClaimIdentity()
+	dbSegment.LockedUntil = modSegment.GetLockedUntil()
+
+	if lockedBy := modSegment.GetLockedBy(); lockedBy != nil {
+		dbSegment.LockedBy = lockedBy.GetName()
+	}
+
+	if publisher := modSegment.GetPublisher(); publisher != nil {
+		dbSegment.Publisher = publisher.GetName()
+	}
+
+	return nil
+}
+
+func serializeSegmentPayload(modSeg models.ISegment, dbSeg *Segment) error {
 	convSeg, ok := modSeg.(*models.ConvertSegment)
 
 	if !ok {
-		return "", models.ErrUnknownSegmentType
+		return models.ErrUnknownSegmentType
 	}
 
 	payload := &ConvertSegmentPayload{
@@ -361,10 +296,12 @@ func serializeSegmentPayload(modSeg models.ISegment) (string, error) {
 	bPayload, err := json.Marshal(payload)
 
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(bPayload), nil
+	dbSeg.Payload = string(bPayload)
+
+	return nil
 }
 
 func deserializeSegmentPayload(dbSeg *Segment, modSeg models.ISegment) error {
