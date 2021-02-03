@@ -124,6 +124,7 @@ type IOrder interface {
 	GetState() string
 	// SetState(string)
 	MatchPublisher(IAuthor) bool
+	GetSegmentIDs() []string
 }
 
 // ISegment _
@@ -155,12 +156,12 @@ type IContracter interface {
 
 // IDealer _
 type IDealer interface {
-	IContractDealer
-	IWorkDealer
+	IContracterDealer
+	IWorkerDealer
 }
 
-// IContractDealer _
-type IContractDealer interface {
+// IContracterDealer _
+type IContracterDealer interface {
 	GetOutputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
 	AllocatePublisherAuthority(name string) (IAuthor, error)
 	AllocateSegment(req IDealerRequest) (ISegment, error)
@@ -175,8 +176,8 @@ type IContractDealer interface {
 	GetQueuedSegmentsCount(ctx context.Context) (int, error)
 }
 
-// IWorkDealer _
-type IWorkDealer interface {
+// IWorkerDealer _
+type IWorkerDealer interface {
 	GetInputStorageClaim(performer IAuthor, id string) (IStorageClaim, error)
 	AllocatePerformerAuthority(name string) (IAuthor, error)
 	FindFreeSegment(performer IAuthor) (ISegment, error)
@@ -192,6 +193,21 @@ type IWorkDealer interface {
 
 // IRegistry _
 type IRegistry interface {
+	FindOrderByID(id string) (IOrder, error)
+	PersistOrder(order IOrder) error
+	PickOrderFromQueue(context.Context) (IOrder, error)
+	FindSegmentByID(id string) (ISegment, error)
+	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
+	FindNotLockedSegment(ctx context.Context) (ISegment, error)
+	PersistSegment(ISegment) error
+	LockSegmentByID(segmentID string, lockedBy IAuthor) error
+	UnlockSegmentByID(segmentID string) error
+	Persist() error
+	Closed() <-chan struct{}
+}
+
+// IContracterRegistry _
+type IContracterRegistry interface {
 	// Persist(ISegment) error
 	// FindByID(string) (ISegment, error)
 	// Destroy(string) (errors)
@@ -202,10 +218,36 @@ type IRegistry interface {
 
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
+	// FindNotLockedSegment(ctx context.Context) (ISegment, error)
+	PersistSegment(ISegment) error
+	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
+	// UnlockSegmentByID(segmentID string) error
+	// SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
+	// SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
+	SearchOrder(fctx context.Context, check func(IOrder) bool) (IOrder, error)
+	SearchAllOrders(fctx context.Context, check func(IOrder) bool) ([]IOrder, error)
+	Persist() error
+	Closed() <-chan struct{}
+}
+
+// IDealerRegistry _
+type IDealerRegistry interface {
+	// Persist(ISegment) error
+	// FindByID(string) (ISegment, error)
+	// Destroy(string) (errors)
+
+	// FindOrderByID(id string) (IOrder, error)
+	// PersistOrder(order IOrder) error
+	// PickOrderFromQueue(context.Context) (IOrder, error)
+
+	FindSegmentByID(id string) (ISegment, error)
+	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
 	FindNotLockedSegment(ctx context.Context) (ISegment, error)
 	PersistSegment(ISegment) error
 	LockSegmentByID(segmentID string, lockedBy IAuthor) error
 	UnlockSegmentByID(segmentID string) error
+	SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
+	SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
 	Persist() error
 	Closed() <-chan struct{}
 }

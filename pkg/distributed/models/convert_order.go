@@ -3,19 +3,20 @@ package models
 import (
 	"encoding/json"
 
+	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // ConvertOrder _
 type ConvertOrder struct {
-	Identity string
-	Type     string
-	State    string
-	// Segments []*ConvertSegment
-
-	Params convert.Params
-
-	Publisher IAuthor
+	Identity   string
+	Type       string
+	State      string
+	InFile     files.Filer
+	OutFile    files.Filer
+	Params     convert.Params
+	Publisher  IAuthor
+	SegmentIDs []string
 }
 
 // OrderStateQueued _
@@ -102,4 +103,9 @@ func (co *ConvertOrder) MatchPublisher(publisher IAuthor) bool {
 	}
 
 	return co.Publisher == publisher
+}
+
+// GetSegmentIDs _
+func (co *ConvertOrder) GetSegmentIDs() []string {
+	return co.SegmentIDs
 }

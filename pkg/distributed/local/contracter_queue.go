@@ -8,20 +8,6 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 )
 
-// // ContracterQueue _
-// type ContracterQueue struct {
-// 	ctx      context.Context
-// 	registry models.IRegistry
-// }
-
-// // NewContracterQueue _
-// func NewContracterQueue(ctx context.Context, registry models.IRegistry) *ContracterQueue {
-// 	return &ContracterQueue{
-// 		ctx:      ctx,
-// 		registry: registry,
-// 	}
-// }
-
 // AddOrderToQueue _
 func (c *ContracterInstance) AddOrderToQueue(req models.IContracterRequest) (models.IOrder, error) {
 	convertRequest, ok := req.(*models.ConvertContracterRequest)

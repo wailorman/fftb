@@ -25,6 +25,9 @@ const KeyPerformer = "performer"
 // KeyStorePayload _
 const KeyStorePayload = "store_payload"
 
+// PrefixContracterPublishWorker _
+const PrefixContracterPublishWorker = "fftb.contracter.publish_worker"
+
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
 	entry := logger.

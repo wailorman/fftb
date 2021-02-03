@@ -80,6 +80,17 @@ func DistributedCliConfig() *cli.Command {
 	}
 }
 
+// // IRegistry _
+// type IRegistry interface {
+// 	models.IRegistry
+// 	models.IContracterRegistry
+// }
+
+// type IDealer interface {
+// 	models.IWorkerDealer
+// 	models.IContracterDealer
+// }
+
 // DistributedConvertApp _
 type DistributedConvertApp struct {
 	storage        models.IStorageController
@@ -132,38 +143,39 @@ func (a *DistributedConvertApp) Init() error {
 
 // StartContracter _
 func (a *DistributedConvertApp) StartContracter(c *cli.Context) error {
-	defer a.cancel()
+	panic("not implemented")
+	// defer a.cancel()
 
-	var err error
+	// var err error
 
-	segmentsPath := files.NewPath(".fftb/segments")
+	// segmentsPath := files.NewPath(".fftb/segments")
 
-	err = segmentsPath.Create()
+	// err = segmentsPath.Create()
 
-	if err != nil {
-		return errors.Wrap(err, "Creating segments path")
-	}
+	// if err != nil {
+	// 	return errors.Wrap(err, "Creating segments path")
+	// }
 
-	inFile := files.NewFile(c.Args().Get(0))
+	// inFile := files.NewFile(c.Args().Get(0))
 
-	a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, segmentsPath)
+	// a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, segmentsPath)
 
-	if err != nil {
-		return errors.Wrap(err, "Initializing contracter")
-	}
+	// if err != nil {
+	// 	return errors.Wrap(err, "Initializing contracter")
+	// }
 
-	_, err = a.contracter.PrepareOrder(&models.ConvertContracterRequest{
-		InFile: inFile,
-		Params: convertParamsFromFlags(c),
-	})
+	// _, err = a.contracter.PrepareOrder(&models.ConvertContracterRequest{
+	// 	InFile: inFile,
+	// 	Params: convertParamsFromFlags(c),
+	// })
 
-	a.logger.Debug("Order published")
+	// a.logger.Debug("Order published")
 
-	if err != nil {
-		return errors.Wrap(err, "Publishing order")
-	}
+	// if err != nil {
+	// 	return errors.Wrap(err, "Publishing order")
+	// }
 
-	return nil
+	// return nil
 }
 
 // StartWorker _

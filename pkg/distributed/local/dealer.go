@@ -16,14 +16,14 @@ const LockSegmentTimeout = time.Duration(10 * time.Second)
 // Dealer _
 type Dealer struct {
 	storageController models.IStorageController
-	registry          models.IRegistry
+	registry          models.IDealerRegistry
 	freeSegmentLock   trylock.TryLocker
 	logger            logrus.FieldLogger
 	ctx               context.Context
 }
 
 // NewDealer _
-func NewDealer(ctx context.Context, sc models.IStorageController, r models.IRegistry) (*Dealer, error) {
+func NewDealer(ctx context.Context, sc models.IStorageController, r models.IDealerRegistry) (*Dealer, error) {
 	var logger logrus.FieldLogger
 	if logger = ctxlog.FromContext(ctx, "fftb.dealer"); logger == nil {
 		logger = ctxlog.New("fftb.dealer")

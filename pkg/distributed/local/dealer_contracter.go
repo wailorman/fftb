@@ -139,5 +139,13 @@ func (d *Dealer) AllocatePublisherAuthority(name string) (models.IAuthor, error)
 
 // GetQueuedSegmentsCount _
 func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context) (int, error) {
-	return 0, nil
+	segments, err := d.registry.SearchAllSegments(fctx, func(segment models.ISegment) bool {
+		return segment.GetState() == models.SegmentStatePublished && !segment.GetIsLocked()
+	})
+
+	if err != nil {
+		return 0, errors.Wrap(err, "Searching segments")
+	}
+
+	return len(segments), nil
 }

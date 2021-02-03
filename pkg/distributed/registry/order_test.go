@@ -29,6 +29,7 @@ var ordersTestTable = []struct{ order models.IOrder }{
 				VideoQuality:     30,
 				VideoCodec:       "h264",
 			},
+			SegmentIDs: []string{"seg_id_1", "seg_id_2"},
 		},
 	},
 }

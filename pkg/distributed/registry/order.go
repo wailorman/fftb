@@ -20,12 +20,13 @@ const OrderQueueTimeout = time.Duration(20 * time.Second)
 
 // Order _
 type Order struct {
-	ObjectType string `json:"object_type"`
-	ID         string `json:"id"`
-	Kind       string `json:"kind"`
-	Payload    string `json:"payload"`
-	Publisher  string `json:"publisher"`
-	State      string `json:"state"`
+	ObjectType string   `json:"object_type"`
+	ID         string   `json:"id"`
+	Kind       string   `json:"kind"`
+	Payload    string   `json:"payload"`
+	Publisher  string   `json:"publisher"`
+	State      string   `json:"state"`
+	SegmentIDs []string `json:"segment_ids"`
 }
 
 // ConvertOrderPayload _
@@ -199,9 +200,10 @@ func (dbOrder *Order) toModel() (models.IOrder, error) {
 	switch dbOrder.Kind {
 	case models.ConvertV1Type:
 		convOrder := &models.ConvertOrder{
-			Identity: dbOrder.ID,
-			Type:     dbOrder.Kind,
-			State:    dbOrder.State,
+			Identity:   dbOrder.ID,
+			Type:       dbOrder.Kind,
+			State:      dbOrder.State,
+			SegmentIDs: dbOrder.SegmentIDs,
 		}
 
 		if dbOrder.Publisher != "" {
@@ -227,6 +229,7 @@ func (dbOrder *Order) fromModel(modOrder models.IOrder) error {
 	dbOrder.ID = modOrder.GetID()
 	dbOrder.Kind = modOrder.GetType()
 	dbOrder.State = modOrder.GetState()
+	dbOrder.SegmentIDs = modOrder.GetSegmentIDs()
 
 	if modOrder.GetPublisher() != nil {
 		dbOrder.Publisher = modOrder.GetPublisher().GetName()

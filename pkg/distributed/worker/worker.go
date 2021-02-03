@@ -33,14 +33,14 @@ const FreeTaskTimeout = time.Duration(3) * time.Second
 type Instance struct {
 	ctx       context.Context
 	tmpPath   files.Pather
-	dealer    models.IWorkDealer
+	dealer    models.IWorkerDealer
 	logger    logrus.FieldLogger
 	closed    chan struct{}
 	performer models.IAuthor
 }
 
 // NewWorker _
-func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkDealer) (*Instance, error) {
+func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkerDealer) (*Instance, error) {
 	var logger logrus.FieldLogger
 	if logger = ctxlog.FromContext(ctx, "fftb.worker"); logger == nil {
 		logger = ctxlog.New("fftb.worker")
