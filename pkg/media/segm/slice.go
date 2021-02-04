@@ -37,32 +37,32 @@ func NewSliceOperation() *SliceOperation {
 }
 
 // Init _
-func (s *SliceOperation) Init(req SliceRequest) error {
-	if s.initialized {
+func (so *SliceOperation) Init(req SliceRequest) error {
+	if so.initialized {
 		return ErrAlreadyInitialized
 	}
 
 	var err error
 
-	s.inFile = req.InFile
-	s.outPath = req.OutPath
-	s.keepTimestamps = req.KeepTimestamps
-	s.segmentSec = req.SegmentSec
+	so.inFile = req.InFile
+	so.outPath = req.OutPath
+	so.keepTimestamps = req.KeepTimestamps
+	so.segmentSec = req.SegmentSec
 
-	err = s.createTmpPath()
+	err = so.createTmpPath()
 
 	if err != nil {
 		return errors.Wrap(err, "Create temp path for segments")
 	}
 
-	s.ffworker = ff.New()
-	err = s.ffworker.Init(req.InFile, s.tmpPath.BuildFile(segmentPrefix+"%03d"+req.InFile.Extension()))
+	so.ffworker = ff.New()
+	err = so.ffworker.Init(req.InFile, so.tmpPath.BuildFile(segmentPrefix+"%03d"+req.InFile.Extension()))
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing ffworker")
 	}
 
-	mediaFile := s.ffworker.MediaFile()
+	mediaFile := so.ffworker.MediaFile()
 
 	// https://askubuntu.com/a/948449
 	// https://trac.ffmpeg.org/wiki/Concatenate
@@ -70,16 +70,16 @@ func (s *SliceOperation) Init(req SliceRequest) error {
 	mediaFile.SetVideoCodec("copy")
 	mediaFile.SetAudioCodec("copy")
 	mediaFile.SetOutputFormat("segment")
-	mediaFile.SetSegmentTime(s.segmentSec)
-	mediaFile.SetResetTimestamps(!s.keepTimestamps)
+	mediaFile.SetSegmentTime(so.segmentSec)
+	mediaFile.SetResetTimestamps(!so.keepTimestamps)
 
-	s.initialized = true
+	so.initialized = true
 
 	return nil
 }
 
 // Run _
-func (s *SliceOperation) Run() (
+func (so *SliceOperation) Run() (
 	finished chan struct{},
 	progress chan ff.Progressable,
 	segments chan *Segment,
@@ -96,22 +96,22 @@ func (s *SliceOperation) Run() (
 		defer close(segments)
 		defer close(failed)
 
-		if s.started {
+		if so.started {
 			failed <- ErrAlreadyInitialized
 			return
 		}
 
-		_progress, _finished, _failed := s.ffworker.Start()
+		_progress, _finished, _failed := so.ffworker.Start()
 
 		for {
 			select {
 			case <-_finished:
-				tmpFiles, err := s.tmpPath.Files()
+				tmpFiles, err := so.tmpPath.Files()
 
 				if err != nil {
 					failed <- errors.Wrap(err, "Getting list of segments files")
 
-					err = s.tmpPath.Destroy()
+					err = so.tmpPath.Destroy()
 
 					if err != nil {
 						// TODO: log
@@ -131,7 +131,7 @@ func (s *SliceOperation) Run() (
 			case failure := <-_failed:
 				failed <- failure
 
-				err := s.tmpPath.Destroy()
+				err := so.tmpPath.Destroy()
 
 				if err != nil {
 					// TODO: log
@@ -149,17 +149,17 @@ func (s *SliceOperation) Run() (
 }
 
 // Purge removes all segments from tmp directory & also tmp directory itself
-func (s *SliceOperation) Purge() error {
-	if s.tmpPath == nil {
+func (so *SliceOperation) Purge() error {
+	if so.tmpPath == nil {
 		return ErrNotInitialized
 	}
 
-	return s.tmpPath.Destroy()
+	return so.tmpPath.Destroy()
 }
 
 // createTmpPath _
-func (s *SliceOperation) createTmpPath() error {
+func (so *SliceOperation) createTmpPath() error {
 	id := fmt.Sprint(rand.Int())
-	s.tmpPath = s.outPath.BuildSubpath("_fftb_chunks_" + id)
-	return s.tmpPath.Create()
+	so.tmpPath = so.outPath.BuildSubpath("_fftb_chunks_" + id)
+	return so.tmpPath.Create()
 }
