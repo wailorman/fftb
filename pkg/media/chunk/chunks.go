@@ -28,8 +28,8 @@ type Instance struct {
 
 // Segmenter _
 type Segmenter interface {
-	Init(req segm.Request) error
-	Start() (progress chan ff.Progressable, segments chan segm.Segment, finished chan bool, failed chan error)
+	Init(req segm.SliceRequest) error
+	Run() (finished chan struct{}, progress chan ff.Progressable, segments chan segm.Segment, failed chan error)
 	Purge() error
 }
 
@@ -75,10 +75,10 @@ func (c *Instance) Use(m Middleware) {
 
 // Init _
 func (c *Instance) Init(req Request) error {
-	c.segmenter = segm.New()
+	c.segmenter = segm.NewSliceOperation()
 	c.req = req
 
-	err := c.segmenter.Init(segm.Request{
+	err := c.segmenter.Init(segm.SliceRequest{
 		InFile:         req.InFile,
 		OutPath:        req.OutPath,
 		KeepTimestamps: false,
@@ -98,7 +98,7 @@ func (c *Instance) Start() (progress chan ff.Progressable, finished chan bool, f
 	finished = make(chan bool)
 	failed = make(chan error)
 
-	sProgress, sSegments, sFinished, sFailed := c.segmenter.Start()
+	sFinished, sProgress, sSegments, sFailed := c.segmenter.Run()
 
 	segs := make([]segm.Segment, 0)
 
