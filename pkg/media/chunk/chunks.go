@@ -29,7 +29,7 @@ type Instance struct {
 // Segmenter _
 type Segmenter interface {
 	Init(req segm.SliceRequest) error
-	Run() (finished chan struct{}, progress chan ff.Progressable, segments chan segm.Segment, failed chan error)
+	Run() (finished chan struct{}, progress chan ff.Progressable, segments chan *segm.Segment, failed chan error)
 	Purge() error
 }
 
@@ -65,7 +65,7 @@ type Request struct {
 
 // Middleware _
 type Middleware interface {
-	RenameSegments(req Request, sortedSegments []segm.Segment) error
+	RenameSegments(req Request, sortedSegments []*segm.Segment) error
 }
 
 // Use _
@@ -100,7 +100,7 @@ func (c *Instance) Start() (progress chan ff.Progressable, finished chan bool, f
 
 	sFinished, sProgress, sSegments, sFailed := c.segmenter.Run()
 
-	segs := make([]segm.Segment, 0)
+	segs := make([]*segm.Segment, 0)
 
 	go func() {
 		for {
@@ -143,8 +143,8 @@ func (c *Instance) Start() (progress chan ff.Progressable, finished chan bool, f
 	return progress, finished, failed
 }
 
-func sortSegments(segs []segm.Segment) []segm.Segment {
-	sortedSegments := make([]segm.Segment, 0)
+func sortSegments(segs []*segm.Segment) []*segm.Segment {
+	sortedSegments := make([]*segm.Segment, 0)
 
 	for _, seg := range segs {
 		sortedSegments = append(sortedSegments, seg)
@@ -157,7 +157,7 @@ func sortSegments(segs []segm.Segment) []segm.Segment {
 	return sortedSegments
 }
 
-func persistSegments(req Request, segs []segm.Segment) error {
+func persistSegments(req Request, segs []*segm.Segment) error {
 	for _, seg := range segs {
 		segmentNewName := strings.Join([]string{
 			req.InFile.BaseName(),

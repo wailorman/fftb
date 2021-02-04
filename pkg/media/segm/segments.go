@@ -26,14 +26,14 @@ type Segment struct {
 	File     files.Filer
 }
 
-func collectSegments(files []files.Filer) []Segment {
-	result := make([]Segment, 0)
+func collectSegments(files []files.Filer) []*Segment {
+	result := make([]*Segment, 0)
 
 	for _, file := range files {
 		foundSegment := getSegmentFromFile(file)
 
 		if foundSegment != nil {
-			result = append(result, *foundSegment)
+			result = append(result, foundSegment)
 		}
 	}
 

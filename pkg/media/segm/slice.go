@@ -65,6 +65,7 @@ func (s *SliceOperation) Init(req SliceRequest) error {
 	mediaFile := s.ffworker.MediaFile()
 
 	// https://askubuntu.com/a/948449
+	// https://trac.ffmpeg.org/wiki/Concatenate
 	mediaFile.SetMap("0")
 	mediaFile.SetVideoCodec("copy")
 	mediaFile.SetAudioCodec("copy")
@@ -81,12 +82,12 @@ func (s *SliceOperation) Init(req SliceRequest) error {
 func (s *SliceOperation) Run() (
 	finished chan struct{},
 	progress chan ff.Progressable,
-	segments chan Segment,
+	segments chan *Segment,
 	failed chan error,
 ) {
 	finished = make(chan struct{})
 	progress = make(chan ff.Progressable)
-	segments = make(chan Segment)
+	segments = make(chan *Segment)
 	failed = make(chan error)
 
 	go func() {
