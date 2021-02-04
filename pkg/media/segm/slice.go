@@ -1,9 +1,6 @@
 package segm
 
 import (
-	"fmt"
-	"math/rand"
-
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/ff"
@@ -49,7 +46,7 @@ func (so *SliceOperation) Init(req SliceRequest) error {
 	so.keepTimestamps = req.KeepTimestamps
 	so.segmentSec = req.SegmentSec
 
-	err = so.createTmpPath()
+	so.tmpPath, err = createTmpSubdir(so.outPath)
 
 	if err != nil {
 		return errors.Wrap(err, "Create temp path for segments")
@@ -155,11 +152,4 @@ func (so *SliceOperation) Purge() error {
 	}
 
 	return so.tmpPath.Destroy()
-}
-
-// createTmpPath _
-func (so *SliceOperation) createTmpPath() error {
-	id := fmt.Sprint(rand.Int())
-	so.tmpPath = so.outPath.BuildSubpath("_fftb_chunks_" + id)
-	return so.tmpPath.Create()
 }

@@ -2,6 +2,7 @@ package segm
 
 import (
 	"fmt"
+	"math/rand"
 	"regexp"
 	"strconv"
 
@@ -63,4 +64,16 @@ func getSegmentFromFile(file files.Filer) *Segment {
 		Position: number,
 		File:     file,
 	}
+}
+
+func createTmpSubdir(dir files.Pather) (files.Pather, error) {
+	id := fmt.Sprint(rand.Int())
+	tmpPath := dir.BuildSubpath("_fftb_chunks_" + id)
+	err := tmpPath.Create()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tmpPath, nil
 }
