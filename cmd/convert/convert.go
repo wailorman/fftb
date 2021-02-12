@@ -147,7 +147,7 @@ func CliConfig() *cli.Command {
 				batchTask = mediaConvert.BatchConverterTask{
 					Parallelism: c.Int("parallelism"),
 					Tasks: []mediaConvert.ConverterTask{
-						mediaConvert.ConverterTask{
+						{
 							InFile:       inFile,
 							OutFile:      outFile,
 							HWAccel:      c.String("hwa"),
