@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -81,8 +82,6 @@ func (t Transcoder) GetCommand() []string {
 
 // InitializeEmptyTranscoder initializes the fields necessary for a blank transcoder
 func (t *Transcoder) InitializeEmptyTranscoder() error {
-	var Metadata models.Metadata
-
 	var err error
 	cfg := t.configuration
 	if len(cfg.FfmpegBin) == 0 || len(cfg.FfprobeBin) == 0 {
@@ -93,7 +92,6 @@ func (t *Transcoder) InitializeEmptyTranscoder() error {
 	}
 	// Set new Mediafile
 	MediaFile := new(models.Mediafile)
-	MediaFile.SetMetadata(Metadata)
 
 	// Set transcoder configuration
 	t.SetMediaFile(MediaFile)
@@ -149,7 +147,6 @@ func (t *Transcoder) CreateOutputPipe(containerFormat string) (*io.PipeReader, e
 // Initialize Init the transcoding process
 func (t *Transcoder) Initialize(inputPath string, outputPath string) error {
 	var err error
-	var Metadata models.Metadata
 
 	cfg := t.configuration
 
@@ -164,17 +161,20 @@ func (t *Transcoder) Initialize(inputPath string, outputPath string) error {
 		return errors.New("error on transcoder.Initialize: inputPath missing")
 	}
 
-	Metadata, err = t.GetFileMetadata(inputPath)
-
-	if err != nil {
-		return errors.Wrap(err, "Getting file metadata")
-	}
-
 	// Set new Mediafile
 	MediaFile := new(models.Mediafile)
-	MediaFile.SetMetadata(Metadata)
 	MediaFile.SetInputPath(inputPath)
 	MediaFile.SetOutputPath(outputPath)
+
+	if isFilePossiblyHasMetadata(inputPath) {
+		metadata, err := t.GetFileMetadata(inputPath)
+
+		if err != nil {
+			return errors.Wrap(err, "Getting file metadata")
+		}
+
+		MediaFile.SetMetadata(metadata)
+	}
 
 	// Set transcoder configuration
 	t.SetMediaFile(MediaFile)
@@ -426,4 +426,16 @@ func (t *Transcoder) closePipes() {
 	if t.mediafile.OutputPipe() {
 		t.mediafile.OutputPipeWriter().Close()
 	}
+}
+
+var metadataBlacklistedExtensions = []string{".txt"}
+
+func isFilePossiblyHasMetadata(filename string) bool {
+	for _, ext := range metadataBlacklistedExtensions {
+		if filepath.Ext(filename) == ext {
+			return false
+		}
+	}
+
+	return true
 }
