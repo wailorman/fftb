@@ -148,7 +148,7 @@ func (f *File) SetChTime(timeObj time.Time) error {
 
 // EnsureParentDirExists _
 func (f *File) EnsureParentDirExists() error {
-	path := NewPath(".")
+	path := NewPath(f.dirPath)
 
 	return path.Create()
 }
