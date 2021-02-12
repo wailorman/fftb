@@ -10,6 +10,7 @@ import (
 
 // Mediafile _
 type Mediafile struct {
+	unsafe                bool
 	aspect                string
 	resolution            string
 	videoBitRate          string
@@ -104,6 +105,11 @@ type Libx265Params struct {
 }
 
 /*** SETTERS ***/
+
+// SetUnsafe _
+func (m *Mediafile) SetUnsafe(v bool) {
+	m.unsafe = v
+}
 
 // SetAudioFilter _
 func (m *Mediafile) SetAudioFilter(v string) {
@@ -518,6 +524,11 @@ func (m *Mediafile) VideoFilter() string {
 	return m.videoFilter
 }
 
+// Unsafe _
+func (m *Mediafile) Unsafe() bool {
+	return m.unsafe
+}
+
 // AudioFilter _
 func (m *Mediafile) AudioFilter() string {
 	return m.audioFilter
@@ -910,6 +921,7 @@ func (m *Mediafile) ToStrCommand() []string {
 	var strCommand []string
 
 	opts := []string{
+		"Unsafe",
 		"SeekTimeInput",
 		"SeekUsingTsInput",
 		"NativeFramerateInput",
@@ -997,6 +1009,15 @@ func (m *Mediafile) ToStrCommand() []string {
 	}
 
 	return strCommand
+}
+
+// ObtainUnsafe _
+func (m *Mediafile) ObtainUnsafe() []string {
+	if m.unsafe {
+		return []string{"-safe", "0"}
+	}
+
+	return nil
 }
 
 // ObtainAudioFilter _
