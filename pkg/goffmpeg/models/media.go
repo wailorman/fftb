@@ -55,6 +55,7 @@ type Mediafile struct {
 	hideBanner            bool
 	outputPath            string
 	outputFormat          string
+	inputFormat           string
 	copyTs                bool
 	nativeFramerateInput  bool
 	inputInitialOffset    string
@@ -383,6 +384,11 @@ func (m *Mediafile) SetMuxDelay(val string) {
 // SetOutputPath _
 func (m *Mediafile) SetOutputPath(val string) {
 	m.outputPath = val
+}
+
+// SetInputFormat _
+func (m *Mediafile) SetInputFormat(val string) {
+	m.inputFormat = val
 }
 
 // SetOutputFormat _
@@ -782,6 +788,11 @@ func (m *Mediafile) OutputPath() string {
 	return m.outputPath
 }
 
+// InputFormat _
+func (m *Mediafile) InputFormat() string {
+	return m.inputFormat
+}
+
 // OutputFormat _
 func (m *Mediafile) OutputFormat() string {
 	return m.outputFormat
@@ -908,6 +919,7 @@ func (m *Mediafile) ToStrCommand() []string {
 		"HardwareAcceleration",
 		"Vsync",
 		"InputVideoCodec",
+		"InputFormat",
 		"InputPath",
 		"InputPipe",
 		"Map",
@@ -1457,6 +1469,15 @@ func (m *Mediafile) ObtainAudioProfile() []string {
 func (m *Mediafile) ObtainCopyTs() []string {
 	if m.copyTs {
 		return []string{"-copyts"}
+	}
+
+	return nil
+}
+
+// ObtainInputFormat _
+func (m *Mediafile) ObtainInputFormat() []string {
+	if m.inputFormat != "" {
+		return []string{"-f", m.inputFormat}
 	}
 
 	return nil
