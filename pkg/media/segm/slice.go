@@ -107,13 +107,6 @@ func (so *SliceOperation) Run() (
 
 				if err != nil {
 					failed <- errors.Wrap(err, "Getting list of segments files")
-
-					err = so.tmpPath.Destroy()
-
-					if err != nil {
-						// TODO: log
-					}
-
 					return
 				}
 
@@ -127,13 +120,6 @@ func (so *SliceOperation) Run() (
 
 			case failure := <-_failed:
 				failed <- failure
-
-				err := so.tmpPath.Destroy()
-
-				if err != nil {
-					// TODO: log
-				}
-
 				return
 
 			case progressMessage := <-_progress:
