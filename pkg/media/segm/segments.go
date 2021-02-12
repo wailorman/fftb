@@ -1,7 +1,6 @@
 package segm
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"regexp"
@@ -12,82 +11,16 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/wailorman/fftb/pkg/files"
-	"github.com/wailorman/fftb/pkg/media/ff"
 )
 
-const segmentPrefix = "fftb_out_"
-
 // ErrNotInitialized happened when instance wasn't initialized by Init() func
-var ErrNotInitialized = errors.New("Segmentor have not been initialized")
+var ErrNotInitialized = errors.New("operation have not been initialized")
 
-// Instance _
-type Instance struct {
-	ctx            context.Context
-	inFile         files.Filer
-	outPath        files.Pather
-	tmpPath        files.Pather
-	ffworker       *ff.Instance
-	keepTimestamps bool
-	segmentSec     int
-}
+// ErrAlreadyInitialized happened when Init() func called twice
+var ErrAlreadyInitialized = errors.New("operation was already initialized")
 
-// New _
-func New(ctx context.Context) *Instance {
-	return &Instance{
-		ctx: ctx,
-	}
-}
-
-// createTmpPath _
-func (s *Instance) createTmpPath() error {
-	id := fmt.Sprint(rand.Int())
-	s.tmpPath = s.outPath.BuildSubpath(".fftb_chunks" + id)
-	return s.tmpPath.Create()
-}
-
-// Request _
-type Request struct {
-	InFile         files.Filer
-	OutPath        files.Pather
-	KeepTimestamps bool
-	SegmentSec     int
-}
-
-// Init _
-func (s *Instance) Init(req Request) error {
-	var err error
-
-	s.inFile = req.InFile
-	s.outPath = req.OutPath
-	s.keepTimestamps = req.KeepTimestamps
-	s.segmentSec = req.SegmentSec
-
-	err = s.createTmpPath()
-
-	if err != nil {
-		return errors.Wrap(err, "Create temp path for segments")
-	}
-
-	s.ffworker = ff.New(context.TODO())
-	err = s.ffworker.Init(req.InFile, s.tmpPath.BuildFile(segmentPrefix+"%03d"+req.InFile.Extension()))
-
-	if err != nil {
-		return errors.Wrap(err, "Initializing ffworker")
-	}
-
-	mediaFile := s.ffworker.MediaFile()
-
-	// https://askubuntu.com/a/948449
-	// https://trac.ffmpeg.org/wiki/Concatenate
-	mediaFile.SetMap("0")
-	mediaFile.SetVideoCodec("copy")
-	mediaFile.SetAudioCodec("copy")
-	mediaFile.SetOutputFormat("segment")
-	mediaFile.SetSegmentTime(s.segmentSec)
-	mediaFile.SetResetTimestamps(!s.keepTimestamps)
-
-	return nil
-}
+// ErrAlreadyStarted happened when Run() func called twice
+var ErrAlreadyStarted = errors.New("operation was already started")
 
 // Segment _
 type Segment struct {
@@ -96,83 +29,7 @@ type Segment struct {
 	File     files.Filer
 }
 
-// Start _
-func (s *Instance) Start() (
-	progress chan ff.Progressable,
-	segments chan *Segment,
-	finished chan bool,
-	failed chan error,
-) {
-	progress = make(chan ff.Progressable)
-	segments = make(chan *Segment)
-	finished = make(chan bool)
-	failed = make(chan error)
-
-	go func() {
-		_progress, _finished, _failed := s.ffworker.Start()
-
-		defer close(progress)
-		defer close(segments)
-		defer close(finished)
-		defer close(failed)
-
-		for {
-			select {
-			case <-_finished:
-				tmpFiles, err := s.tmpPath.Files()
-
-				if err != nil {
-					failed <- errors.Wrap(err, "Getting list of segments files")
-
-					err = s.tmpPath.Destroy()
-
-					if err != nil {
-						failed <- errors.Wrap(err, "Removing tmp directory")
-					}
-
-					return
-				}
-
-				segs := collectSegments(tmpFiles)
-
-				for _, seg := range segs {
-					segments <- seg
-				}
-
-				finished <- true
-				return
-
-			case failure := <-_failed:
-				failed <- failure
-
-				err := s.tmpPath.Destroy()
-
-				if err != nil {
-					failed <- errors.Wrap(err, "Removing tmp directory")
-				}
-
-				return
-
-			case progressMessage := <-_progress:
-				progress <- progressMessage
-			}
-		}
-	}()
-
-	return progress, segments, finished, failed
-}
-
-// Purge removes all segments from tmp directory & also tmp directory itself
-func (s *Instance) Purge() error {
-	if s.tmpPath == nil {
-		return ErrNotInitialized
-	}
-
-	return s.tmpPath.Destroy()
-}
-
-// CreateSegmentsList _
-func (s *Instance) CreateSegmentsList(segs []*Segment) string {
+func createSegmentsList(segs []*Segment) string {
 	sort.SliceStable(segs, func(i, j int) bool {
 		return segs[i].Position < segs[j].Position
 	})
@@ -217,8 +74,6 @@ func getSegmentFromFile(file files.Filer) *Segment {
 	number, err := strconv.Atoi(foundStrNum)
 
 	if err != nil {
-		// TODO:
-		fmt.Printf("err: %#v\n", err)
 		return nil
 	}
 
@@ -226,4 +81,16 @@ func getSegmentFromFile(file files.Filer) *Segment {
 		Position: number,
 		File:     file,
 	}
+}
+
+func createTmpSubdir(dir files.Pather) (files.Pather, error) {
+	id := fmt.Sprint(rand.Int())
+	tmpPath := dir.BuildSubpath("_fftb_chunks_" + id)
+	err := tmpPath.Create()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tmpPath, nil
 }

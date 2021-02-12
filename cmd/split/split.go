@@ -1,7 +1,6 @@
 package split
 
 import (
-	"context"
 	"os"
 
 	"github.com/pkg/errors"
@@ -13,6 +12,8 @@ import (
 	"github.com/wailorman/fftb/pkg/media/chunk"
 	"github.com/wailorman/fftb/pkg/media/segm"
 )
+
+const bytesInMegabyte = 1000000
 
 // CliConfig _
 func CliConfig() *cli.Command {
@@ -33,7 +34,6 @@ func CliConfig() *cli.Command {
 
 		Action: func(c *cli.Context) error {
 			pwd, err := os.Getwd()
-			ctx := context.Background()
 
 			if err != nil {
 				return errors.Wrap(err, "Getting current working directory")
@@ -51,12 +51,12 @@ func CliConfig() *cli.Command {
 				return errors.New("Missing output path argument")
 			}
 
-			return splitToChunks(ctx, pwd, inputFilePath, c.Int("chunk-size"), outputPath)
+			return splitToChunks(pwd, inputFilePath, c.Int("chunk-size"), outputPath)
 		},
 	}
 }
 
-func splitToChunks(ctx context.Context, pwd, path string, chunkSize int, relativeChunksPath string) error {
+func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) error {
 	mainFile := files.NewFile(path)
 	outPath := files.NewPath(relativeChunksPath)
 
@@ -68,8 +68,8 @@ func splitToChunks(ctx context.Context, pwd, path string, chunkSize int, relativ
 
 	log.Info("Splitting to chunks...")
 
-	segmenter := segm.New(ctx)
-	chunker := chunk.New(ctx, segmenter)
+	segmenter := segm.NewSliceOperation()
+	chunker := chunk.New(segmenter)
 	chunker.Init(chunk.Request{
 		InFile:             mainFile,
 		OutPath:            outPath,

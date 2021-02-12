@@ -133,8 +133,8 @@ func (contracter *ContracterInstance) PublishOrder(fctx context.Context, modOrde
 
 // SliceConvertOrder _
 func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, convOrder *models.ConvertOrder) ([]*segm.Segment, error) {
-	segmenter := segm.New(fctx)
-	segmenter.Init(segm.Request{
+	segmenter := segm.NewSliceOperation()
+	segmenter.Init(segm.SliceRequest{
 		InFile:         convOrder.InFile,
 		KeepTimestamps: false,
 		OutPath:        contracter.tempPath,
@@ -143,7 +143,7 @@ func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, co
 
 	reqSegs := make([]*segm.Segment, 0)
 
-	sProgress, sSegments, sFinished, sFailed := segmenter.Start()
+	sFinished, sProgress, sSegments, sFailed := segmenter.Run()
 
 	for {
 		select {

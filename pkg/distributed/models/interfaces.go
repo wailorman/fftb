@@ -198,10 +198,14 @@ type IRegistry interface {
 	PickOrderFromQueue(context.Context) (IOrder, error)
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	FindNotLockedSegment(ctx context.Context) (ISegment, error)
 	PersistSegment(ISegment) error
+	SearchOrder(fctx context.Context, check func(IOrder) bool) (IOrder, error)
+	SearchAllOrders(fctx context.Context, check func(IOrder) bool) ([]IOrder, error)
+	FindNotLockedSegment(ctx context.Context) (ISegment, error)
 	LockSegmentByID(segmentID string, lockedBy IAuthor) error
 	UnlockSegmentByID(segmentID string) error
+	SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
+	SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
 	Persist() error
 	Closed() <-chan struct{}
 }
