@@ -147,9 +147,9 @@ func (so *SliceOperation) Run() (
 
 // Purge removes all segments from tmp directory & also tmp directory itself
 func (so *SliceOperation) Purge() error {
-	if so.tmpPath == nil {
-		return ErrNotInitialized
+	if so.tmpPath != nil {
+		return so.tmpPath.Destroy()
 	}
 
-	return so.tmpPath.Destroy()
+	return nil
 }
