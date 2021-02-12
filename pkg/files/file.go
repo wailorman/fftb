@@ -2,6 +2,7 @@ package files
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -25,7 +26,9 @@ type Filer interface {
 	NewWithSuffix(suffix string) Filer
 	BuildPath() Pather
 	IsExist() bool
-	ReadContent() (string, error)
+	ReadAllContent() (string, error)
+	ReadContent() (FileReader, error)
+	WriteContent() (FileWriter, error)
 	Move(newFullPath string) error
 	Rename(newName string) error
 	MarshalYAML() (interface{}, error)
@@ -135,13 +138,36 @@ func (f *File) EnsureParentDirExists() error {
 	return path.Create()
 }
 
+// FileWriter _
+type FileWriter interface {
+	io.Writer
+	io.StringWriter
+	io.Closer
+}
+
+// FileReader _
+type FileReader interface {
+	io.Reader
+	io.Closer
+}
+
+// ReadContent _
+func (f *File) ReadContent() (FileReader, error) {
+	return os.Open(f.FullPath())
+}
+
+// WriteContent _
+func (f *File) WriteContent() (FileWriter, error) {
+	return os.OpenFile(f.FullPath(), os.O_APPEND|os.O_WRONLY, 0644)
+}
+
 // Remove _
 func (f *File) Remove() error {
 	return os.Remove(f.FullPath())
 }
 
-// ReadContent _
-func (f *File) ReadContent() (string, error) {
+// ReadAllContent _
+func (f *File) ReadAllContent() (string, error) {
 	file, err := os.Open(f.FullPath())
 
 	if err != nil {

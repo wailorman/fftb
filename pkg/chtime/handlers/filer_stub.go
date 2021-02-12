@@ -119,8 +119,8 @@ func (f *filerStub) NewWithSuffix(suffix string) files.Filer {
 	return newFile
 }
 
-// ReadContent _
-func (f *filerStub) ReadContent() (string, error) {
+// ReadAllContent _
+func (f *filerStub) ReadAllContent() (string, error) {
 	file, err := os.Open(f.FullPath())
 
 	if err != nil {
@@ -132,6 +132,16 @@ func (f *filerStub) ReadContent() (string, error) {
 	b, err := ioutil.ReadAll(file)
 
 	return string(b), nil
+}
+
+// ReadContent _
+func (f *filerStub) ReadContent() (files.FileReader, error) {
+	return os.Open(f.FullPath())
+}
+
+// WriteContent _
+func (f *filerStub) WriteContent() (files.FileWriter, error) {
+	return nil, nil
 }
 
 // MarshalYAML is YAML Marshaller interface implementation
