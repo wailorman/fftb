@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Filer _
@@ -27,6 +29,8 @@ type Filer interface {
 	BuildPath() Pather
 	IsExist() bool
 	ReadAllContent() (string, error)
+	Create() error
+	Size() (int, error)
 	ReadContent() (FileReader, error)
 	WriteContent() (FileWriter, error)
 	Move(newFullPath string) error
@@ -91,6 +95,17 @@ func (f *File) SetFileName(fileName string) {
 	f.fileName = fileName
 }
 
+// Size _
+func (f *File) Size() (int, error) {
+	info, err := os.Stat(f.FullPath())
+
+	if err != nil {
+		return 0, errors.Wrap(err, "Getting file size")
+	}
+
+	return int(info.Size()), nil
+}
+
 // Clone _
 func (f *File) Clone() Filer {
 	newFile := &File{}
@@ -136,6 +151,21 @@ func (f *File) EnsureParentDirExists() error {
 	path := NewPath(".")
 
 	return path.Create()
+}
+
+// Create creates file
+func (f *File) Create() error {
+	parentDir := f.BuildPath()
+
+	err := parentDir.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Creating parent directory")
+	}
+
+	_, err = os.Create(f.FullPath())
+
+	return err
 }
 
 // FileWriter _

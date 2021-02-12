@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
 )
 
@@ -137,6 +138,22 @@ func (f *filerStub) ReadAllContent() (string, error) {
 // ReadContent _
 func (f *filerStub) ReadContent() (files.FileReader, error) {
 	return os.Open(f.FullPath())
+}
+
+// Create _
+func (f *filerStub) Create() error {
+	return nil
+}
+
+// Size _
+func (f *filerStub) Size() (int, error) {
+	info, err := os.Stat(f.FullPath())
+
+	if err != nil {
+		return 0, errors.Wrap(err, "Getting file size")
+	}
+
+	return int(info.Size()), nil
 }
 
 // WriteContent _
