@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -25,6 +27,22 @@ type Segment struct {
 	// from 0 to inf
 	Position int
 	File     files.Filer
+}
+
+func createSegmentsList(segs []*Segment) string {
+	sort.SliceStable(segs, func(i, j int) bool {
+		return segs[i].Position < segs[j].Position
+	})
+
+	textSegs := make([]string, 0)
+
+	for _, seg := range segs {
+		textSegs = append(textSegs, fmt.Sprintf("file '%s'", seg.File.FullPath()))
+	}
+
+	list := strings.Join(textSegs, "\n")
+
+	return list
 }
 
 func collectSegments(files []files.Filer) []*Segment {
@@ -56,7 +74,6 @@ func getSegmentFromFile(file files.Filer) *Segment {
 	number, err := strconv.Atoi(foundStrNum)
 
 	if err != nil {
-		fmt.Printf("err: %#v\n", err)
 		return nil
 	}
 

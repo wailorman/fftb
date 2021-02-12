@@ -11,5 +11,6 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	gopkg.in/yaml.v2 v2.3.0
 )

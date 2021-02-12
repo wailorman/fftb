@@ -1,6 +1,7 @@
 package segm
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,4 +61,28 @@ func Test__getSegmentFromFile(t *testing.T) {
 		}
 	}
 
+}
+
+func Test__createSegmentsList(t *testing.T) {
+	testTable := []struct {
+		segments     []*Segment
+		expectedList string
+	}{
+		{
+			[]*Segment{
+				{File: files.NewFile("/tmp/fftb_out_1"), Position: 1},
+				{File: files.NewFile("/tmp/fftb_out_3"), Position: 3},
+				{File: files.NewFile("/tmp/fftb_out_2"), Position: 2},
+			},
+			"file '/tmp/fftb_out_1'\n" +
+				"file '/tmp/fftb_out_2'\n" +
+				"file '/tmp/fftb_out_3'",
+		},
+	}
+
+	for i, testItem := range testTable {
+		segList := createSegmentsList(testItem.segments)
+
+		assert.Equal(t, testItem.expectedList, segList, fmt.Sprintf("line %d", i))
+	}
 }
