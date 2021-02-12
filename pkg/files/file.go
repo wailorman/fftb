@@ -56,6 +56,25 @@ func NewFile(relativePath string) *File {
 	}
 }
 
+// NewTempFile _
+func NewTempFile(dir, name string) (*File, error) {
+	tempDir := NewPath(os.TempDir() + "/" + dir)
+
+	err := tempDir.Create()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Creating directory in tmp dir")
+	}
+
+	file, err := ioutil.TempFile(tempDir.FullPath(), "*_"+name)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Creating tmp file")
+	}
+
+	return NewFile(file.Name()), nil
+}
+
 // FullPath _
 func (f *File) FullPath() string {
 	return filepath.Join(f.dirPath, f.fileName)
