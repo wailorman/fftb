@@ -53,7 +53,7 @@ func (so *SliceOperation) Init(req SliceRequest) error {
 	}
 
 	so.ffworker = ff.New()
-	err = so.ffworker.Init(req.InFile, so.tmpPath.BuildFile(segmentPrefix+"%03d"+req.InFile.Extension()))
+	err = so.ffworker.Init(req.InFile, so.tmpPath.BuildFile(segmentPrefix+"%06d"+req.InFile.Extension()))
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing ffworker")
