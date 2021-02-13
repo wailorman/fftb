@@ -122,7 +122,7 @@ func CliConfig() *cli.Command {
 
 			if c.String("config") != "" {
 				configFile := files.NewFile(c.String("config"))
-				config, err := configFile.ReadContent()
+				config, err := configFile.ReadAllContent()
 
 				if err != nil {
 					return errors.Wrap(err, "Reading config content")
@@ -147,7 +147,7 @@ func CliConfig() *cli.Command {
 				batchTask = mediaConvert.BatchConverterTask{
 					Parallelism: c.Int("parallelism"),
 					Tasks: []mediaConvert.ConverterTask{
-						mediaConvert.ConverterTask{
+						{
 							InFile:       inFile,
 							OutFile:      outFile,
 							HWAccel:      c.String("hwa"),

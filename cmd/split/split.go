@@ -68,7 +68,7 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 
 	log.Info("Splitting to chunks...")
 
-	segmenter := segm.New()
+	segmenter := segm.NewSliceOperation()
 	chunker := chunk.New(segmenter)
 	chunker.Init(chunk.Request{
 		InFile:             mainFile,

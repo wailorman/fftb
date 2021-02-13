@@ -13,7 +13,7 @@ type Pather interface {
 	FullPath() string
 	Create() error
 	BuildSubpath(path string) Pather
-	BuildFile(name string) Filer
+	BuildFile(filePath string) Filer
 	Destroy() error
 }
 
@@ -29,6 +29,11 @@ func NewPath(relativePath string) Pather {
 	return &Path{
 		path: fullPath,
 	}
+}
+
+// NewTempPath _
+func NewTempPath(name string) Pather {
+	return NewPath(filepath.Clean(os.TempDir() + "/" + name))
 }
 
 // FullPath _
@@ -51,8 +56,8 @@ func (p *Path) BuildSubpath(path string) Pather {
 }
 
 // BuildFile returns instance of new file inside current directory (not written to disk)
-func (p *Path) BuildFile(name string) Filer {
-	return NewFile(p.FullPath() + "/" + name)
+func (p *Path) BuildFile(filePath string) Filer {
+	return NewFile(p.FullPath() + "/" + filePath)
 }
 
 // Destroy _

@@ -10,6 +10,7 @@ import (
 
 // Mediafile _
 type Mediafile struct {
+	unsafe                bool
 	aspect                string
 	resolution            string
 	videoBitRate          string
@@ -55,6 +56,7 @@ type Mediafile struct {
 	hideBanner            bool
 	outputPath            string
 	outputFormat          string
+	inputFormat           string
 	copyTs                bool
 	nativeFramerateInput  bool
 	inputInitialOffset    string
@@ -103,6 +105,11 @@ type Libx265Params struct {
 }
 
 /*** SETTERS ***/
+
+// SetUnsafe _
+func (m *Mediafile) SetUnsafe(v bool) {
+	m.unsafe = v
+}
 
 // SetAudioFilter _
 func (m *Mediafile) SetAudioFilter(v string) {
@@ -385,6 +392,11 @@ func (m *Mediafile) SetOutputPath(val string) {
 	m.outputPath = val
 }
 
+// SetInputFormat _
+func (m *Mediafile) SetInputFormat(val string) {
+	m.inputFormat = val
+}
+
 // SetOutputFormat _
 func (m *Mediafile) SetOutputFormat(val string) {
 	m.outputFormat = val
@@ -510,6 +522,11 @@ func (m *Mediafile) Filter() string {
 // VideoFilter _
 func (m *Mediafile) VideoFilter() string {
 	return m.videoFilter
+}
+
+// Unsafe _
+func (m *Mediafile) Unsafe() bool {
+	return m.unsafe
 }
 
 // AudioFilter _
@@ -782,6 +799,11 @@ func (m *Mediafile) OutputPath() string {
 	return m.outputPath
 }
 
+// InputFormat _
+func (m *Mediafile) InputFormat() string {
+	return m.inputFormat
+}
+
 // OutputFormat _
 func (m *Mediafile) OutputFormat() string {
 	return m.outputFormat
@@ -899,6 +921,7 @@ func (m *Mediafile) ToStrCommand() []string {
 	var strCommand []string
 
 	opts := []string{
+		"Unsafe",
 		"SeekTimeInput",
 		"SeekUsingTsInput",
 		"NativeFramerateInput",
@@ -908,6 +931,7 @@ func (m *Mediafile) ToStrCommand() []string {
 		"HardwareAcceleration",
 		"Vsync",
 		"InputVideoCodec",
+		"InputFormat",
 		"InputPath",
 		"InputPipe",
 		"Map",
@@ -985,6 +1009,15 @@ func (m *Mediafile) ToStrCommand() []string {
 	}
 
 	return strCommand
+}
+
+// ObtainUnsafe _
+func (m *Mediafile) ObtainUnsafe() []string {
+	if m.unsafe {
+		return []string{"-safe", "0"}
+	}
+
+	return nil
 }
 
 // ObtainAudioFilter _
@@ -1457,6 +1490,15 @@ func (m *Mediafile) ObtainAudioProfile() []string {
 func (m *Mediafile) ObtainCopyTs() []string {
 	if m.copyTs {
 		return []string{"-copyts"}
+	}
+
+	return nil
+}
+
+// ObtainInputFormat _
+func (m *Mediafile) ObtainInputFormat() []string {
+	if m.inputFormat != "" {
+		return []string{"-f", m.inputFormat}
 	}
 
 	return nil
