@@ -8,12 +8,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/media/segm"
 )
 
 // PublishOrder _
-func (contracter *ContracterInstance) PublishOrder(fctx context.Context, modOrder models.IOrder) error {
+func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrder models.IOrder) error {
 	var err error
 
 	// TODO: cancel order & segments on failure
@@ -34,7 +35,7 @@ func (contracter *ContracterInstance) PublishOrder(fctx context.Context, modOrde
 
 	muxer := strings.Trim(convOrder.InFile.Extension(), ".")
 
-	for i := range slices {
+	for i, slice := range slices {
 		dealerReq := &models.ConvertDealerRequest{
 			Type:          models.ConvertV1Type,
 			Identity:      uuid.New().String(),
@@ -42,6 +43,7 @@ func (contracter *ContracterInstance) PublishOrder(fctx context.Context, modOrde
 			Params:        convOrder.Params,
 			Muxer:         muxer,
 			Author:        contracter.publisher,
+			Position:      slice.Position,
 		}
 
 		dealerSegment, err := contracter.dealer.AllocateSegment(dealerReq)
@@ -122,6 +124,7 @@ func (contracter *ContracterInstance) PublishOrder(fctx context.Context, modOrde
 		}
 	}
 
+	convOrder.State = models.OrderStateInProgress
 	err = contracter.registry.PersistOrder(convOrder)
 
 	if err != nil {
@@ -133,6 +136,10 @@ func (contracter *ContracterInstance) PublishOrder(fctx context.Context, modOrde
 
 // SliceConvertOrder _
 func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, convOrder *models.ConvertOrder) ([]*segm.Segment, error) {
+	llog := contracter.logger.WithField(dlog.KeyOrderID, convOrder.GetID())
+
+	llog.Info("Slicing order")
+
 	segmenter := segm.NewSliceOperation()
 	segmenter.Init(segm.SliceRequest{
 		InFile:         convOrder.InFile,
@@ -147,13 +154,20 @@ func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, co
 
 	for {
 		select {
-		case <-sProgress:
-		// case pr := <-sProgress:
-		// mb.Publish(pr)
+		case p := <-sProgress:
+			if p != nil {
+				llog.
+					WithField(dlog.KeyPercent, p.Percent()).
+					Debug("Slicing order progress")
+			}
 		case reqSeg := <-sSegments:
-			reqSegs = append(reqSegs, reqSeg)
+			if reqSeg != nil {
+				reqSegs = append(reqSegs, reqSeg)
+			}
 		case fail := <-sFailed:
-			return nil, fail
+			if fail != nil {
+				return nil, fail
+			}
 		case <-sFinished:
 			return reqSegs, nil
 		}

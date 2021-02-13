@@ -35,7 +35,8 @@ var segmentsTestTable = []struct{ segment models.ISegment }{
 				VideoQuality:     30,
 				VideoCodec:       "h264",
 			},
-			Muxer: "mp4",
+			Muxer:    "mp4",
+			Position: 5,
 
 			LockedUntil: &someTime,
 			LockedBy:    &models.Author{Name: "v1/publishers/local/0009"},

@@ -4,16 +4,18 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
+	"github.com/wailorman/fftb/pkg/distributed/models"
 )
 
 // QueuedSegmentsPollingInterval _
 const QueuedSegmentsPollingInterval = time.Duration(5 * time.Second)
 
-// MaxQueuedSegmentsCount _
-const MaxQueuedSegmentsCount = 15
+// ThresholdQueuedSegmentsCount _
+const ThresholdQueuedSegmentsCount = 15
 
 // ContracterPublishWorker _
 type ContracterPublishWorker struct {
@@ -57,16 +59,20 @@ func (pW *ContracterPublishWorker) Start() {
 					continue
 				}
 
-				if queuedSegmentsCount < MaxQueuedSegmentsCount {
+				if queuedSegmentsCount < ThresholdQueuedSegmentsCount {
 					queuedOrder, err := pW.contracter.registry.PickOrderFromQueue(pW.ctx)
 
 					if err != nil {
-						pW.logger.WithError(err).
-							Warn("Failed to pick new order from queue")
+						if errors.Is(err, models.ErrNotFound) {
+							pW.logger.Debug("Queued orders not found")
+						} else {
+							pW.logger.WithError(err).
+								Warn("Failed to pick new order from queue")
+						}
 						continue
 					}
 
-					err = pW.contracter.PublishOrder(pW.ctx, queuedOrder)
+					err = pW.contracter.publishOrder(pW.ctx, queuedOrder)
 
 					if err != nil {
 						pW.logger.WithError(err).

@@ -25,8 +25,9 @@ type ConvertSegment struct {
 	OutputStorageClaimIdentity string
 	State                      string
 
-	Params convert.Params
-	Muxer  string
+	Params   convert.Params
+	Muxer    string
+	Position int
 
 	Publisher   IAuthor
 	LockedUntil *time.Time
@@ -162,4 +163,9 @@ func (ct *ConvertSegment) Lock(performer IAuthor) {
 func (ct *ConvertSegment) Unlock() {
 	ct.LockedBy = nil
 	ct.LockedUntil = nil
+}
+
+// GetPosition _
+func (ct *ConvertSegment) GetPosition() int {
+	return ct.Position
 }

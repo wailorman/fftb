@@ -1,0 +1,233 @@
+package convert
+
+import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/distributed/local"
+	"github.com/wailorman/fftb/pkg/distributed/models"
+	"github.com/wailorman/fftb/pkg/distributed/registry"
+	"github.com/wailorman/fftb/pkg/distributed/ukvs/localfile"
+	"github.com/wailorman/fftb/pkg/distributed/worker"
+	"github.com/wailorman/fftb/pkg/files"
+	prefixed "github.com/x-cray/logrus-prefixed-formatter"
+)
+
+// // IRegistry _
+// type IRegistry interface {
+// 	models.IRegistry
+// 	models.IContracterRegistry
+// }
+
+// type IDealer interface {
+// 	models.IWorkerDealer
+// 	models.IContracterDealer
+// }
+
+// DistributedConvertApp _
+type DistributedConvertApp struct {
+	storage        models.IStorageController
+	publisher      models.IAuthor
+	registry       models.IRegistry
+	dealer         models.IDealer
+	contracter     *local.ContracterInstance
+	workerInstance *worker.Instance
+	ctx            context.Context
+	cancel         func()
+	logger         *logrus.Entry
+	closed         chan struct{}
+}
+
+// Init _
+func (a *DistributedConvertApp) Init() error {
+	var err error
+
+	a.closed = make(chan struct{})
+
+	logger := logrus.New()
+	logger.SetLevel(logrus.TraceLevel)
+	logger.Formatter = &prefixed.TextFormatter{
+		FullTimestamp: true,
+		SpacePadding:  10,
+	}
+	a.logger = logger.WithField("prefix", "fftb")
+
+	a.ctx, a.cancel = context.WithCancel(context.WithValue(context.Background(), ctxlog.LoggerContextKey, a.logger))
+
+	a.storage, err = initStorage(a.ctx)
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing storage")
+	}
+
+	a.registry, err = initRegistry(a.ctx)
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing registry")
+	}
+
+	a.dealer, err = local.NewDealer(a.ctx, a.storage, a.registry)
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing delaer")
+	}
+
+	a.publisher = &models.Author{Name: "local"}
+
+	contracterTmpPath := files.NewPath(".fftb/contracter")
+	err = contracterTmpPath.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Creating tmp path for contracter")
+	}
+
+	a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, contracterTmpPath)
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing contracter")
+	}
+
+	return nil
+}
+
+// StartContracter _
+func (a *DistributedConvertApp) StartContracter() error {
+	publishWorker := local.NewContracterPublishWorker(a.ctx, a.contracter)
+	concatWorker := local.NewContracterConcatWorker(a.ctx, a.contracter)
+
+	publishWorker.Start()
+	concatWorker.Start()
+
+	return nil
+}
+
+// AddTask _
+func (a *DistributedConvertApp) AddTask(c *cli.Context) error {
+	var err error
+
+	segmentsPath := files.NewPath(".fftb/segments")
+
+	err = segmentsPath.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Creating segments path")
+	}
+
+	inFile := files.NewFile(c.Args().Get(0))
+	outFile := files.NewFile(c.Args().Get(1))
+
+	// a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, segmentsPath)
+
+	// if err != nil {
+	// 	return errors.Wrap(err, "Initializing contracter")
+	// }
+
+	_, err = a.contracter.AddOrderToQueue(&models.ConvertContracterRequest{
+		InFile:  inFile,
+		OutFile: outFile,
+		Params:  convertParamsFromFlags(c),
+		Author:  a.publisher,
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "Publishing order")
+	}
+
+	a.logger.Debug("Order queued")
+
+	return nil
+}
+
+// StartWorker _
+func (a *DistributedConvertApp) StartWorker() error {
+	var err error
+
+	workerPath := files.NewPath(".fftb/worker")
+
+	err = workerPath.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing worker path")
+	}
+
+	a.workerInstance, err = worker.NewWorker(a.ctx, workerPath, a.dealer)
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing worker instance")
+	}
+
+	// workerDone := a.workerInstance.Start()
+	a.workerInstance.Start()
+
+	return nil
+}
+
+// Wait _
+func (a *DistributedConvertApp) Wait() <-chan struct{} {
+	cancelSignal := make(chan os.Signal)
+
+	signal.Notify(cancelSignal, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		for {
+			select {
+			case <-a.ctx.Done():
+				if a.workerInstance != nil {
+					<-a.workerInstance.Closed()
+					a.logger.Debug("Worker terminated")
+				}
+
+				err := a.registry.Persist()
+
+				if err != nil {
+					a.logger.WithError(err).Warn("Registry persisting problem")
+				}
+
+				<-a.registry.Closed()
+				close(a.closed)
+				return
+			case <-cancelSignal:
+				a.logger.Info("Terminating")
+				a.cancel()
+			}
+		}
+	}()
+
+	return a.closed
+}
+
+func initStorage(ctx context.Context) (models.IStorageController, error) {
+	storagePath := files.NewPath(".fftb/storage")
+
+	err := storagePath.Create()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Creating storage path")
+	}
+
+	storage := local.NewStorageControl(storagePath)
+
+	return storage, nil
+}
+
+func initRegistry(ctx context.Context) (models.IRegistry, error) {
+	store, err := localfile.NewClient(ctx, ".fftb/store.json")
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Initializing localfile ukvs store")
+	}
+
+	registry, err := registry.NewRegistry(ctx, store)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Initializing registry")
+	}
+
+	return registry, nil
+}

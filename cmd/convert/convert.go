@@ -147,7 +147,7 @@ func CliConfig() *cli.Command {
 				batchTask = mediaConvert.BatchTask{
 					Parallelism: c.Int("parallelism"),
 					Tasks: []mediaConvert.Task{
-						mediaConvert.Task{
+						{
 							InFile:  inFile.FullPath(),
 							OutFile: outFile.FullPath(),
 							Params: mediaConvert.Params{

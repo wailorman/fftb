@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/wailorman/fftb/pkg/distributed/dlog"
-
-	"github.com/wailorman/fftb/pkg/distributed/ukvs"
-	"github.com/wailorman/fftb/pkg/media/convert"
-
 	"github.com/pkg/errors"
+
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
+	"github.com/wailorman/fftb/pkg/distributed/ukvs"
+	"github.com/wailorman/fftb/pkg/files"
+	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // OrderQueueTimeout _
@@ -31,7 +31,9 @@ type Order struct {
 
 // ConvertOrderPayload _
 type ConvertOrderPayload struct {
-	Params convert.Params `json:"params"`
+	Params  convert.Params `json:"params"`
+	InFile  string         `json:"in_file"`
+	OutFile string         `json:"out_file"`
 }
 
 // FindOrderByID _
@@ -58,63 +60,14 @@ func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
 // PickOrderFromQueue _
 func (r *Instance) PickOrderFromQueue(fctx context.Context) (models.IOrder, error) {
 	if !r.orderQueueLock.TryLockTimeout(OrderQueueTimeout) {
-		return nil, models.ErrTimeoutReached
+		return nil, models.ErrLockTimeoutReached
 	}
+
+	defer r.orderQueueLock.Unlock()
 
 	return r.SearchOrder(fctx, func(modOrder models.IOrder) bool {
 		return modOrder.GetState() == models.OrderStateQueued
 	})
-}
-
-func (r *Instance) searchOrders(fctx context.Context, multiple bool, check func(models.IOrder) bool) ([]models.IOrder, error) {
-	ffctx, ffcancel := context.WithCancel(fctx)
-	defer ffcancel()
-
-	results, failures := r.store.FindAll(ffctx, "v1/orders/*")
-	orders := make([]models.IOrder, 0)
-
-	for {
-		select {
-		case <-r.ctx.Done():
-			return orders, nil
-
-		case <-fctx.Done():
-			return orders, nil
-
-		case err := <-failures:
-			if err != nil {
-				return nil, errors.Wrap(err, "Searching for free order")
-			}
-
-			return orders, nil
-
-		case res, ok := <-results:
-			if !ok {
-				return orders, nil
-			}
-
-			modOrder, err := unmarshalOrderModel(res)
-
-			if err != nil {
-				r.logger.WithError(err).
-					WithField(dlog.KeyStorePayload, string(res)).
-					Warn("Unmarshalling order model from store")
-
-				continue
-			}
-
-			if check(modOrder) {
-				orders = append(orders, modOrder)
-
-				if !multiple {
-					return orders, nil
-				}
-			}
-
-		case <-time.After(SearchTimeout):
-			return nil, models.ErrTimeoutReached
-		}
-	}
 }
 
 // SearchOrder _
@@ -162,6 +115,57 @@ func (r *Instance) PersistOrder(modOrder models.IOrder) error {
 	}
 
 	return nil
+}
+
+func (r *Instance) searchOrders(fctx context.Context, multiple bool, check func(models.IOrder) bool) ([]models.IOrder, error) {
+	ffctx, ffcancel := context.WithCancel(fctx)
+	defer ffcancel()
+
+	results, failures := r.store.FindAll(ffctx, "v1/orders/*")
+	orders := make([]models.IOrder, 0)
+
+	for {
+		select {
+		case <-r.ctx.Done():
+			return orders, models.ErrCancelled
+
+		case <-fctx.Done():
+			return orders, models.ErrCancelled
+
+		case err := <-failures:
+			if err != nil {
+				return nil, errors.Wrap(err, "Searching for free order")
+			}
+
+			return orders, nil
+
+		case res, ok := <-results:
+			if !ok {
+				return orders, nil
+			}
+
+			modOrder, err := unmarshalOrderModel(res)
+
+			if err != nil {
+				r.logger.WithError(err).
+					WithField(dlog.KeyStorePayload, string(res)).
+					Warn("Unmarshalling order model from store")
+
+				continue
+			}
+
+			if check(modOrder) {
+				orders = append(orders, modOrder)
+
+				if !multiple {
+					return orders, nil
+				}
+			}
+
+		case <-time.After(SearchTimeout):
+			return nil, models.ErrTimeoutReached
+		}
+	}
 }
 
 func unmarshalOrderModel(data []byte) (models.IOrder, error) {
@@ -252,7 +256,9 @@ func serializeOrderPayload(modOrder models.IOrder, dbOrder *Order) error {
 	}
 
 	payload := &ConvertOrderPayload{
-		Params: convOrder.Params,
+		Params:  convOrder.Params,
+		InFile:  convOrder.InFile.FullPath(),
+		OutFile: convOrder.OutFile.FullPath(),
 	}
 
 	bPayload, err := json.Marshal(payload)
@@ -286,6 +292,8 @@ func deserializeOrderPayload(dbOrder *Order, modOrder models.IOrder) error {
 	}
 
 	convOrder.Params = convPayload.Params
+	convOrder.InFile = files.NewFile(convPayload.InFile)
+	convOrder.OutFile = files.NewFile(convPayload.OutFile)
 
 	return nil
 }

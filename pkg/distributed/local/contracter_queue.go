@@ -26,6 +26,8 @@ func (c *ContracterInstance) AddOrderToQueue(req models.IContracterRequest) (mod
 		State:     models.OrderStateQueued,
 		Params:    convertRequest.Params,
 		Publisher: c.publisher,
+		InFile:    convertRequest.InFile,
+		OutFile:   convertRequest.OutFile,
 	}
 
 	err := c.registry.PersistOrder(order)

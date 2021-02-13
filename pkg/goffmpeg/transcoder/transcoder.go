@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -442,6 +443,8 @@ func (t Transcoder) Output() chan models.Progress {
 
 			ctxlog.Logger.WithField("line", line).
 				Trace("Received line from ffmpeg output")
+
+			log.Println(line)
 
 			if strings.Contains(line, "frame=") && strings.Contains(line, "time=") && strings.Contains(line, "bitrate=") {
 				var re = regexp.MustCompile(`=\s+`)

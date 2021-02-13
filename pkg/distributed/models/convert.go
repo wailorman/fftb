@@ -32,8 +32,9 @@ type ConvertDealerRequest struct {
 	Identity      string
 	OrderIdentity string
 
-	Params convert.Params
-	Muxer  string
+	Params   convert.Params
+	Muxer    string
+	Position int
 
 	Author IAuthor
 }

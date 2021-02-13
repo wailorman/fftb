@@ -28,6 +28,12 @@ const KeyStorePayload = "store_payload"
 // PrefixContracterPublishWorker _
 const PrefixContracterPublishWorker = "fftb.contracter.publish_worker"
 
+// PrefixContracterConcatWorker _
+const PrefixContracterConcatWorker = "fftb.contracter.concat_worker"
+
+// PrefixContracter _
+const PrefixContracter = "fftb.contracter"
+
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
 	entry := logger.
@@ -36,5 +42,29 @@ func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Pr
 		WithField(KeySegmentState, p.Step()).
 		WithField(KeyOrderID, seg.GetOrderID())
 
-	entry.Info("Processing segment")
+	entry.Debug("Processing segment")
+}
+
+// basicProgress _
+type basicProgress struct {
+	step    models.ProgressStep
+	percent float64
+}
+
+// Step _
+func (bP *basicProgress) Step() models.ProgressStep {
+	return bP.step
+}
+
+// Percent _
+func (bP *basicProgress) Percent() float64 {
+	return bP.percent
+}
+
+// MakeIOProgress _
+func MakeIOProgress(step models.ProgressStep, percent float64) models.Progresser {
+	return &basicProgress{
+		step:    step,
+		percent: percent,
+	}
 }

@@ -32,7 +32,10 @@ var ErrNotFound = errors.New("Not found")
 var ErrTimeoutReached = errors.New("Timeout reached")
 
 // ErrFreeSegmentLockTimeout _
-var ErrFreeSegmentLockTimeout = errors.New("Free segment lock timeout")
+var ErrFreeSegmentLockTimeout = errors.New("Free segment lock timeout") // TODO: Subst. with ErrLockTimeoutReached
+
+// ErrLockTimeoutReached _
+var ErrLockTimeoutReached = errors.New("Lock timeout reached")
 
 // ErrMissingLockAuthor _
 var ErrMissingLockAuthor = errors.New("Missing lock author")
@@ -143,6 +146,7 @@ type ISegment interface {
 	GetState() string
 	GetPublisher() IAuthor
 	GetPerformer() IAuthor
+	GetPosition() int
 	MatchPublisher(IAuthor) bool
 	MatchPerformer(IAuthor) bool
 	Lock(performer IAuthor)
@@ -162,7 +166,7 @@ type IDealer interface {
 
 // IContracterDealer _
 type IContracterDealer interface {
-	GetOutputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
+	GetOutputStorageClaim(publisher IAuthor, segmentID string) (IStorageClaim, error)
 	AllocatePublisherAuthority(name string) (IAuthor, error)
 	AllocateSegment(req IDealerRequest) (ISegment, error)
 	AllocateInputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
@@ -174,11 +178,13 @@ type IContracterDealer interface {
 	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
 	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
 	GetQueuedSegmentsCount(ctx context.Context) (int, error)
+	GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error)
+	GetSegmentByID(segmentID string) (ISegment, error)
 }
 
 // IWorkerDealer _
 type IWorkerDealer interface {
-	GetInputStorageClaim(performer IAuthor, id string) (IStorageClaim, error)
+	GetInputStorageClaim(performer IAuthor, segmentID string) (IStorageClaim, error)
 	AllocatePerformerAuthority(name string) (IAuthor, error)
 	FindFreeSegment(performer IAuthor) (ISegment, error)
 	NotifyRawDownload(performer IAuthor, id string, p Progresser) error
@@ -202,8 +208,8 @@ type IRegistry interface {
 	SearchOrder(fctx context.Context, check func(IOrder) bool) (IOrder, error)
 	SearchAllOrders(fctx context.Context, check func(IOrder) bool) ([]IOrder, error)
 	FindNotLockedSegment(ctx context.Context) (ISegment, error)
-	LockSegmentByID(segmentID string, lockedBy IAuthor) error
-	UnlockSegmentByID(segmentID string) error
+	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
+	// UnlockSegmentByID(segmentID string) error
 	SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
 	SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
 	Persist() error
@@ -248,8 +254,8 @@ type IDealerRegistry interface {
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
 	FindNotLockedSegment(ctx context.Context) (ISegment, error)
 	PersistSegment(ISegment) error
-	LockSegmentByID(segmentID string, lockedBy IAuthor) error
-	UnlockSegmentByID(segmentID string) error
+	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
+	// UnlockSegmentByID(segmentID string) error
 	SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
 	SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
 	Persist() error

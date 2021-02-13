@@ -12,9 +12,7 @@ import (
 
 // FindFreeSegment _
 func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, error) {
-	locked := d.freeSegmentLock.TryLockTimeout(LockSegmentTimeout)
-
-	if !locked {
+	if !d.freeSegmentLock.TryLockTimeout(LockSegmentTimeout) {
 		return nil, models.ErrFreeSegmentLockTimeout
 	}
 
@@ -26,10 +24,12 @@ func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, err
 		return nil, errors.Wrap(err, "Looking for free segment")
 	}
 
-	err = d.registry.LockSegmentByID(freeSegment.GetID(), performer)
+	freeSegment.Lock(performer)
+
+	err = d.registry.PersistSegment(freeSegment)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Locking free segment")
+		return nil, errors.Wrap(err, "Persisting locked segment")
 	}
 
 	return freeSegment, nil
@@ -108,7 +108,12 @@ func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error
 		return models.ErrUnknownSegmentType
 	}
 
+	d.logger.WithField(dlog.KeySegmentID, convertSegment.GetID()).
+		WithField(dlog.KeyOrderID, segment.GetOrderID()).
+		Info("Segment is finished")
+
 	convertSegment.State = models.SegmentStateFinished
+	convertSegment.Unlock()
 
 	return d.registry.PersistSegment(convertSegment)
 }
@@ -137,7 +142,9 @@ func (d *Dealer) segmentProgress(performer models.IAuthor, segmentID string, p m
 
 	dlog.SegmentProgress(d.logger, seg, p)
 
-	err = d.registry.LockSegmentByID(seg.GetID(), performer)
+	seg.Lock(performer)
+
+	err = d.registry.PersistSegment(seg)
 
 	if err != nil {
 		return errors.Wrap(err, "Prolongating segment lock")
@@ -193,5 +200,7 @@ func (d *Dealer) QuitSegment(performer models.IAuthor, id string) error {
 		return errors.Wrap(models.ErrPerformerMismatch, fmt.Sprintf("Received performer `%s`, locked by performer `%s`", performer, seg.GetPerformer()))
 	}
 
-	return d.registry.UnlockSegmentByID(id)
+	seg.Unlock()
+
+	return d.registry.PersistSegment(seg)
 }

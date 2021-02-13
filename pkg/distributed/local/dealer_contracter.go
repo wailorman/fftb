@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 )
 
@@ -17,6 +18,10 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 		return nil, models.ErrUnknownRequestType
 	}
 
+	d.logger.WithField(dlog.KeyOrderID, convertReq.OrderIdentity).
+		WithField(dlog.KeySegmentID, convertReq.Identity).
+		Info("Allocating segment")
+
 	// TODO: check id is free
 
 	convertSegment := &models.ConvertSegment{
@@ -24,6 +29,7 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 		OrderIdentity: convertReq.OrderIdentity,
 		Params:        convertReq.Params,
 		Muxer:         convertReq.Muxer,
+		Position:      convertReq.Position,
 		State:         models.SegmentStatePrepared,
 		Publisher:     req.GetAuthor(),
 	}
@@ -125,6 +131,10 @@ func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) erro
 		return models.ErrUnknownSegmentType
 	}
 
+	d.logger.WithField(dlog.KeyOrderID, convertSegment.GetOrderID()).
+		WithField(dlog.KeySegmentID, convertSegment.GetID()).
+		Info("Publishing segment")
+
 	convertSegment.State = models.SegmentStatePublished
 
 	return d.registry.PersistSegment(convertSegment)
@@ -148,4 +158,30 @@ func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context) (int, error) {
 	}
 
 	return len(segments), nil
+}
+
+// GetSegmentsStatesByOrderID _
+func (d *Dealer) GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error) {
+	segments, err := d.registry.FindSegmentsByOrderID(fctx, orderID)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Getting segments")
+	}
+
+	if len(segments) == 0 {
+		return nil, models.ErrNotFound
+	}
+
+	statesMap := make(map[string]string)
+
+	for _, segment := range segments {
+		statesMap[segment.GetID()] = segment.GetState()
+	}
+
+	return statesMap, nil
+}
+
+// GetSegmentByID _
+func (d *Dealer) GetSegmentByID(segmentID string) (models.ISegment, error) {
+	return d.registry.FindSegmentByID(segmentID)
 }

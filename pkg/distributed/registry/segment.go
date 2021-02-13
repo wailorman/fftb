@@ -27,6 +27,7 @@ type Segment struct {
 	LockedBy                   string     `json:"locked_by"`
 	State                      string     `json:"state"`
 	Publisher                  string     `json:"publisher"`
+	Position                   int        `json:"position"`
 }
 
 // ConvertSegmentPayload _
@@ -142,8 +143,10 @@ func (r *Instance) FindNotLockedSegment(fctx context.Context) (models.ISegment, 
 		return nil, models.ErrTimeoutReached
 	}
 
+	defer r.freeSegmentLock.Unlock()
+
 	return r.SearchSegment(fctx, func(segment models.ISegment) bool {
-		return !segment.GetIsLocked()
+		return !segment.GetIsLocked() && segment.GetState() == models.SegmentStatePublished
 	})
 }
 
@@ -234,6 +237,7 @@ func (dbSegment *Segment) toModel() (models.ISegment, error) {
 	modSeg.State = dbSegment.State
 	modSeg.InputStorageClaimIdentity = dbSegment.InputStorageClaimIdentity
 	modSeg.OutputStorageClaimIdentity = dbSegment.OutputStorageClaimIdentity
+	modSeg.Position = dbSegment.Position
 
 	modSeg.LockedUntil = dbSegment.LockedUntil
 
@@ -269,6 +273,7 @@ func (dbSegment *Segment) fromModel(modSegment models.ISegment) error {
 	dbSegment.InputStorageClaimIdentity = modSegment.GetInputStorageClaimIdentity()
 	dbSegment.OutputStorageClaimIdentity = modSegment.GetOutputStorageClaimIdentity()
 	dbSegment.LockedUntil = modSegment.GetLockedUntil()
+	dbSegment.Position = modSegment.GetPosition()
 
 	if lockedBy := modSegment.GetLockedBy(); lockedBy != nil {
 		dbSegment.LockedBy = lockedBy.GetName()
