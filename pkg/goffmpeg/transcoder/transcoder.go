@@ -312,6 +312,15 @@ func (t *Transcoder) Stop() error {
 	return nil
 }
 
+// Kill kills ffmpeg process
+func (t *Transcoder) Kill() error {
+	if t.process != nil {
+		return t.process.Process.Kill()
+	}
+
+	return nil
+}
+
 // Output Returns the transcoding progress channel
 func (t Transcoder) Output() chan models.Progress {
 	out := make(chan models.Progress)
