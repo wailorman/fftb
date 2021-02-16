@@ -1,15 +1,21 @@
 package segm
 
 import (
+	"context"
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/ff"
 )
 
 // ConcatOperation _
 type ConcatOperation struct {
+	ctx              context.Context
+	ffctx            context.Context
+	ffcancel         func()
+	wg               *chwg.ChannelledWaitGroup
 	outFile          files.Filer
 	segments         []*Segment
 	segmentsListFile files.Filer
@@ -26,8 +32,15 @@ type ConcatRequest struct {
 }
 
 // NewConcatOperation _
-func NewConcatOperation() *ConcatOperation {
-	return &ConcatOperation{}
+func NewConcatOperation(ctx context.Context) *ConcatOperation {
+	ffctx, ffcancel := context.WithCancel(ctx)
+
+	return &ConcatOperation{
+		ctx:      ctx,
+		ffctx:    ffctx,
+		ffcancel: ffcancel,
+		wg:       chwg.New(),
+	}
 }
 
 // Init _
@@ -69,7 +82,7 @@ func (co *ConcatOperation) Init(req ConcatRequest) error {
 		return errors.Wrap(err, "Writing segments list")
 	}
 
-	co.ffworker = ff.New()
+	co.ffworker = ff.New(co.ffctx)
 	err = co.ffworker.Init(co.segmentsListFile, req.OutFile)
 
 	if err != nil {
@@ -88,15 +101,16 @@ func (co *ConcatOperation) Init(req ConcatRequest) error {
 }
 
 // Run _
-func (co *ConcatOperation) Run() (finished chan struct{}, progress chan ff.Progressable, failures chan error) {
-	finished = make(chan struct{})
+func (co *ConcatOperation) Run() (progress chan ff.Progressable, failures chan error) {
 	progress = make(chan ff.Progressable)
 	failures = make(chan error)
 
+	co.wg.Add(1)
+
 	go func() {
-		defer close(finished)
 		defer close(progress)
 		defer close(failures)
+		defer co.wg.Done()
 
 		if !co.initialized {
 			failures <- ErrNotInitialized
@@ -108,24 +122,29 @@ func (co *ConcatOperation) Run() (finished chan struct{}, progress chan ff.Progr
 			return
 		}
 
-		_progress, _finished, _failed := co.ffworker.Start()
+		fProgress, fFailures := co.ffworker.Start()
 
 		for {
 			select {
-			case <-_finished:
-				return
+			case failure, failed := <-fFailures:
+				if !failed {
+					return
+				}
 
-			case failure := <-_failed:
+				co.ffcancel()
+				<-co.ffworker.Closed()
 				failures <- failure
 				return
 
-			case progressMessage := <-_progress:
-				progress <- progressMessage
+			case progressMessage, ok := <-fProgress:
+				if ok {
+					progress <- progressMessage
+				}
 			}
 		}
 	}()
 
-	return finished, progress, failures
+	return progress, failures
 }
 
 // Prune _
@@ -135,4 +154,9 @@ func (co *ConcatOperation) Prune() error {
 	}
 
 	return nil
+}
+
+// Closed _
+func (co *ConcatOperation) Closed() <-chan struct{} {
+	return co.wg.Closed()
 }
