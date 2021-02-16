@@ -1,40 +1,72 @@
 package ff
 
 import (
+	"context"
+	"time"
+
+	"github.com/pkg/errors"
+
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
 	goffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 	goffmpegTranscoder "github.com/wailorman/fftb/pkg/goffmpeg/transcoder"
 )
 
+// ErrNotInitialized happened when instance wasn't initialized by Init() func
+var ErrNotInitialized = errors.New("not initialized")
+
+// ErrAlreadyStarted happened when Start() func calls more than once
+var ErrAlreadyStarted = errors.New("already started")
+
+// ErrAlreadyInitialized happened when Init() func calls more than once
+var ErrAlreadyInitialized = errors.New("already initialized")
+
+// ErrProcessTimeout happened when ffmpeg does not send any messages more than ProcessTimeout value
+var ErrProcessTimeout = errors.New("ffmpeg process timeout")
+
+// ProcessTimeout is maximum time ffmpeg allowed to not send any messages.
+// Once this timeout reached, ErrProcessTimeout will happened
+var ProcessTimeout = time.Duration(30 * time.Second)
+
 // Instance _
 type Instance struct {
-	Started  chan bool
-	Stopping chan bool
-	Stopped  chan bool
-
-	stop       chan struct{}
-	inFile     files.Filer
-	outFile    files.Filer
-	transcoder *goffmpegTranscoder.Transcoder
+	ctx         context.Context
+	initialized bool
+	started     bool
+	wg          *chwg.ChannelledWaitGroup
+	inFile      files.Filer
+	outFile     files.Filer
+	transcoder  *goffmpegTranscoder.Transcoder
 }
 
 // New just initializing & configuring instance before start up
-func New() *Instance {
+func New(ctx context.Context) *Instance {
 	return &Instance{
-		stop: make(chan struct{}),
+		ctx: ctx,
+		wg:  chwg.New(),
 	}
 }
 
 // Init receives input & output file objects and initializing transcoder.
 // Returns an error if transcoder can't initialize
 func (c *Instance) Init(inFile, outFile files.Filer) error {
+	if c.initialized {
+		return ErrAlreadyInitialized
+	}
+
 	c.inFile = inFile
 	c.outFile = outFile
 	c.transcoder = new(goffmpegTranscoder.Transcoder)
 
 	err := c.transcoder.Initialize(inFile.FullPath(), outFile.FullPath())
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	c.initialized = true
+
+	return nil
 }
 
 // MediaFile returns goffmpeg's MediaFile object for configuring transcoder input & output
@@ -42,69 +74,53 @@ func (c *Instance) MediaFile() *goffmpegModels.Mediafile {
 	return c.transcoder.MediaFile()
 }
 
-// Stop stops transcoding proccess & sends two messages to two channels
-// in respecive order:
-// Stopping
-// Stopped
-func (c *Instance) Stop() {
-	c.stop = make(chan struct{})
-	// broadcast to all channel receivers
-	close(c.stop)
-}
-
-func (c *Instance) initChannels() {
-	c.Stopping = make(chan bool, 1)
-	c.Stopped = make(chan bool, 1)
-	c.Started = make(chan bool, 1)
-}
-
-func (c *Instance) closeChannels() {
-	close(c.Stopping)
-	close(c.Stopped)
-	close(c.Started)
-}
-
-// Start starts ffmpeg process & returns 3 channels.
+// Start starts ffmpeg process & returns 2 channels.
 // progress channel will send progress message ~every 1 sec.
-// finished — once.
-// failed channel will send an error object
-// if something goes wrong & also send a signal to finished channel.
-// Also sends a message to Started channel
+// failures channel will send an error object or nil once operation is done.
 func (c *Instance) Start() (
 	progress chan Progressable,
-	finished chan bool,
-	failed chan error,
+	failures chan error,
 ) {
 	progress = make(chan Progressable)
-	finished = make(chan bool)
-	failed = make(chan error)
+	failures = make(chan error)
 
-	c.initChannels()
+	c.wg.Add(1)
 
 	go func() {
 		defer close(progress)
-		defer close(finished)
-		defer close(failed)
+		defer close(failures)
+		defer c.wg.Done()
 
-		defer c.closeChannels()
+		if !c.initialized {
+			failures <- ErrNotInitialized
+			return
+		}
+
+		if c.started {
+			failures <- ErrAlreadyStarted
+			return
+		}
+
+		c.started = true
 
 		done := c.transcoder.Run(true)
 
-		c.Started <- true
-
 		_progress := c.transcoder.Output()
+
+		t := time.NewTimer(ProcessTimeout)
+		defer t.Stop()
 
 		for {
 			select {
-			case <-c.stop:
-				c.Stopping <- true
+			case <-c.ctx.Done():
 				c.transcoder.Stop()
-				c.Stopped <- true
-				finished <- true
+				failures <- c.ctx.Err()
 				return
 
-			case progressMessage := <-_progress:
-				if progressMessage.FramesProcessed != "" {
+			case progressMessage, ok := <-_progress:
+				if ok && progressMessage.FramesProcessed != "" {
+					t.Reset(ProcessTimeout)
+
 					progress <- &Progress{
 						framesProcessed: progressMessage.FramesProcessed,
 						currentTime:     progressMessage.CurrentTime,
@@ -118,14 +134,23 @@ func (c *Instance) Start() (
 
 			case err := <-done:
 				if err != nil {
-					failed <- err
+					failures <- err
 				}
 
-				finished <- true
+				return
+
+			case <-t.C:
+				c.transcoder.Kill()
+				failures <- ErrProcessTimeout
 				return
 			}
 		}
 	}()
 
-	return progress, finished, failed
+	return progress, failures
+}
+
+// Closed returns channel with finished signal
+func (c *Instance) Closed() <-chan struct{} {
+	return c.wg.Closed()
 }
