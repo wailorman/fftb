@@ -79,7 +79,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 			slices = append(slices, slice)
 		}
 
-		concatOperation := segm.NewConcatOperation()
+		concatOperation := segm.NewConcatOperation(c.ctx)
 
 		err := concatOperation.Init(segm.ConcatRequest{
 			OutFile:  convOrder.OutFile,
@@ -93,24 +93,26 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 		cg := new(errgroup.Group)
 
 		cg.Go(func() error {
-			cFinished, cProgress, cFailures := concatOperation.Run()
+			cProgress, cFailures := concatOperation.Run()
 
 			var cErr error
 			for {
 				select {
-				case <-cFinished:
-					if cErr != nil {
-						return errors.Wrap(cErr, "Failed to concatenate")
-					}
-
-					break
-				case pM := <-cProgress:
-					if pM != nil {
+				case pM, ok := <-cProgress:
+					if ok {
 						c.logger.WithField(dlog.KeyOrderID, order.GetID()).
 							WithField(dlog.KeyPercent, pM.Percent()).
 							Info("Concatenating order")
 					}
-				case failure := <-cFailures:
+				case failure, failed := <-cFailures:
+					if !failed {
+						if cErr != nil {
+							return errors.Wrap(cErr, "Failed to concatenate")
+						}
+
+						return nil
+					}
+
 					if failure != nil {
 						cErr = failure
 					}

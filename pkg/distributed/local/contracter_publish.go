@@ -140,7 +140,7 @@ func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, co
 
 	llog.Info("Slicing order")
 
-	segmenter := segm.NewSliceOperation()
+	segmenter := segm.NewSliceOperation(contracter.ctx)
 	segmenter.Init(segm.SliceRequest{
 		InFile:         convOrder.InFile,
 		KeepTimestamps: false,
@@ -150,26 +150,28 @@ func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, co
 
 	reqSegs := make([]*segm.Segment, 0)
 
-	sFinished, sProgress, sSegments, sFailed := segmenter.Run()
+	sProgress, sSegments, sFailed := segmenter.Run()
 
 	for {
 		select {
-		case p := <-sProgress:
-			if p != nil {
+		case p, ok := <-sProgress:
+			if ok {
 				llog.
 					WithField(dlog.KeyPercent, p.Percent()).
 					Debug("Slicing order progress")
 			}
-		case reqSeg := <-sSegments:
-			if reqSeg != nil {
+
+		case reqSeg, ok := <-sSegments:
+			if ok {
 				reqSegs = append(reqSegs, reqSeg)
 			}
-		case fail := <-sFailed:
-			if fail != nil {
-				return nil, fail
+
+		case failure, failed := <-sFailed:
+			if !failed {
+				return reqSegs, nil
 			}
-		case <-sFinished:
-			return reqSegs, nil
+
+			return nil, failure
 		}
 	}
 }

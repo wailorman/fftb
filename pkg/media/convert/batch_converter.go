@@ -3,77 +3,61 @@ package convert
 import (
 	"context"
 	"strconv"
-	"sync"
 
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/media/info"
 )
 
 // BatchConverter _
 type BatchConverter struct {
-	closed     chan struct{}
+	wg         *chwg.ChannelledWaitGroup
 	ctx        context.Context
-	cancel     func()
 	infoGetter info.Getter
 }
 
 // NewBatchConverter _
 func NewBatchConverter(ctx context.Context, infoGetter info.Getter) *BatchConverter {
-	bc := &BatchConverter{
+	return &BatchConverter{
+		wg:         chwg.New(),
+		ctx:        ctx,
 		infoGetter: infoGetter,
-		closed:     make(chan struct{}),
 	}
-
-	bc.ctx, bc.cancel = context.WithCancel(ctx)
-
-	return bc
-}
-
-// Stop _
-func (bc *BatchConverter) Stop() {
-	bc.cancel()
 }
 
 // Convert _
 func (bc *BatchConverter) Convert(batchTask BatchTask) (
 	progress chan BatchProgressMessage,
-	finished chan bool,
-	failed chan BatchErrorMessage,
+	failures chan BatchErrorMessage,
 ) {
 	taskCount := len(batchTask.Tasks)
 
 	progress = make(chan BatchProgressMessage)
-	finished = make(chan bool)
-	failed = make(chan BatchErrorMessage)
+	failures = make(chan BatchErrorMessage)
 	taskQueue := make(chan Task, taskCount)
 
-	var wg sync.WaitGroup
-	wg.Add(taskCount)
+	bc.wg.Add(taskCount)
 
 	go func() {
 		for i := 0; i < batchTask.Parallelism; i++ {
 			go func() {
 				for task := range taskQueue {
-					select {
-					case <-bc.ctx.Done():
-						wg.Done()
-						return
-
-					default:
+					if !bc.wg.IsFinished() {
 						err := bc.convertOne(task, progress)
 
 						if err != nil {
-							failed <- BatchErrorMessage{
+							failures <- BatchErrorMessage{
 								Task: task,
 								Err:  err,
 							}
 
 							if batchTask.StopConversionOnError {
-								bc.Stop()
+								bc.wg.AllDone()
+								return
 							}
 						}
-					}
 
-					wg.Done()
+						bc.wg.Done()
+					}
 				}
 			}()
 		}
@@ -90,52 +74,44 @@ func (bc *BatchConverter) Convert(batchTask BatchTask) (
 	}()
 
 	go func() {
-		wg.Wait()
-
-		close(bc.closed)
-
-		select {
-		case <-bc.ctx.Done():
-		default:
-			finished <- true
-		}
-
+		bc.wg.Wait()
 		close(progress)
-		close(finished)
-		close(failed)
+		close(failures)
 		close(taskQueue)
 	}()
 
-	return progress, finished, failed
+	return progress, failures
 }
 
 func (bc *BatchConverter) convertOne(task Task, progress chan BatchProgressMessage) error {
-	sConv := NewConverter(bc.ctx, bc.infoGetter)
-	_progress, _finished, _failed := sConv.Convert(task)
+	sCtx, sCancel := context.WithCancel(bc.ctx)
+	sConv := NewConverter(sCtx, bc.infoGetter)
+	sProgress, sFailures := sConv.Convert(task)
 
 	for {
 		select {
-		case <-bc.ctx.Done():
-			<-sConv.Closed()
-			return nil
-
-		case progressMessage := <-_progress:
-			progress <- BatchProgressMessage{
-				Progress: progressMessage,
-				Task:     task,
+		case progressMessage, ok := <-sProgress:
+			if ok {
+				progress <- BatchProgressMessage{
+					Progress: progressMessage,
+					Task:     task,
+				}
 			}
 
-		case errorMessage := <-_failed:
+		case errorMessage, failed := <-sFailures:
+			sCancel()
+
+			if !failed {
+				<-sConv.Closed()
+				return nil
+			}
+
 			return errorMessage
-
-		case <-_finished:
-			return nil
-
 		}
 	}
 }
 
-// Closed _
+// Closed returns channel with finished signal
 func (bc *BatchConverter) Closed() <-chan struct{} {
-	return bc.closed
+	return bc.wg.Closed()
 }

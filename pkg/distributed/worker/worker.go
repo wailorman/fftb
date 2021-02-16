@@ -184,7 +184,7 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 
 	throttled := throttle.New(2000 * time.Millisecond)
 
-	progressChan, doneChan, errChan := converter.Convert(task)
+	progressChan, errChan := converter.Convert(task)
 
 	for {
 		select {
@@ -228,45 +228,44 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 				})
 			}
 
-		case cErr, ok := <-errChan:
-			if ok {
-				panic(errors.Wrap(cErr, "Error processing convert task"))
+		case cErr, failed := <-errChan:
+			if !failed {
+				outputFileReader, err := outputFile.ReadContent()
+
+				if err != nil {
+					panic(errors.Wrap(err, "Building output file reader"))
+				}
+
+				_, err = io.Copy(outputClaimWriter, outputFileReader)
+
+				if err != nil {
+					panic(errors.Wrap(err, "Writing result to output claim"))
+				}
+
+				err = outputFile.Remove()
+
+				if err != nil {
+					panic(errors.Wrap(err, "Removing output file after uploading to storage"))
+				}
+
+				err = inputFile.Remove()
+
+				if err != nil {
+					panic(errors.Wrap(err, "Removing input file after processing it"))
+				}
+
+				slog.Info("Segment is done")
+
+				err = w.dealer.FinishSegment(w.performer, freeSegment.GetID())
+
+				if err != nil {
+					panic(errors.Wrap(err, "Sending segment finish notification"))
+				}
+
+				return nil
 			}
 
-		case <-doneChan:
-			outputFileReader, err := outputFile.ReadContent()
-
-			if err != nil {
-				panic(errors.Wrap(err, "Building output file reader"))
-			}
-
-			_, err = io.Copy(outputClaimWriter, outputFileReader)
-
-			if err != nil {
-				panic(errors.Wrap(err, "Writing result to output claim"))
-			}
-
-			err = outputFile.Remove()
-
-			if err != nil {
-				panic(errors.Wrap(err, "Removing output file after uploading to storage"))
-			}
-
-			err = inputFile.Remove()
-
-			if err != nil {
-				panic(errors.Wrap(err, "Removing input file after processing it"))
-			}
-
-			slog.Info("Segment is done")
-
-			err = w.dealer.FinishSegment(w.performer, freeSegment.GetID())
-
-			if err != nil {
-				panic(errors.Wrap(err, "Sending segment finish notification"))
-			}
-
-			return nil
+			panic(errors.Wrap(cErr, "Error processing convert task"))
 		}
 	}
 }

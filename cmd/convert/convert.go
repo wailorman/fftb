@@ -115,7 +115,6 @@ func CliConfig() *cli.Command {
 			infoGetter := info.New()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
-			var doneChan chan bool
 			var errChan chan mediaConvert.BatchErrorMessage
 
 			var batchTask mediaConvert.BatchTask
@@ -197,19 +196,22 @@ func CliConfig() *cli.Command {
 
 			converter := mediaConvert.NewBatchConverter(ctx, infoGetter)
 
-			progressChan, doneChan, errChan = converter.Convert(batchTask)
+			progressChan, errChan = converter.Convert(batchTask)
 
 			for {
 				select {
-				case progressMessage := <-progressChan:
-					logProgress(progressMessage)
+				case progressMessage, ok := <-progressChan:
+					if ok {
+						logProgress(progressMessage)
+					}
 
-				case errorMessage := <-errChan:
-					logError(errorMessage)
+				case failure, failed := <-errChan:
+					if !failed {
+						logDone()
+						return nil
+					}
 
-				case <-doneChan:
-					logDone()
-					return nil
+					logError(failure)
 				}
 			}
 		},

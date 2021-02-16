@@ -1,6 +1,7 @@
 package segm_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -20,11 +21,14 @@ func Test__splitAndConcat(t *testing.T) {
 
 	for _, testItem := range testTable {
 		func() {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
 			segmentsDir := files.NewTempPath("fftb_test_segments")
 
 			t.Log("segments path:", segmentsDir.FullPath())
 
-			sliceOperation := segm.NewSliceOperation()
+			sliceOperation := segm.NewSliceOperation(ctx)
 
 			err := sliceOperation.Init(segm.SliceRequest{
 				InFile:         testItem.file,
@@ -35,19 +39,14 @@ func Test__splitAndConcat(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			sFinished, sProgress, sSegments, sFailed := sliceOperation.Run()
+			sProgress, sSegments, sFailures := sliceOperation.Run()
 
 			segments := make([]*segm.Segment, 0)
 
 			sliceGroup := new(errgroup.Group)
 			sliceGroup.Go(func() error {
-				var gerr error
-
 				for {
 					select {
-					case <-sFinished:
-						return gerr
-
 					case p := <-sProgress:
 						if p != nil {
 							t.Log("Slicing progress:", p.Progress())
@@ -58,8 +57,12 @@ func Test__splitAndConcat(t *testing.T) {
 							segments = append(segments, segment)
 						}
 
-					case err := <-sFailed:
-						gerr = err
+					case failure, failed := <-sFailures:
+						if !failed {
+							return nil
+						}
+
+						return failure
 
 					// TODO: rewrite with context
 					case <-time.After(5 * time.Minute):
@@ -74,7 +77,7 @@ func Test__splitAndConcat(t *testing.T) {
 
 			assert.Equal(t, 69, len(segments), "Segments count")
 
-			concatOperation := segm.NewConcatOperation()
+			concatOperation := segm.NewConcatOperation(ctx)
 			concatOutputFile, err := files.NewTempFile("fftb_concat_test", "fftb_concat_output.mp4")
 			concatOutputFile.Create()
 
@@ -89,24 +92,23 @@ func Test__splitAndConcat(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			cFinished, cProgress, cFailures := concatOperation.Run()
+			cProgress, cFailures := concatOperation.Run()
 
 			concatGroup := new(errgroup.Group)
 			concatGroup.Go(func() error {
-				var gerr error
-
 				for {
 					select {
-					case <-cFinished:
-						return gerr
-
 					case p := <-cProgress:
 						if p != nil {
 							t.Logf("Concatenation progress: %f", p.Progress())
 						}
 
-					case err := <-cFailures:
-						gerr = err
+					case failure, failed := <-cFailures:
+						if !failed {
+							return nil
+						}
+
+						return failure
 
 					// TODO: rewrite with context
 					case <-time.After(5 * time.Minute):
