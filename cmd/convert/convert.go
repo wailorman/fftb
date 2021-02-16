@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/wailorman/fftb/pkg/files"
@@ -109,14 +110,12 @@ func CliConfig() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+			ctx := context.Background()
+
 			mediaInfoGetter := mediaInfo.NewGetter()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
-			var doneChan chan bool
 			var errChan chan mediaConvert.BatchErrorMessage
-
-			var conversionStarted chan bool
-			var inputVideoCodecDetected chan mediaConvert.InputVideoCodecDetectedBatchMessage
 
 			var batchTask mediaConvert.BatchConverterTask
 
@@ -191,33 +190,24 @@ func CliConfig() *cli.Command {
 				return nil
 			}
 
-			converter := mediaConvert.NewBatchConverter(mediaInfoGetter)
+			converter := mediaConvert.NewBatchConverter(ctx, mediaInfoGetter)
 
-			progressChan, doneChan, errChan = converter.Convert(batchTask)
-
-			conversionStarted = converter.ConversionStarted
-			inputVideoCodecDetected = converter.InputVideoCodecDetected
+			progressChan, errChan = converter.Convert(batchTask)
 
 			for {
 				select {
-				case progressMessage := <-progressChan:
-					logProgress(progressMessage)
+				case progressMessage, ok := <-progressChan:
+					if ok {
+						logProgress(progressMessage)
+					}
 
-				case errorMessage := <-errChan:
-					logError(errorMessage)
+				case failure, failed := <-errChan:
+					if !failed {
+						logDone()
+						return nil
+					}
 
-				case <-doneChan:
-					logDone()
-					return nil
-
-				case <-conversionStarted:
-					logConversionStarted()
-
-				case msg := <-converter.TaskConversionStarted:
-					logTaskConversionStarted(msg)
-
-				case inputVideoCodec := <-inputVideoCodecDetected:
-					logInputVideoCodec(inputVideoCodec)
+					logError(failure)
 				}
 			}
 		},

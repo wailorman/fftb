@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 // Instance _
 type Instance struct {
+	ctx        context.Context
 	mainFile   files.Filer
 	resultPath files.Pather
 	req        Request
@@ -29,8 +31,9 @@ type Instance struct {
 // Segmenter _
 type Segmenter interface {
 	Init(req segm.SliceRequest) error
-	Run() (finished chan struct{}, progress chan ff.Progressable, segments chan *segm.Segment, failed chan error)
+	Run() (progress chan ff.Progressable, segments chan *segm.Segment, failures chan error)
 	Purge() error
+	Closed() <-chan struct{}
 }
 
 // DurationCalculator _
@@ -49,8 +52,9 @@ type Result struct {
 }
 
 // New _
-func New(segmenter Segmenter) *Instance {
+func New(ctx context.Context, segmenter Segmenter) *Instance {
 	return &Instance{
+		ctx:         ctx,
 		segmenter:   segmenter,
 		middlewares: make([]Middleware, 0),
 	}
@@ -75,7 +79,7 @@ func (c *Instance) Use(m Middleware) {
 
 // Init _
 func (c *Instance) Init(req Request) error {
-	c.segmenter = segm.NewSliceOperation()
+	c.segmenter = segm.NewSliceOperation(c.ctx)
 	c.req = req
 
 	err := c.segmenter.Init(segm.SliceRequest{
@@ -93,54 +97,65 @@ func (c *Instance) Init(req Request) error {
 }
 
 // Start _
-func (c *Instance) Start() (progress chan ff.Progressable, finished chan bool, failed chan error) {
+func (c *Instance) Start() (progress chan ff.Progressable, failures chan error) {
 	progress = make(chan ff.Progressable)
-	finished = make(chan bool)
-	failed = make(chan error)
+	failures = make(chan error)
 
-	sFinished, sProgress, sSegments, sFailed := c.segmenter.Run()
+	sProgress, sSegments, sFailed := c.segmenter.Run()
 
 	segs := make([]*segm.Segment, 0)
 
 	go func() {
+		defer close(progress)
+		defer close(failures)
+
 		for {
 			select {
-			case progressMsg := <-sProgress:
-				progress <- progressMsg
-			case segment := <-sSegments:
-				segs = append(segs, segment)
-			case failure := <-sFailed:
-				failed <- failure
-			case <-sFinished:
-				err := persistSegments(c.req, segs)
+			case progressMsg, ok := <-sProgress:
+				if ok {
+					progress <- progressMsg
+				}
 
-				if err != nil {
-					failed <- errors.Wrap(err, "Failed to persist segments to result path")
-					rollbackSegmenter(failed, c.segmenter)
+			case segment, ok := <-sSegments:
+				if ok {
+					segs = append(segs, segment)
+				}
+
+			case failure, failed := <-sFailed:
+				if !failed {
+					<-c.segmenter.Closed()
+
+					err := persistSegments(c.req, segs)
+
+					if err != nil {
+						failures <- errors.Wrap(err, "Failed to persist segments to result path")
+						c.segmenter.Purge()
+						return
+					}
+
+					segs = sortSegments(segs)
+
+					for _, mwr := range c.middlewares {
+						err := mwr.RenameSegments(c.req, segs)
+
+						if err != nil {
+							failures <- errors.Wrap(err, "Failed to perform middleware")
+							c.segmenter.Purge()
+							return
+						}
+					}
+
+					c.segmenter.Purge()
+
 					return
 				}
 
-				segs = sortSegments(segs)
-
-				for _, mwr := range c.middlewares {
-					err := mwr.RenameSegments(c.req, segs)
-
-					if err != nil {
-						failed <- errors.Wrap(err, "Failed to perform middleware")
-						rollbackSegmenter(failed, c.segmenter)
-						return
-					}
-				}
-
-				rollbackSegmenter(failed, c.segmenter)
-
-				finished <- true
-				return
+				failures <- failure
 			}
 		}
 	}()
 
-	return progress, finished, failed
+	return progress, failures
 }
 
 func sortSegments(segs []*segm.Segment) []*segm.Segment {
@@ -176,12 +191,4 @@ func persistSegments(req Request, segs []*segm.Segment) error {
 	}
 
 	return nil
-}
-
-func rollbackSegmenter(failed chan error, segmenter Segmenter) {
-	err := segmenter.Purge()
-
-	if err != nil {
-		failed <- errors.Wrap(err, "Rolling back segmenter")
-	}
 }

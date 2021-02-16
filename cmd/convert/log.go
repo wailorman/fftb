@@ -33,20 +33,3 @@ func logError(errorMessage mediaConvert.BatchErrorMessage) {
 func logDone() {
 	ctxlog.Logger.Info("Conversion done")
 }
-
-func logConversionStarted() {
-	ctxlog.Logger.Info("Conversion started")
-}
-
-func logInputVideoCodec(msg mediaConvert.InputVideoCodecDetectedBatchMessage) {
-	ctxlog.Logger.WithField("input_video_codec", msg.Codec).
-		WithField("task_id", msg.Task.ID).
-		WithField("task_input_file", msg.Task.InFile.FullPath()).
-		Debug("Input video codec detected")
-}
-
-func logTaskConversionStarted(task mediaConvert.ConverterTask) {
-	ctxlog.Logger.WithField("task_id", task.ID).
-		WithField("task_input_file", task.InFile.FullPath()).
-		Debug("Task conversion started")
-}
