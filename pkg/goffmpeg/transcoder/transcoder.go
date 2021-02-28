@@ -263,7 +263,7 @@ func (t *Transcoder) GetFramesMetadata(filePath string) (chan bool, chan models.
 
 		command := []string{t.configuration.FfprobeBin, "-v", "quiet", "-i", filePath, "-print_format", "json=c=1", "-show_frames", "-show_format", "-show_streams"}
 
-		ctxlog.Logger.WithField("command", strings.Join(command, " ")).
+		t.logger.WithField("command", strings.Join(command, " ")).
 			Debug("Running ffprobe")
 
 		runner := run.New(command)
