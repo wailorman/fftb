@@ -25,7 +25,7 @@ func cliApp() {
 
 		Compiled: time.Now(),
 		Authors: []*cli.Author{
-			&cli.Author{
+			{
 				Name:  "Sergey Popov",
 				Email: "wailorman@gmail.com",
 			},
