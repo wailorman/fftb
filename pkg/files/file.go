@@ -36,6 +36,7 @@ type Filer interface {
 	Move(newFullPath string) error
 	Rename(newName string) error
 	MarshalYAML() (interface{}, error)
+	Equal(Filer) bool
 }
 
 // File _
@@ -246,4 +247,9 @@ func (f *File) Rename(newName string) error {
 // MarshalYAML is YAML Marshaller interface implementation
 func (f *File) MarshalYAML() (interface{}, error) {
 	return f.FullPath(), nil
+}
+
+// Equal _
+func (f *File) Equal(otherFile Filer) bool {
+	return f.FullPath() == otherFile.FullPath()
 }

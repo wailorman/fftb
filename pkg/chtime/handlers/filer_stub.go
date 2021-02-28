@@ -165,3 +165,8 @@ func (f *filerStub) WriteContent() (files.FileWriter, error) {
 func (f *filerStub) MarshalYAML() (interface{}, error) {
 	return f.FullPath(), nil
 }
+
+// Equal _
+func (f *filerStub) Equal(otherFile files.Filer) bool {
+	return f.FullPath() == otherFile.FullPath()
+}

@@ -15,6 +15,7 @@ type Pather interface {
 	BuildSubpath(path string) Pather
 	BuildFile(filePath string) Filer
 	Destroy() error
+	Equal(Pather) bool
 }
 
 // Path _
@@ -91,4 +92,9 @@ func (p *Path) Files() ([]Filer, error) {
 	})
 
 	return files, err
+}
+
+// Equal _
+func (p *Path) Equal(otherPath Pather) bool {
+	return p.FullPath() == otherPath.FullPath()
 }
