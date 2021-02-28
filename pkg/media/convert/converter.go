@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/chwg"
+	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/ff"
 	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
@@ -47,7 +48,10 @@ func (c *Converter) Convert(task Task) (
 		defer close(failures)
 		defer c.wg.Done()
 
-		err = c.ffworker.Init(task.InFile, task.OutFile)
+		inFile := files.NewFile(task.InFile)
+		outFile := files.NewFile(task.OutFile)
+
+		err = c.ffworker.Init(inFile, outFile)
 
 		if err != nil {
 			failures <- errors.Wrap(err, "ffworker initializing error")
@@ -56,7 +60,7 @@ func (c *Converter) Convert(task Task) (
 
 		mediaFile := c.ffworker.MediaFile()
 
-		metadata, err := c.infoGetter.GetMediaInfo(task.InFile)
+		metadata, err := c.infoGetter.GetMediaInfo(inFile)
 
 		if err != nil {
 			failures <- errors.Wrap(err, "Getting file metadata")
@@ -91,7 +95,7 @@ func (c *Converter) Convert(task Task) (
 			return
 		}
 
-		err = task.OutFile.BuildPath().Create()
+		err = outFile.BuildPath().Create()
 
 		if err != nil {
 			failures <- errors.Wrap(err, "Creating output dir")

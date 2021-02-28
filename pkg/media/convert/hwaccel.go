@@ -9,7 +9,7 @@ type hwAccelerator interface {
 }
 
 func chooseHwAccel(task Task, metadata ffmpegModels.Metadata) hwAccelerator {
-	switch task.HWAccel {
+	switch task.Params.HWAccel {
 	case NvencHWAccelType:
 		return &nvencHWAccel{
 			task:     task,

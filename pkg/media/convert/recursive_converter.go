@@ -22,21 +22,16 @@ type RecursiveConverter struct {
 	stopConversion chan struct{}
 }
 
-// RecursiveConverterTask _
-type RecursiveConverterTask struct {
-	Parallelism  int
-	InPath       files.Pather
-	OutPath      files.Pather
-	VideoCodec   string
-	HWAccel      string
-	VideoBitRate string
-	VideoQuality int
-	Preset       string
-	Scale        string
+// RecursiveTask _
+type RecursiveTask struct {
+	Parallelism int
+	InPath      files.Pather
+	OutPath     files.Pather
+	Params      Params
 }
 
 // BuildBatchTaskFromRecursive _
-func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter mediaInfo.Getter) (BatchTask, error) {
+func BuildBatchTaskFromRecursive(task RecursiveTask, infoGetter mediaInfo.Getter) (BatchTask, error) {
 	allFiles, err := task.InPath.Files()
 
 	if err != nil {
@@ -55,15 +50,10 @@ func BuildBatchTaskFromRecursive(task RecursiveConverterTask, infoGetter mediaIn
 		outFile.SetDirPath(task.OutPath)
 
 		batchTask.Tasks = append(batchTask.Tasks, Task{
-			ID:           strconv.Itoa(i),
-			InFile:       file,
-			OutFile:      outFile,
-			VideoCodec:   task.VideoCodec,
-			HWAccel:      task.HWAccel,
-			VideoBitRate: task.VideoBitRate,
-			VideoQuality: task.VideoQuality,
-			Preset:       task.Preset,
-			Scale:        task.Scale,
+			ID:      strconv.Itoa(i),
+			InFile:  file.FullPath(),
+			OutFile: outFile.FullPath(),
+			Params:  task.Params,
 		})
 	}
 

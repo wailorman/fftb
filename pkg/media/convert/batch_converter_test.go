@@ -22,14 +22,16 @@ func Test__batchConvert(t *testing.T) {
 				Parallelism: 1,
 				Tasks: []convert.Task{
 					{
-						InFile:       files.NewFile("/Users/wailorman/projects/fftb/tmp/video/video02.mp4"),
-						OutFile:      files.NewFile("/Users/wailorman/projects/fftb/tmp/video/video02_out.mp4"),
-						HWAccel:      "",
-						VideoCodec:   "h264",
-						Preset:       "ultrafast",
-						VideoBitRate: "",
-						VideoQuality: 45,
-						Scale:        "",
+						Params: convert.Params{
+							HWAccel:      "",
+							VideoCodec:   "h264",
+							Preset:       "ultrafast",
+							VideoBitRate: "",
+							VideoQuality: 45,
+							Scale:        "",
+						},
+						InFile:  "/Users/wailorman/projects/fftb/tmp/video/video02.mp4",
+						OutFile: "/Users/wailorman/projects/fftb/tmp/video/video02_out.mp4",
 					},
 				},
 			},
@@ -72,7 +74,8 @@ func Test__batchConvert(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			outputSize, err := testItem.task.Tasks[0].OutFile.Size()
+			outputFile := files.NewFile(testItem.task.Tasks[0].OutFile)
+			outputSize, err := outputFile.Size()
 
 			assert.Nil(t, err)
 

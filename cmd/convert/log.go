@@ -25,7 +25,7 @@ func logError(errorMessage mediaConvert.BatchErrorMessage) {
 	if errorMessage.Err != nil {
 		ctxlog.Logger.WithField("error", errorMessage.Err.Error()).
 			WithField("task_id", errorMessage.Task.ID).
-			WithField("task_input_file", errorMessage.Task.InFile.FullPath()).
+			WithField("task_input_file", errorMessage.Task.InFile).
 			Warn("Error")
 	}
 }
