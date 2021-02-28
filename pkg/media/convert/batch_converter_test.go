@@ -22,6 +22,8 @@ func Test__batchConvert(t *testing.T) {
 				Parallelism: 1,
 				Tasks: []convert.Task{
 					{
+						InFile:  "/Users/wailorman/projects/fftb/tmp/video/video02.mp4",
+						OutFile: "/Users/wailorman/projects/fftb/tmp/video/video02_out.mp4",
 						Params: convert.Params{
 							HWAccel:      "",
 							VideoCodec:   "h264",
@@ -30,8 +32,6 @@ func Test__batchConvert(t *testing.T) {
 							VideoQuality: 45,
 							Scale:        "",
 						},
-						InFile:  "/Users/wailorman/projects/fftb/tmp/video/video02.mp4",
-						OutFile: "/Users/wailorman/projects/fftb/tmp/video/video02_out.mp4",
 					},
 				},
 			},
