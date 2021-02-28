@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -57,7 +58,7 @@ func NewClient(ctx context.Context, storagePath string) (*Client, error) {
 		closed: make(chan struct{}),
 	}
 
-	if err := c.Init(); err != nil {
+	if err := c.init(); err != nil {
 		return nil, errors.Wrap(err, "Initialization error")
 	}
 
@@ -95,8 +96,7 @@ func NewClient(ctx context.Context, storagePath string) (*Client, error) {
 	return c, nil
 }
 
-// Init _
-func (c *Client) Init() error {
+func (c *Client) init() error {
 	storageFile := files.NewFile(c.storagePath)
 
 	if !storageFile.IsExist() {
@@ -139,12 +139,6 @@ func (c *Client) Persist() error {
 
 	storageFile := files.NewFile(c.storagePath)
 
-	err := storageFile.Create()
-
-	if err != nil {
-		return errors.Wrap(err, "Truncating storage file")
-	}
-
 	bRegistry, err := json.Marshal(c.registry)
 
 	if err != nil {
@@ -154,6 +148,16 @@ func (c *Client) Persist() error {
 	bReader := bytes.NewReader(bRegistry)
 
 	storageWriter, err := storageFile.WriteContent()
+
+	if err != nil {
+		return errors.Wrap(err, "Opening storage file for write")
+	}
+
+	err = storageFile.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Truncating storage file")
+	}
 
 	_, err = io.Copy(storageWriter, bReader)
 
@@ -223,8 +227,8 @@ func (c *Client) GetAll(fctx context.Context) (chan []byte, chan error) {
 
 // FindAll _
 func (c *Client) FindAll(fctx context.Context, pattern string) (chan []byte, chan error) {
-	results := make(chan []byte, 1)
-	failures := make(chan error, 1)
+	results := make(chan []byte)
+	failures := make(chan error)
 
 	go func() {
 		defer close(results)
