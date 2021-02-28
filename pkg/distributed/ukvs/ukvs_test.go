@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/wailorman/fftb/pkg/distributed/ukvs/inmemory"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs/localfile"
+	"github.com/wailorman/fftb/pkg/distributed/ukvs/ubolt"
 	"github.com/wailorman/fftb/pkg/files"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs"
-	"github.com/wailorman/fftb/pkg/distributed/ukvs/inmemory"
 )
 
 // StoresExample _
@@ -30,8 +31,14 @@ var clients = make(map[string]ukvs.IStore)
 
 var localfileStoragePath = files.NewTempPath(
 	fmt.Sprintf(
-		"ukvs_test_%s/%s",
+		"ukvs_test/localfile_%s.db",
 		uuid.New().String(),
+	),
+).FullPath()
+
+var uboltStoragePath = files.NewTempPath(
+	fmt.Sprintf(
+		"ukvs_test/ubolt_%s.db",
 		uuid.New().String(),
 	),
 ).FullPath()
@@ -87,6 +94,32 @@ func setup() {
 			func(ctx context.Context) (ukvs.IStore, error) { return buildLocalfileClient(ctx) },
 		},
 	)
+
+	storesTbl = append(
+		storesTbl,
+		&StoresExample{
+			"ubolt",
+			true,
+			func(ctx context.Context) (ukvs.IStore, error) {
+				bFile := files.NewFile(uboltStoragePath)
+				bPath := bFile.BuildPath()
+
+				err := bPath.Create()
+
+				if err != nil {
+					return nil, err
+				}
+
+				c, err := ubolt.NewClient(ctx, bFile.FullPath())
+
+				if clients["ubolt"] == nil {
+					clients["ubolt"] = c
+				}
+
+				return c, nil
+			},
+		},
+	)
 }
 
 func teardown() {
@@ -103,6 +136,9 @@ func teardown() {
 }
 
 func TestMain(m *testing.M) {
+	fmt.Printf("localfileStoragePath: %#v\n", localfileStoragePath)
+	fmt.Printf("uboltStoragePath: %#v\n", uboltStoragePath)
+
 	setup()
 	code := m.Run()
 	teardown()
@@ -111,7 +147,10 @@ func TestMain(m *testing.M) {
 
 func Test__GetSet(t *testing.T) {
 	for _, tableItem := range storesTbl {
-		store, err := tableItem.buildClient(gctx)
+		ictx, icancel := context.WithCancel(gctx)
+		defer icancel()
+
+		store, err := tableItem.buildClient(ictx)
 
 		assert.Nil(t, err)
 
@@ -131,7 +170,10 @@ func Test__GetSet(t *testing.T) {
 
 func Test__Destroy(t *testing.T) {
 	for _, tableItem := range storesTbl {
-		store, err := tableItem.buildClient(gctx)
+		ictx, icancel := context.WithCancel(gctx)
+		defer icancel()
+
+		store, err := tableItem.buildClient(ictx)
 
 		assert.Nil(t, err)
 
@@ -153,7 +195,10 @@ func Test__Destroy(t *testing.T) {
 
 func Test__GetAll(t *testing.T) {
 	for _, tableItem := range storesTbl {
-		store, err := tableItem.buildClient(gctx)
+		ictx, icancel := context.WithCancel(gctx)
+		defer icancel()
+
+		store, err := tableItem.buildClient(ictx)
 
 		assert.Nil(t, err)
 
@@ -161,28 +206,28 @@ func Test__GetAll(t *testing.T) {
 		store.Set("key2", []byte("value"))
 		store.Set("key3", []byte("value"))
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(ictx)
 
 		values, _ := store.GetAll(ctx)
 
 		val1, ok1 := <-values
 		cancel()
 		time.Sleep(100 * time.Millisecond)
-		val2, ok2 := <-values
-		val3, ok3 := <-values
+		<-values
+		_, ok3 := <-values
 
 		assert.Equal(t, string([]byte("value")), string(val1), fmt.Sprintf("driver: %s", tableItem.driverName))
 		assert.Equal(t, true, ok1, fmt.Sprintf("driver: %s", tableItem.driverName))
-		assert.Equal(t, string(""), string(val2), fmt.Sprintf("driver: %s", tableItem.driverName))
-		assert.Equal(t, false, ok2, fmt.Sprintf("driver: %s", tableItem.driverName))
-		assert.Equal(t, string(""), string(val3), fmt.Sprintf("driver: %s", tableItem.driverName))
 		assert.Equal(t, false, ok3, fmt.Sprintf("driver: %s", tableItem.driverName))
 	}
 }
 
 func Test__FindAll(t *testing.T) {
 	for _, tableItem := range storesTbl {
-		store, err := tableItem.buildClient(gctx)
+		ictx, icancel := context.WithCancel(gctx)
+		defer icancel()
+
+		store, err := tableItem.buildClient(ictx)
 
 		assert.Nil(t, err)
 
@@ -195,28 +240,28 @@ func Test__FindAll(t *testing.T) {
 		store.Set("tasks/3", []byte("tasks"))
 		store.Set("tasks/4", []byte("tasks"))
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(ictx)
 
 		values, _ := store.FindAll(ctx, "orders/*")
 
 		val1, ok1 := <-values
 		cancel()
 		time.Sleep(100 * time.Millisecond)
-		val2, ok2 := <-values
-		val3, ok3 := <-values
+		<-values
+		_, ok3 := <-values
 
 		assert.Equal(t, string([]byte("orders")), string(val1), fmt.Sprintf("driver: %s", tableItem.driverName))
 		assert.Equal(t, true, ok1, fmt.Sprintf("driver: %s", tableItem.driverName))
-		assert.Equal(t, string(""), string(val2), fmt.Sprintf("driver: %s", tableItem.driverName))
-		assert.Equal(t, false, ok2, fmt.Sprintf("driver: %s", tableItem.driverName))
-		assert.Equal(t, string(""), string(val3), fmt.Sprintf("driver: %s", tableItem.driverName))
 		assert.Equal(t, false, ok3, fmt.Sprintf("driver: %s", tableItem.driverName))
 	}
 }
 
 func Test__ExpireAt(t *testing.T) {
 	for _, tableItem := range storesTbl {
-		store, err := tableItem.buildClient(gctx)
+		ictx, icancel := context.WithCancel(gctx)
+		defer icancel()
+
+		store, err := tableItem.buildClient(ictx)
 
 		assert.Nil(t, err)
 
@@ -245,7 +290,10 @@ func Test__Persistence(t *testing.T) {
 			continue
 		}
 
-		ctx1, cancel1 := context.WithCancel(context.TODO())
+		ictx, icancel := context.WithCancel(gctx)
+		defer icancel()
+
+		ctx1, cancel1 := context.WithCancel(ictx)
 		store1, err := tableItem.buildClient(ctx1)
 		assert.Nil(t, err)
 
@@ -253,11 +301,14 @@ func Test__Persistence(t *testing.T) {
 		cancel1()
 		<-store1.Closed()
 
-		ctx2 := context.TODO()
-		store2, err := tableItem.buildClient(ctx2)
-		assert.Nil(t, err)
+		store2, err := tableItem.buildClient(ictx)
+		assert.Nilf(t, err, "driver: %s", tableItem.driverName)
 
-		value2, _ := store2.Get("persistent_key")
-		assert.Equal(t, []byte("persistent_value"), value2)
+		value2, err := store2.Get("persistent_key")
+		assert.Nilf(t, err, "driver: %s", tableItem.driverName)
+		assert.Equalf(t,
+			string([]byte("persistent_value")),
+			string(value2),
+			"driver: %s; persisted value", tableItem.driverName)
 	}
 }
