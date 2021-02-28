@@ -1,6 +1,7 @@
 package cut
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -35,7 +36,7 @@ func (ci *CutterInstance) CutVideo(
 
 	log := ctxlog.Logger
 
-	trans := new(transcoder.Transcoder)
+	trans := transcoder.New(context.TODO())
 
 	err := trans.Initialize(
 		inFile.FullPath(),
