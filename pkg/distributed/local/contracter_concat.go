@@ -2,7 +2,6 @@ package local
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
