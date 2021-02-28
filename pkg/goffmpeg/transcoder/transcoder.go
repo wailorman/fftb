@@ -19,6 +19,7 @@ import (
 	"github.com/wailorman/fftb/pkg/goffmpeg/ffmpeg"
 	"github.com/wailorman/fftb/pkg/goffmpeg/models"
 	"github.com/wailorman/fftb/pkg/goffmpeg/utils"
+	"github.com/wailorman/fftb/pkg/run"
 )
 
 // Transcoder Main struct
@@ -247,6 +248,91 @@ func (t *Transcoder) GetFileMetadata(filePath string) (models.Metadata, error) {
 	}
 
 	return *metadata, nil
+}
+
+// GetFramesMetadata _
+func (t *Transcoder) GetFramesMetadata(filePath string) (chan bool, chan models.Framer, chan error) {
+	done := make(chan bool)
+	frames := make(chan models.Framer, 0)
+	failed := make(chan error)
+
+	go func() {
+		defer close(done)
+		defer close(frames)
+		defer close(failed)
+
+		command := []string{t.configuration.FfprobeBin, "-v", "quiet", "-i", filePath, "-print_format", "json=c=1", "-show_frames", "-show_format", "-show_streams"}
+
+		ctxlog.Logger.WithField("command", strings.Join(command, " ")).
+			Debug("Running ffprobe")
+
+		runner := run.New(command)
+		err := runner.Run()
+
+		if err != nil {
+			failed <- errors.Wrap(err, "Starting runner")
+			done <- true
+			return
+		}
+
+		rDone, rStdout, rStderr, rFailures := runner.StreamOutput()
+
+		stdErrMessages := make([]string, 0)
+
+		for {
+			select {
+			case errMsg := <-rStderr:
+				if errMsg != "" {
+					stdErrMessages = append(stdErrMessages, errMsg)
+				}
+			case line := <-rStdout:
+				if line != "" {
+					line = strings.ReplaceAll(line, "},", "}")
+
+					if strings.Contains(line, "\"media_type\": \"audio\"") {
+						audioFrame := &models.AudioFrame{}
+
+						err := json.Unmarshal([]byte(line), audioFrame)
+
+						if err != nil {
+							failed <- errors.Wrap(err, "Unmarshaling audio frame")
+							done <- true
+							return
+						}
+
+						frames <- audioFrame
+					} else if strings.Contains(line, "\"media_type\": \"video\"") {
+						videoFrame := &models.VideoFrame{}
+
+						err := json.Unmarshal([]byte(line), videoFrame)
+
+						if err != nil {
+							failed <- errors.Wrap(err, "Unmarshaling video frame")
+							done <- true
+							return
+						}
+
+						frames <- videoFrame
+					}
+				}
+			case err := <-rFailures:
+				failed <- errors.Wrap(err, "Receiving output from ffprobe")
+				done <- true
+				return
+			case <-rDone:
+				if len(stdErrMessages) > 0 {
+					errStr := strings.Join(stdErrMessages, "; ")
+					failed <- errors.New(errStr)
+				}
+
+				done <- true
+				return
+			}
+
+		}
+	}()
+
+	return done, frames, failed
 }
 
 // Run Starts the transcoding process
