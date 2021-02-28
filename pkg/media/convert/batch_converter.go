@@ -5,19 +5,18 @@ import (
 	"strconv"
 
 	"github.com/wailorman/fftb/pkg/chwg"
-	"github.com/wailorman/fftb/pkg/media/info"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // BatchConverter _
 type BatchConverter struct {
 	wg         *chwg.ChannelledWaitGroup
 	ctx        context.Context
-	infoGetter info.Getter
+	infoGetter minfo.Getter
 }
 
 // NewBatchConverter _
-func NewBatchConverter(ctx context.Context, infoGetter mediaInfo.Getter) *BatchConverter {
+func NewBatchConverter(ctx context.Context, infoGetter minfo.Getter) *BatchConverter {
 	return &BatchConverter{
 		wg:         chwg.New(),
 		ctx:        ctx,
