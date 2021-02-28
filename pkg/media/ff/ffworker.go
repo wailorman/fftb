@@ -56,7 +56,7 @@ func (c *Instance) Init(inFile, outFile files.Filer) error {
 
 	c.inFile = inFile
 	c.outFile = outFile
-	c.transcoder = new(goffmpegTranscoder.Transcoder)
+	c.transcoder = goffmpegTranscoder.New(c.ctx)
 
 	err := c.transcoder.Initialize(inFile.FullPath(), outFile.FullPath())
 
