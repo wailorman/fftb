@@ -8,7 +8,7 @@ import (
 	"github.com/wailorman/fftb/pkg/files"
 
 	mediaDuration "github.com/wailorman/fftb/pkg/media/duration"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // ErrNoTimeMatches _

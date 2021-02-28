@@ -11,32 +11,6 @@ It can:
 
 ## Usage
 
-### etime
-
-*from Extract Time*
-
-Final Cut Pro (and many other video editing tools) has a great feature for syncing videos from multiple cameras to multicam clip (TODO Watch more). In short videos, real footage & a couple of cameras it can be easily done by audio synchronization. But when discord ping comes in, the audio synchronization can take forever & the result may be completely wrong. Things getting better & faster when you use file creation timestamp to order & synchronize clips along with audio synchronization.
-
-![Multicam clip creation dialog](docs/images/fcpx_mcc.png)
-
-So it extracts creation time from filename and writes it to file's metadata. As you can see below, Nvidia's ShadowPlay saves files with a creation date in filename & metadata, but after some file movements across computers or disks this metadata can be lost and creation time from metadata does not match filename timestamp.
-
-![Files has wrong timestamps in metadata](docs/images/rdr_wrong_timestamps.png)
-
-Currently, these filename patterns are supported:
-
-* `NMS 22-05-2020 21-52-13.mp4` [(Mirillis Action!)](https://mirillis.com/en/products/action.html)
-* `20180505_170735.mp4` [(AverMedia)](https://www.avermedia.com/en/product-detail/GC513)
-* `Far Cry New Dawn 2020.02.12 - 23.03.10.00.DVR.mp4` (Nvidia ShadowPlay Instant replay)
-* `Far Cry New Dawn 2020.02.12 - 23.03.10.00.mp4` (Nvidia ShadowPlay)
-* `2016_05_20_15_31_51-ses.mp4` (plays tv)
-
-Example usage:
-
-```
-$ fftb etime -R .
-```
-
 ### convert
 
 **[Read more about converting](docs/converting_guide.md)**
@@ -73,6 +47,32 @@ Options description:
 * **`--preset`** Encoding preset (prefer `slow` for best quality & `fast` for faster converting)
 * **`--dry-run`** Do not execute conversion and print yaml task config (TODO)
 * **`--config`** Config file path (TODO)
+
+### etime
+
+*from Extract Time*
+
+Final Cut Pro (and many other video editing tools) has a great feature for syncing videos from multiple cameras to multicam clip (TODO Watch more). In short videos, real footage & a couple of cameras it can be easily done by audio synchronization. But when discord ping comes in, the audio synchronization can take forever & the result may be completely wrong. Things getting better & faster when you use file creation timestamp to order & synchronize clips along with audio synchronization.
+
+![Multicam clip creation dialog](docs/images/fcpx_mcc.png)
+
+So it extracts creation time from filename and writes it to file's metadata. As you can see below, Nvidia's ShadowPlay saves files with a creation date in filename & metadata, but after some file movements across computers or disks this metadata can be lost and creation time from metadata does not match filename timestamp.
+
+![Files has wrong timestamps in metadata](docs/images/rdr_wrong_timestamps.png)
+
+Currently, these filename patterns are supported:
+
+* `NMS 22-05-2020 21-52-13.mp4` [(Mirillis Action!)](https://mirillis.com/en/products/action.html)
+* `20180505_170735.mp4` [(AverMedia)](https://www.avermedia.com/en/product-detail/GC513)
+* `Far Cry New Dawn 2020.02.12 - 23.03.10.00.DVR.mp4` (Nvidia ShadowPlay Instant replay)
+* `Far Cry New Dawn 2020.02.12 - 23.03.10.00.mp4` (Nvidia ShadowPlay)
+* `2016_05_20_15_31_51-ses.mp4` (plays tv)
+
+Example usage:
+
+```
+$ fftb etime -R .
+```
 
 ### split
 

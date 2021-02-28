@@ -1,80 +1,52 @@
 package convert
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
-	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 	"github.com/wailorman/fftb/pkg/media/ff"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
 // Converter _
 type Converter struct {
-	ConversionStarted       chan bool
-	MetadataReceived        chan ffmpegModels.Metadata
-	InputVideoCodecDetected chan string
-	ConversionStopping      chan bool
-	ConversionStopped       chan bool
-
+	wg         *chwg.ChannelledWaitGroup
+	ctx        context.Context
 	infoGetter mediaInfo.Getter
 	ffworker   *ff.Instance
 }
 
 // NewConverter _
-func NewConverter(infoGetter mediaInfo.Getter) *Converter {
-	ffworker := ff.New()
+func NewConverter(ctx context.Context, infoGetter mediaInfo.Getter) *Converter {
+	ffworker := ff.New(ctx)
 
 	return &Converter{
-		infoGetter:         infoGetter,
-		ffworker:           ffworker,
-		ConversionStarted:  ffworker.Started,
-		ConversionStopping: ffworker.Stopping,
-		ConversionStopped:  ffworker.Stopped,
+		wg:         chwg.New(),
+		ctx:        ctx,
+		infoGetter: infoGetter,
+		ffworker:   ffworker,
 	}
-}
-
-func (c *Converter) initChannels() {
-	c.ConversionStopping = make(chan bool, 1)
-	c.ConversionStopped = make(chan bool, 1)
-	c.ConversionStarted = make(chan bool, 1)
-	c.MetadataReceived = make(chan ffmpegModels.Metadata, 1)
-	c.InputVideoCodecDetected = make(chan string, 1)
-}
-
-func (c *Converter) closeChannels() {
-	close(c.ConversionStopping)
-	close(c.ConversionStopped)
-	close(c.ConversionStarted)
-	close(c.MetadataReceived)
-	close(c.InputVideoCodecDetected)
-}
-
-// Stop _
-func (c *Converter) Stop() {
-	c.ffworker.Stop()
 }
 
 // Convert _
 func (c *Converter) Convert(task Task) (
 	progress chan ff.Progressable,
-	finished chan bool,
-	failed chan error,
+	failures chan error,
 ) {
 	progress = make(chan ff.Progressable)
-	finished = make(chan bool)
-	failed = make(chan error)
+	failures = make(chan error)
 
-	c.initChannels()
+	c.wg.Add(1)
 
 	go func() {
 		var err error
 
 		defer close(progress)
-		defer close(finished)
-		defer close(failed)
-
-		defer c.closeChannels()
+		defer close(failures)
+		defer c.wg.Done()
 
 		inFile := files.NewFile(task.InFile)
 		outFile := files.NewFile(task.OutFile)
@@ -82,7 +54,7 @@ func (c *Converter) Convert(task Task) (
 		err = c.ffworker.Init(inFile, outFile)
 
 		if err != nil {
-			failed <- errors.Wrap(err, "ffworker initializing error")
+			failures <- errors.Wrap(err, "ffworker initializing error")
 			return
 		}
 
@@ -91,64 +63,74 @@ func (c *Converter) Convert(task Task) (
 		metadata, err := c.infoGetter.GetMediaInfo(inFile)
 
 		if err != nil {
-			failed <- errors.Wrap(err, "Getting file metadata")
+			failures <- errors.Wrap(err, "Getting file metadata")
 			return
 		}
 
-		c.MetadataReceived <- metadata
+		// TODO: log metadata
 
 		if !mediaUtils.IsVideo(metadata) {
-			failed <- errors.Wrap(err, "Input file is not video")
+			failures <- errors.Wrap(err, "Input file is not video")
 			return
 		}
-
-		c.InputVideoCodecDetected <- mediaUtils.GetVideoCodec(metadata)
 
 		codec, err := chooseCodec(task, metadata)
 
 		if err != nil {
-			failed <- errors.Wrap(err, "Choosing codec")
+			failures <- errors.Wrap(err, "Choosing codec")
 			return
 		}
 
 		err = codec.configure(mediaFile)
 
 		if err != nil {
-			failed <- errors.Wrap(err, "Configuring codec")
+			failures <- errors.Wrap(err, "Configuring codec")
 			return
 		}
 
 		err = newVideoScale(task, metadata).configure(mediaFile)
 
 		if err != nil {
-			failed <- errors.Wrap(err, "Configuring video scale")
+			failures <- errors.Wrap(err, "Configuring video scale")
 			return
 		}
 
 		err = outFile.BuildPath().Create()
 
 		if err != nil {
-			failed <- errors.Wrap(err, "Creating output dir")
+			failures <- errors.Wrap(err, "Creating output dir")
 			return
 		}
 
-		_progress, _finished, _failed := c.ffworker.Start()
+		fProgress, fFailures := c.ffworker.Start()
 
 		for {
 			select {
-			case <-_finished:
-				finished <- true
+			case <-c.ctx.Done():
+				failures <- c.ctx.Err()
 				return
 
-			case failure := <-_failed:
-				failed <- failure
+			case failure, failed := <-fFailures:
+				if !failed {
+					<-c.ffworker.Closed()
+					return
+				}
+
+				failures <- failure
 				return
 
-			case progressMessage := <-_progress:
-				progress <- progressMessage
+			case progressMessage, ok := <-fProgress:
+				if ok {
+					progress <- progressMessage
+				}
 			}
 		}
 	}()
 
-	return progress, finished, failed
+	return progress, failures
+}
+
+// Closed _
+func (c *Converter) Closed() <-chan struct{} {
+	return c.wg.Closed()
 }

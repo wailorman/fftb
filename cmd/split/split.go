@@ -1,6 +1,7 @@
 package split
 
 import (
+	"context"
 	"os"
 
 	"github.com/pkg/errors"
@@ -33,6 +34,7 @@ func CliConfig() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+			ctx := context.Background()
 			pwd, err := os.Getwd()
 
 			if err != nil {
@@ -51,12 +53,12 @@ func CliConfig() *cli.Command {
 				return errors.New("Missing output path argument")
 			}
 
-			return splitToChunks(pwd, inputFilePath, c.Int("chunk-size"), outputPath)
+			return splitToChunks(ctx, pwd, inputFilePath, c.Int("chunk-size"), outputPath)
 		},
 	}
 }
 
-func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) error {
+func splitToChunks(ctx context.Context, pwd, path string, chunkSize int, relativeChunksPath string) error {
 	mainFile := files.NewFile(path)
 	outPath := files.NewPath(relativeChunksPath)
 
@@ -68,25 +70,27 @@ func splitToChunks(pwd, path string, chunkSize int, relativeChunksPath string) e
 
 	log.Info("Splitting to chunks...")
 
-	segmenter := segm.New()
-	chunker := chunk.New(segmenter)
+	segmenter := segm.NewSliceOperation(ctx)
+	chunker := chunk.New(ctx, segmenter)
 	chunker.Init(chunk.Request{
 		InFile:             mainFile,
 		OutPath:            outPath,
 		SegmentDurationSec: chunkSize,
 	})
 
-	progress, finished, failed := chunker.Start()
+	cProgress, cFailures := chunker.Start()
 
 	for {
 		select {
-		case progressMsg := <-progress:
+		case progressMsg := <-cProgress:
 			logProgress(progressMsg)
-		case failure := <-failed:
+		case failure, failed := <-cFailures:
+			if !failed {
+				logDone()
+				return nil
+			}
+
 			logError(failure)
-			return nil
-		case <-finished:
-			logDone()
 			return nil
 		}
 	}

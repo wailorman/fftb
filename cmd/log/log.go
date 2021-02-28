@@ -4,7 +4,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/wailorman/fftb/pkg/ctxlog"
-	goffmpegCtxlog "github.com/wailorman/fftb/pkg/goffmpeg/ctxlog"
 )
 
 func getLogrusLevel(level int) logrus.Level {
@@ -33,5 +32,4 @@ func SetLoggingLevel(c *cli.Context) {
 	lvl := getLogrusLevel(c.Int("verbosity"))
 
 	ctxlog.SetLevel(lvl)
-	goffmpegCtxlog.SetLevel(lvl)
 }

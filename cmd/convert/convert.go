@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/wailorman/fftb/pkg/files"
@@ -10,7 +11,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	mediaConvert "github.com/wailorman/fftb/pkg/media/convert"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // CliConfig _
@@ -109,20 +110,18 @@ func CliConfig() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+			ctx := context.Background()
+
 			mediaInfoGetter := mediaInfo.NewGetter()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
-			var doneChan chan bool
 			var errChan chan mediaConvert.BatchErrorMessage
-
-			var conversionStarted chan bool
-			var inputVideoCodecDetected chan mediaConvert.InputVideoCodecDetectedBatchMessage
 
 			var batchTask mediaConvert.BatchTask
 
 			if c.String("config") != "" {
 				configFile := files.NewFile(c.String("config"))
-				config, err := configFile.ReadContent()
+				config, err := configFile.ReadAllContent()
 
 				if err != nil {
 					return errors.Wrap(err, "Reading config content")
@@ -147,7 +146,7 @@ func CliConfig() *cli.Command {
 				batchTask = mediaConvert.BatchTask{
 					Parallelism: c.Int("parallelism"),
 					Tasks: []mediaConvert.Task{
-						mediaConvert.Task{
+						{
 							InFile:  inFile.FullPath(),
 							OutFile: outFile.FullPath(),
 							Params: mediaConvert.Params{
@@ -195,33 +194,24 @@ func CliConfig() *cli.Command {
 				return nil
 			}
 
-			converter := mediaConvert.NewBatchConverter(mediaInfoGetter)
+			converter := mediaConvert.NewBatchConverter(ctx, mediaInfoGetter)
 
-			progressChan, doneChan, errChan = converter.Convert(batchTask)
-
-			conversionStarted = converter.ConversionStarted
-			inputVideoCodecDetected = converter.InputVideoCodecDetected
+			progressChan, errChan = converter.Convert(batchTask)
 
 			for {
 				select {
-				case progressMessage := <-progressChan:
-					logProgress(progressMessage)
+				case progressMessage, ok := <-progressChan:
+					if ok {
+						logProgress(progressMessage)
+					}
 
-				case errorMessage := <-errChan:
-					logError(errorMessage)
+				case failure, failed := <-errChan:
+					if !failed {
+						logDone()
+						return nil
+					}
 
-				case <-doneChan:
-					logDone()
-					return nil
-
-				case <-conversionStarted:
-					logConversionStarted()
-
-				case msg := <-converter.TaskConversionStarted:
-					logTaskConversionStarted(msg)
-
-				case inputVideoCodec := <-inputVideoCodecDetected:
-					logInputVideoCodec(inputVideoCodec)
+					logError(failure)
 				}
 			}
 		},
