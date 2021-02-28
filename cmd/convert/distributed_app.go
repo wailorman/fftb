@@ -13,7 +13,7 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
-	"github.com/wailorman/fftb/pkg/distributed/ukvs/localfile"
+	"github.com/wailorman/fftb/pkg/distributed/ukvs/ubolt"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
 	"github.com/wailorman/fftb/pkg/files"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
@@ -217,10 +217,10 @@ func initStorage(ctx context.Context) (models.IStorageController, error) {
 }
 
 func initRegistry(ctx context.Context) (models.IRegistry, error) {
-	store, err := localfile.NewClient(ctx, ".fftb/store.json")
+	store, err := ubolt.NewClient(ctx, ".fftb/bolt.db")
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Initializing localfile ukvs store")
+		return nil, errors.Wrap(err, "Initializing ubolt ukvs store")
 	}
 
 	registry, err := registry.NewRegistry(ctx, store)
