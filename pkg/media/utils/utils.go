@@ -4,7 +4,7 @@ import (
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
 
 	"github.com/wailorman/fftb/pkg/files"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // FilterVideos _

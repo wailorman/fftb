@@ -3,7 +3,7 @@ package cut
 import (
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // CalculatorInstance _

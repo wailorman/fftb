@@ -11,7 +11,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	mediaConvert "github.com/wailorman/fftb/pkg/media/convert"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // CliConfig _
