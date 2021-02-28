@@ -25,7 +25,7 @@ func NewBatchConverter(ctx context.Context, infoGetter minfo.Getter) *BatchConve
 }
 
 // Convert _
-func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
+func (bc *BatchConverter) Convert(batchTask BatchTask) (
 	progress chan BatchProgressMessage,
 	failures chan BatchErrorMessage,
 ) {
@@ -33,7 +33,7 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 
 	progress = make(chan BatchProgressMessage)
 	failures = make(chan BatchErrorMessage)
-	taskQueue := make(chan ConverterTask, taskCount)
+	taskQueue := make(chan Task, taskCount)
 
 	bc.wg.Add(taskCount)
 
@@ -83,7 +83,7 @@ func (bc *BatchConverter) Convert(batchTask BatchConverterTask) (
 	return progress, failures
 }
 
-func (bc *BatchConverter) convertOne(task ConverterTask, progress chan BatchProgressMessage) error {
+func (bc *BatchConverter) convertOne(task Task, progress chan BatchProgressMessage) error {
 	sCtx, sCancel := context.WithCancel(bc.ctx)
 	sConv := NewConverter(sCtx, bc.infoGetter)
 	sProgress, sFailures := sConv.Convert(task)

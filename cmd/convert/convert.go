@@ -117,7 +117,7 @@ func CliConfig() *cli.Command {
 			var progressChan chan mediaConvert.BatchProgressMessage
 			var errChan chan mediaConvert.BatchErrorMessage
 
-			var batchTask mediaConvert.BatchConverterTask
+			var batchTask mediaConvert.BatchTask
 
 			if c.String("config") != "" {
 				configFile := files.NewFile(c.String("config"))
@@ -143,9 +143,9 @@ func CliConfig() *cli.Command {
 				outFile := inFile.Clone()
 				outFile.SetDirPath(files.NewPath(outputPath))
 
-				batchTask = mediaConvert.BatchConverterTask{
+				batchTask = mediaConvert.BatchTask{
 					Parallelism: c.Int("parallelism"),
-					Tasks: []mediaConvert.ConverterTask{
+					Tasks: []mediaConvert.Task{
 						{
 							InFile:       inFile,
 							OutFile:      outFile,

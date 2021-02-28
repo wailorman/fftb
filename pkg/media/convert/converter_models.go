@@ -26,15 +26,15 @@ type VideoFileFilteringMessage struct {
 	Err     error
 }
 
-// BatchConverterTask _
-type BatchConverterTask struct {
-	Parallelism           int             `yaml:"parallelism"`
-	StopConversionOnError bool            `yaml:"stop_conversion_on_error"`
-	Tasks                 []ConverterTask `yaml:"tasks"`
+// BatchTask _
+type BatchTask struct {
+	Parallelism           int    `yaml:"parallelism"`
+	StopConversionOnError bool   `yaml:"stop_conversion_on_error"`
+	Tasks                 []Task `yaml:"tasks"`
 }
 
-// ConverterTask _
-type ConverterTask struct {
+// Task _
+type Task struct {
 	ID               string      `yaml:"id"`
 	InFile           files.Filer `yaml:"in_file"`
 	OutFile          files.Filer `yaml:"out_file"`
@@ -72,7 +72,7 @@ var ErrOutputFileExistsOrIsDirectory = errors.New("Output file exists or is dire
 var ErrVtbQualityNotSupported = errors.New("Video quality option is not supported by Apple VideoToolBox")
 
 // UnmarshalYAML _
-func (ct *ConverterTask) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (ct *Task) UnmarshalYAML(unmarshal func(interface{}) error) error {
 
 	task := struct {
 		ID               string `yaml:"id"`

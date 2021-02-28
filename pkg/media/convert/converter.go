@@ -31,7 +31,7 @@ func NewConverter(ctx context.Context, infoGetter mediaInfo.Getter) *Converter {
 }
 
 // Convert _
-func (c *Converter) Convert(task ConverterTask) (
+func (c *Converter) Convert(task Task) (
 	progress chan ff.Progressable,
 	failures chan error,
 ) {

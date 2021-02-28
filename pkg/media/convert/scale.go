@@ -3,8 +3,8 @@ package convert
 import (
 	"fmt"
 
-	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
 const (
@@ -15,11 +15,11 @@ const (
 )
 
 type videoScale struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 
-func newVideoScale(task ConverterTask, metadata ffmpegModels.Metadata) *videoScale {
+func newVideoScale(task Task, metadata ffmpegModels.Metadata) *videoScale {
 	return &videoScale{
 		task:     task,
 		metadata: metadata,

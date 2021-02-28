@@ -1,12 +1,12 @@
 package convert
 
 import (
-	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
 type nvencHWAccel struct {
-	task     ConverterTask
+	task     Task
 	metadata ffmpegModels.Metadata
 }
 

@@ -15,12 +15,12 @@ import (
 
 func Test__batchConvert(t *testing.T) {
 	testTable := []struct {
-		task convert.BatchConverterTask
+		task convert.BatchTask
 	}{
 		{
-			task: convert.BatchConverterTask{
+			task: convert.BatchTask{
 				Parallelism: 1,
-				Tasks: []convert.ConverterTask{
+				Tasks: []convert.Task{
 					{
 						InFile:       files.NewFile("/Users/wailorman/projects/fftb/tmp/video/video02.mp4"),
 						OutFile:      files.NewFile("/Users/wailorman/projects/fftb/tmp/video/video02_out.mp4"),
