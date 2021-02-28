@@ -102,6 +102,7 @@ type Mediafile struct {
 // Libx265Params _
 type Libx265Params struct {
 	CRF uint32
+	QP  uint32
 }
 
 /*** SETTERS ***/
@@ -1404,11 +1405,13 @@ func (m *Mediafile) ObtainLibx265Params() []string {
 			flags = append(flags, fmt.Sprintf("crf=%d", m.libx265Params.CRF))
 		}
 
-		if len(flags) > 0 {
-			flags = append([]string{"-x265-params"}, flags...)
+		if m.libx265Params.QP > 0 {
+			flags = append(flags, fmt.Sprintf("qp=%d", m.libx265Params.QP))
 		}
 
-		return flags
+		if len(flags) > 0 {
+			return []string{"-x265-params", strings.Join(flags, " ")}
+		}
 	}
 
 	return nil

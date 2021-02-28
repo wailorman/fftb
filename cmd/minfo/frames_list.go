@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"github.com/wailorman/fftb/pkg/files"
-	"github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 	"github.com/wailorman/fftb/pkg/media/utils"
 )
 
@@ -26,7 +26,7 @@ var framesListSubcommand = &cli.Command{
 			return errors.New("Missing file path argument")
 		}
 
-		infoGetter := info.New()
+		infoGetter := minfo.New()
 		inputFile := files.NewFile(inputFilePath)
 
 		if !inputFile.IsExist() {

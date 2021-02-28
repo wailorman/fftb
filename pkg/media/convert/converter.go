@@ -7,7 +7,7 @@ import (
 	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/ff"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 	mediaUtils "github.com/wailorman/fftb/pkg/media/utils"
 )
 
@@ -15,12 +15,12 @@ import (
 type Converter struct {
 	wg         *chwg.ChannelledWaitGroup
 	ctx        context.Context
-	infoGetter mediaInfo.Getter
+	infoGetter minfo.Getter
 	ffworker   *ff.Instance
 }
 
 // NewConverter _
-func NewConverter(ctx context.Context, infoGetter mediaInfo.Getter) *Converter {
+func NewConverter(ctx context.Context, infoGetter minfo.Getter) *Converter {
 	ffworker := ff.New(ctx)
 
 	return &Converter{

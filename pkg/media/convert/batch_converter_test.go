@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/convert"
-	"github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -43,9 +43,9 @@ func Test__batchConvert(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			mediaInfoGetter := info.New()
+			infoGetter := minfo.New()
 
-			converter := convert.NewBatchConverter(ctx, mediaInfoGetter)
+			converter := convert.NewBatchConverter(ctx, infoGetter)
 			cProgress, cFailures := converter.Convert(testItem.task)
 
 			cg := new(errgroup.Group)
@@ -74,8 +74,8 @@ func Test__batchConvert(t *testing.T) {
 
 			assert.Nil(t, err)
 
-			outFile := files.NewFile(testItem.task.Tasks[0].OutFile)
-			outputSize, err := outFile.Size()
+			outputFile := files.NewFile(testItem.task.Tasks[0].OutFile)
+			outputSize, err := outputFile.Size()
 
 			assert.Nil(t, err)
 

@@ -6,13 +6,13 @@ import (
 
 	"github.com/pkg/errors"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 
 	"github.com/wailorman/fftb/pkg/files"
-	"github.com/wailorman/fftb/pkg/media/info"
 )
 
 // FilterVideos _
-func FilterVideos(allFiles []files.Filer, infoGetter info.Getter) []files.Filer {
+func FilterVideos(allFiles []files.Filer, infoGetter minfo.Getter) []files.Filer {
 	videoFiles := make([]files.Filer, 0)
 
 	for _, file := range allFiles {

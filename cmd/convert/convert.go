@@ -11,7 +11,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	mediaConvert "github.com/wailorman/fftb/pkg/media/convert"
-	"github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // CliConfig _
@@ -112,7 +112,7 @@ func CliConfig() *cli.Command {
 		Action: func(c *cli.Context) error {
 			ctx := context.Background()
 
-			infoGetter := info.New()
+			infoGetter := minfo.New()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
 			var errChan chan mediaConvert.BatchErrorMessage

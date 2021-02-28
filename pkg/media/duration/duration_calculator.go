@@ -3,12 +3,12 @@ package cut
 import (
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
-	"github.com/wailorman/fftb/pkg/media/info"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // CalculatorInstance _
 type CalculatorInstance struct {
-	infoGetter info.Getter
+	infoGetter minfo.Getter
 }
 
 // Calculator _
@@ -17,7 +17,7 @@ type Calculator interface {
 }
 
 // NewCalculator _
-func NewCalculator(infoGetter info.Getter) *CalculatorInstance {
+func NewCalculator(infoGetter minfo.Getter) *CalculatorInstance {
 	return &CalculatorInstance{
 		infoGetter: infoGetter,
 	}

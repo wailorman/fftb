@@ -18,9 +18,7 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/convert"
-	"github.com/wailorman/fftb/pkg/media/info"
-	// "github.com/bep/debounce"
-	// "github.com/machinebox/progress"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // FreeTaskDelay _
@@ -179,7 +177,7 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 		Params:  convertSegment.Params,
 	}
 
-	infoGetter := info.New()
+	infoGetter := minfo.New()
 	converter := convert.NewConverter(w.ctx, infoGetter)
 
 	throttled := throttle.New(2000 * time.Millisecond)

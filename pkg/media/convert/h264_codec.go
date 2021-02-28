@@ -30,7 +30,7 @@ func (c *H264Codec) configure(mediaFile *ffmpegModels.Mediafile) error {
 	mediaFile.SetMaxMuxingQueueSize(102400)
 
 	if c.task.Params.VideoQuality > 0 {
-		mediaFile.SetCRF(uint32(c.task.Params.VideoQuality))
+		mediaFile.SetConstantQuantization(c.task.Params.VideoQuality)
 	} else {
 		mediaFile.SetVideoBitRate(c.task.Params.VideoBitRate)
 	}
