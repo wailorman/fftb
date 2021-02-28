@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
@@ -149,7 +150,15 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 		return nil
 	})
 
-	return g.Wait()
+	err := g.Wait()
+
+	if err != nil {
+		return err
+	}
+
+	convOrder.State = models.OrderStateFinished
+
+	return c.registry.PersistOrder(convOrder)
 }
 
 func (c *ContracterInstance) downloadSegment(fctx context.Context, order models.IOrder, segmentID string) (*segm.Segment, error) {

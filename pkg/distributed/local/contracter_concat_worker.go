@@ -66,8 +66,11 @@ func (pC *ContracterConcatWorker) Start() {
 
 				err = pC.contracter.ConcatOrder(pC.ctx, finishedOrder)
 
-				pC.logger.WithError(err).
-					Warn("Failed to concat finished order")
+				if err != nil {
+					pC.logger.WithError(err).
+						Warn("Failed to concat finished order")
+				}
+
 				continue
 			}
 		}
