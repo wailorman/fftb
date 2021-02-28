@@ -112,7 +112,7 @@ func CliConfig() *cli.Command {
 		Action: func(c *cli.Context) error {
 			ctx := context.Background()
 
-			mediaInfoGetter := minfo.NewGetter()
+			infoGetter := minfo.New()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
 			var errChan chan mediaConvert.BatchErrorMessage
@@ -176,7 +176,7 @@ func CliConfig() *cli.Command {
 							VideoQuality: c.Int("video-quality"),
 							Scale:        c.String("scale"),
 						},
-					}, mediaInfoGetter)
+					}, infoGetter)
 
 					if err != nil {
 						return errors.Wrap(err, "Building recursive task")
@@ -194,7 +194,7 @@ func CliConfig() *cli.Command {
 				return nil
 			}
 
-			converter := mediaConvert.NewBatchConverter(ctx, mediaInfoGetter)
+			converter := mediaConvert.NewBatchConverter(ctx, infoGetter)
 
 			progressChan, errChan = converter.Convert(batchTask)
 

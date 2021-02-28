@@ -43,9 +43,9 @@ func Test__batchConvert(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			mediaInfoGetter := minfo.NewGetter()
+			infoGetter := minfo.New()
 
-			converter := convert.NewBatchConverter(ctx, mediaInfoGetter)
+			converter := convert.NewBatchConverter(ctx, infoGetter)
 			cProgress, cFailures := converter.Convert(testItem.task)
 
 			cg := new(errgroup.Group)
