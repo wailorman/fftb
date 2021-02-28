@@ -13,7 +13,7 @@ type CalculatorInstance struct {
 
 // Calculator _
 type Calculator interface {
-	CalculateDuration(file files.Filer) (float64, error)
+	CalculateDuration(files.Filer) (float64, error)
 }
 
 // NewCalculator _

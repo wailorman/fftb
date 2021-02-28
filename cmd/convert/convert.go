@@ -16,6 +16,33 @@ import (
 
 // CliConfig _
 func CliConfig() *cli.Command {
+	flags := convertParamsFlags()
+
+	flags = append(
+		flags,
+		&cli.IntFlag{
+			Name:    "parallelism",
+			Aliases: []string{"P"},
+			Usage: "Number of parallel ffmpeg workers.\n" +
+				"                                  With higher parallelism value you can utilize more CPU/GPU resources, \n" +
+				"                                  but in some situations ffmpeg can't run in parallel or will not give a profit",
+			Value: 1,
+		},
+		&cli.BoolFlag{
+			Name:    "recursively",
+			Aliases: []string{"R"},
+			Usage:   "Convert all video files in directory recursively",
+		},
+		&cli.BoolFlag{
+			Name:  "dry-run",
+			Usage: "Do not execute conversion and print yaml task config",
+		},
+		&cli.StringFlag{
+			Name:  "config",
+			Usage: "Config file path (output from --dry-run option)",
+		},
+	)
+
 	return &cli.Command{
 		Name:    "convert",
 		Aliases: []string{"conv"},
@@ -25,94 +52,13 @@ func CliConfig() *cli.Command {
 			"\n" +
 			"   If directory does not exists, it will create it for you.\n" +
 			"   WARNING: If file already exists, it will overwrite it",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "video-codec",
-				Aliases: []string{"vc"},
-				Usage:   "Video codec. Possible values: h264, hevc",
-				Value:   "h264",
-			},
-			&cli.StringFlag{
-				Name:    "hardware-acceleration",
-				Aliases: []string{"hwa"},
-				Usage: "Used hardware acceleration type. Possible values:\n" +
-					"                                               videotoolbox (for macs),\n" +
-					"                                               nvenc (for Nvidia GPUs).\n" +
-					"                                               By default uses x264/x265 CPU encoders",
-			},
-			&cli.StringFlag{
-				Name:    "video-bitrate",
-				Aliases: []string{"vb"},
-				Usage:   "Video bitrate. Ignores if --video-quality is passed. By default delegates choise to ffmpeg. Examples: 25M, 1600K",
-			},
-			&cli.IntFlag{
-				Name:    "video-quality",
-				Aliases: []string{"vq"},
-				Usage: "Video quality (-crf option for CPU encoding and -qp option for NVENC).\n" +
-					"                                      Integer from 1 to 51 (30 is recommended). By default delegates choise to ffmpeg",
-			},
-			&cli.StringFlag{
-				Name:  "scale",
-				Usage: "Scaling. Possible values: 1/2 (half resolution), 1/4 (quarter resolution)",
-			},
-			&cli.IntFlag{
-				Name:    "parallelism",
-				Aliases: []string{"P"},
-				Usage: "Number of parallel ffmpeg workers.\n" +
-					"                                  With higher parallelism value you can utilize more CPU/GPU resources, \n" +
-					"                                  but in some situations ffmpeg can't run in parallel or will not give a profit",
-				Value: 1,
-			},
-			&cli.BoolFlag{
-				Name:    "recursively",
-				Aliases: []string{"R"},
-				Usage:   "Convert all video files in directory recursively",
-			},
-			&cli.BoolFlag{
-				Name:  "dry-run",
-				Usage: "Do not execute conversion and print yaml task config",
-			},
-			&cli.StringFlag{
-				Name:  "config",
-				Usage: "Config file path (output from --dry-run option)",
-			},
-			&cli.StringFlag{
-				Name:  "preset",
-				Value: "slow",
-				Usage: "Encoding preset.\n" +
-					"\t\n" +
-					"\tWARNING! Apple's VideoToolBox does not support presets\n" +
-					"\t\n" +
-					"\tCPU-encoding values:\n" +
-					"\t- ultrafast\n" +
-					"\t- superfast\n" +
-					"\t- veryfast\n" +
-					"\t- faster\n" +
-					"\t- fast\n" +
-					"\t- medium\n" +
-					"\t- slow\n" +
-					"\t- slower\n" +
-					"\t- veryslow\n" +
-					"\t\n" +
-					"\tNVENC values:\n" +
-					"\t- slow\n" +
-					"\t- medium\n" +
-					"\t- fast\n" +
-					"\t- hp\n" +
-					"\t- hq\n" +
-					"\t- bd\n" +
-					"\t- ll\n" +
-					"\t- llhq\n" +
-					"\t- llhp\n" +
-					"\t- lossless\n" +
-					"\t- losslesshp\t",
-			},
-		},
+
+		Flags: flags,
 
 		Action: func(c *cli.Context) error {
 			ctx := context.Background()
 
-			mediaInfoGetter := minfo.NewGetter()
+			infoGetter := minfo.New()
 
 			var progressChan chan mediaConvert.BatchProgressMessage
 			var errChan chan mediaConvert.BatchErrorMessage
@@ -149,14 +95,7 @@ func CliConfig() *cli.Command {
 						{
 							InFile:  inFile.FullPath(),
 							OutFile: outFile.FullPath(),
-							Params: mediaConvert.Params{
-								HWAccel:      c.String("hwa"),
-								VideoCodec:   c.String("video-codec"),
-								Preset:       c.String("preset"),
-								VideoBitRate: c.String("video-bitrate"),
-								VideoQuality: c.Int("video-quality"),
-								Scale:        c.String("scale"),
-							},
+							Params:  convertParamsFromFlags(c),
 						},
 					},
 				}
@@ -168,15 +107,8 @@ func CliConfig() *cli.Command {
 						Parallelism: c.Int("parallelism"),
 						InPath:      files.NewPath(inputPath),
 						OutPath:     files.NewPath(outputPath),
-						Params: mediaConvert.Params{
-							HWAccel:      c.String("hwa"),
-							VideoCodec:   c.String("video-codec"),
-							Preset:       c.String("preset"),
-							VideoBitRate: c.String("video-bitrate"),
-							VideoQuality: c.Int("video-quality"),
-							Scale:        c.String("scale"),
-						},
-					}, mediaInfoGetter)
+						Params:      convertParamsFromFlags(c),
+					}, infoGetter)
 
 					if err != nil {
 						return errors.Wrap(err, "Building recursive task")
@@ -194,7 +126,7 @@ func CliConfig() *cli.Command {
 				return nil
 			}
 
-			converter := mediaConvert.NewBatchConverter(ctx, mediaInfoGetter)
+			converter := mediaConvert.NewBatchConverter(ctx, infoGetter)
 
 			progressChan, errChan = converter.Convert(batchTask)
 
