@@ -1,7 +1,10 @@
 package segm
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/ff"
 )
@@ -10,6 +13,10 @@ const segmentPrefix = "fftb_out_"
 
 // SliceOperation _
 type SliceOperation struct {
+	ctx            context.Context
+	ffctx          context.Context
+	ffcancel       func()
+	wg             *chwg.ChannelledWaitGroup
 	inFile         files.Filer
 	outPath        files.Pather
 	tmpPath        files.Pather
@@ -29,8 +36,15 @@ type SliceRequest struct {
 }
 
 // NewSliceOperation _
-func NewSliceOperation() *SliceOperation {
-	return &SliceOperation{}
+func NewSliceOperation(ctx context.Context) *SliceOperation {
+	ffctx, ffcancel := context.WithCancel(ctx)
+
+	return &SliceOperation{
+		ffctx:    ffctx,
+		ffcancel: ffcancel,
+		ctx:      ctx,
+		wg:       chwg.New(),
+	}
 }
 
 // Init _
@@ -52,7 +66,7 @@ func (so *SliceOperation) Init(req SliceRequest) error {
 		return errors.Wrap(err, "Create temp path for segments")
 	}
 
-	so.ffworker = ff.New()
+	so.ffworker = ff.New(so.ffctx)
 	err = so.ffworker.Init(req.InFile, so.tmpPath.BuildFile(segmentPrefix+"%06d"+req.InFile.Extension()))
 
 	if err != nil {
@@ -77,58 +91,69 @@ func (so *SliceOperation) Init(req SliceRequest) error {
 
 // Run _
 func (so *SliceOperation) Run() (
-	finished chan struct{},
 	progress chan ff.Progressable,
 	segments chan *Segment,
-	failed chan error,
+	failures chan error,
 ) {
-	finished = make(chan struct{})
 	progress = make(chan ff.Progressable)
 	segments = make(chan *Segment)
-	failed = make(chan error)
+	failures = make(chan error)
+	so.wg.Add(1)
 
 	go func() {
-		defer close(finished)
 		defer close(progress)
 		defer close(segments)
-		defer close(failed)
+		defer close(failures)
+		defer so.wg.Done()
 
-		if so.started {
-			failed <- ErrAlreadyInitialized
+		if !so.initialized {
+			failures <- ErrNotInitialized
 			return
 		}
 
-		_progress, _finished, _failed := so.ffworker.Start()
+		if so.started {
+			failures <- ErrAlreadyStarted
+			return
+		}
+
+		fProgress, fFailures := so.ffworker.Start()
 
 		for {
 			select {
-			case <-_finished:
-				tmpFiles, err := so.tmpPath.Files()
+			case failure, failed := <-fFailures:
+				if !failed {
+					tmpFiles, err := so.tmpPath.Files()
 
-				if err != nil {
-					failed <- errors.Wrap(err, "Getting list of segments files")
+					if err != nil {
+						so.ffcancel()
+						<-so.ffworker.Closed()
+						failures <- errors.Wrap(err, "Getting list of segments files")
+						return
+					}
+
+					segs := collectSegments(tmpFiles)
+
+					for _, seg := range segs {
+						segments <- seg
+					}
+
 					return
 				}
 
-				segs := collectSegments(tmpFiles)
+				so.ffcancel()
+				<-so.ffworker.Closed()
+				failures <- failure
+				return
 
-				for _, seg := range segs {
-					segments <- seg
+			case progressMessage, ok := <-fProgress:
+				if ok {
+					progress <- progressMessage
 				}
-
-				return
-
-			case failure := <-_failed:
-				failed <- failure
-				return
-
-			case progressMessage := <-_progress:
-				progress <- progressMessage
 			}
 		}
 	}()
 
-	return finished, progress, segments, failed
+	return progress, segments, failures
 }
 
 // Purge removes all segments from tmp directory & also tmp directory itself
@@ -138,4 +163,9 @@ func (so *SliceOperation) Purge() error {
 	}
 
 	return nil
+}
+
+// Closed _
+func (so *SliceOperation) Closed() <-chan struct{} {
+	return so.wg.Closed()
 }
