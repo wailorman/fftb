@@ -2,13 +2,13 @@ package utils
 
 import (
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
+	"github.com/wailorman/fftb/pkg/media/minfo"
 
 	"github.com/wailorman/fftb/pkg/files"
-	mediaInfo "github.com/wailorman/fftb/pkg/media/minfo"
 )
 
 // FilterVideos _
-func FilterVideos(allFiles []files.Filer, infoGetter mediaInfo.Getter) []files.Filer {
+func FilterVideos(allFiles []files.Filer, infoGetter minfo.Getter) []files.Filer {
 	videoFiles := make([]files.Filer, 0)
 
 	for _, file := range allFiles {
