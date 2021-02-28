@@ -3,6 +3,7 @@ package transcoder
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +14,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/wailorman/fftb/pkg/goffmpeg/ctxlog"
+	"github.com/sirupsen/logrus"
+	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/goffmpeg/ffmpeg"
 	"github.com/wailorman/fftb/pkg/goffmpeg/models"
 	"github.com/wailorman/fftb/pkg/goffmpeg/utils"
@@ -26,6 +28,24 @@ type Transcoder struct {
 	process       *exec.Cmd
 	mediafile     *models.Mediafile
 	configuration ffmpeg.Configuration
+	ctx           context.Context
+	logger        logrus.FieldLogger
+}
+
+// LoggingPrefix _
+const LoggingPrefix = "goffmpeg"
+
+// New _
+func New(ctx context.Context) *Transcoder {
+	var logger logrus.FieldLogger
+	if logger = ctxlog.FromContext(ctx, LoggingPrefix); logger == nil {
+		logger = ctxlog.New(LoggingPrefix)
+	}
+
+	return &Transcoder{
+		ctx:    ctx,
+		logger: logger,
+	}
 }
 
 // SetProcessStderrPipe Set the STDERR pipe
@@ -85,7 +105,7 @@ func (t *Transcoder) InitializeEmptyTranscoder() error {
 	var err error
 	cfg := t.configuration
 	if len(cfg.FfmpegBin) == 0 || len(cfg.FfprobeBin) == 0 {
-		cfg, err = ffmpeg.Configure()
+		cfg, err = ffmpeg.Configure(t.ctx)
 		if err != nil {
 			return err
 		}
@@ -151,7 +171,7 @@ func (t *Transcoder) Initialize(inputPath string, outputPath string) error {
 	cfg := t.configuration
 
 	if len(cfg.FfmpegBin) == 0 || len(cfg.FfprobeBin) == 0 {
-		cfg, err = ffmpeg.Configure()
+		cfg, err = ffmpeg.Configure(t.ctx)
 		if err != nil {
 			return err
 		}
@@ -193,7 +213,7 @@ func (t *Transcoder) GetFileMetadata(filePath string) (models.Metadata, error) {
 	cfg := t.configuration
 
 	if len(cfg.FfmpegBin) == 0 || len(cfg.FfprobeBin) == 0 {
-		cfg, err = ffmpeg.Configure()
+		cfg, err = ffmpeg.Configure(t.ctx)
 		if err != nil {
 			return models.Metadata{}, err
 		}
@@ -201,7 +221,7 @@ func (t *Transcoder) GetFileMetadata(filePath string) (models.Metadata, error) {
 
 	command := []string{"-i", filePath, "-print_format", "json", "-show_format", "-show_streams", "-show_error"}
 
-	ctxlog.Logger.WithField("command", fmt.Sprintf("%s %s", cfg.FfprobeBin, strings.Join(command, " "))).
+	t.logger.WithField("command", fmt.Sprintf("%s %s", cfg.FfprobeBin, strings.Join(command, " "))).
 		Debug("Running ffprobe")
 
 	cmd := exec.Command(cfg.FfprobeBin, command...)
@@ -238,7 +258,7 @@ func (t *Transcoder) Run(progress bool) <-chan error {
 		command = append([]string{"-nostats", "-loglevel", "0"}, command...)
 	}
 
-	ctxlog.Logger.WithField("command", fmt.Sprintf("%s %s", t.configuration.FfmpegBin, strings.Join(command, " "))).
+	t.logger.WithField("command", fmt.Sprintf("%s %s", t.configuration.FfmpegBin, strings.Join(command, " "))).
 		Debug("Running ffmpeg")
 
 	proc := exec.Command(t.configuration.FfmpegBin, command...)
@@ -363,7 +383,7 @@ func (t Transcoder) Output() chan models.Progress {
 			Progress := new(models.Progress)
 			line := scanner.Text()
 
-			ctxlog.Logger.WithField("line", line).
+			t.logger.WithField("line", line).
 				Trace("Received line from ffmpeg output")
 
 			if strings.Contains(line, "frame=") && strings.Contains(line, "time=") && strings.Contains(line, "bitrate=") {

@@ -1,6 +1,8 @@
 package info
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
 	ffmpegModels "github.com/wailorman/fftb/pkg/goffmpeg/models"
@@ -23,7 +25,7 @@ func NewGetter() *GetterInstance {
 
 // GetMediaInfo _
 func (ig *GetterInstance) GetMediaInfo(file files.Filer) (ffmpegModels.Metadata, error) {
-	trans := &transcoder.Transcoder{}
+	trans := transcoder.New(context.TODO())
 
 	err := trans.InitializeEmptyTranscoder()
 
