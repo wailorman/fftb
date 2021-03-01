@@ -174,7 +174,7 @@ func (t *Transcoder) Initialize(inputPath string, outputPath string) error {
 	if len(cfg.FfmpegBin) == 0 || len(cfg.FfprobeBin) == 0 {
 		cfg, err = ffmpeg.Configure(t.ctx)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Configuring ffmpeg")
 		}
 	}
 
