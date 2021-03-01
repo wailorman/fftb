@@ -87,7 +87,7 @@ func (r *Instance) SearchOrder(fctx context.Context, check func(models.IOrder) b
 
 // SearchAllOrders _
 func (r *Instance) SearchAllOrders(fctx context.Context, check func(models.IOrder) bool) ([]models.IOrder, error) {
-	orders, err := r.searchOrders(fctx, false, check)
+	orders, err := r.searchOrders(fctx, true, check)
 
 	if err != nil {
 		return nil, err
@@ -98,6 +98,9 @@ func (r *Instance) SearchAllOrders(fctx context.Context, check func(models.IOrde
 
 // PersistOrder _
 func (r *Instance) PersistOrder(modOrder models.IOrder) error {
+	r.logger.WithField("json", dlog.JSON(modOrder)).
+		Trace("Persisting order")
+
 	if modOrder == nil {
 		return models.ErrMissingOrder
 	}

@@ -470,7 +470,7 @@ func (t Transcoder) Output() chan models.Progress {
 			line := scanner.Text()
 
 			t.logger.WithField("line", line).
-				Trace("Received line from ffmpeg output")
+				Trace("ffmpeg output")
 
 			if strings.Contains(line, "frame=") && strings.Contains(line, "time=") && strings.Contains(line, "bitrate=") {
 				var re = regexp.MustCompile(`=\s+`)

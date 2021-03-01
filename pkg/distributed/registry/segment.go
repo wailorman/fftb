@@ -128,7 +128,7 @@ func (r *Instance) SearchSegment(fctx context.Context, check func(models.ISegmen
 
 // SearchAllSegments _
 func (r *Instance) SearchAllSegments(fctx context.Context, check func(models.ISegment) bool) ([]models.ISegment, error) {
-	segments, err := r.searchSegments(fctx, false, check)
+	segments, err := r.searchSegments(fctx, true, check)
 
 	if err != nil {
 		return nil, err
@@ -159,6 +159,9 @@ func (r *Instance) FindSegmentsByOrderID(fctx context.Context, orderID string) (
 
 // PersistSegment _
 func (r *Instance) PersistSegment(modSegment models.ISegment) error {
+	r.logger.WithField("json", dlog.JSON(modSegment)).
+		Trace("Persisting segment")
+
 	if modSegment == nil {
 		return models.ErrMissingSegment
 	}

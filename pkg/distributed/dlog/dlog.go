@@ -1,6 +1,7 @@
 package dlog
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/sirupsen/logrus"
@@ -25,6 +26,9 @@ const KeyPerformer = "performer"
 // KeyStorePayload _
 const KeyStorePayload = "store_payload"
 
+// KeyCallee _
+const KeyCallee = "callee"
+
 // PrefixContracterPublishWorker _
 const PrefixContracterPublishWorker = "fftb.contracter.publish_worker"
 
@@ -33,6 +37,9 @@ const PrefixContracterConcatWorker = "fftb.contracter.concat_worker"
 
 // PrefixContracter _
 const PrefixContracter = "fftb.contracter"
+
+// PrefixWorker _
+const PrefixWorker = "fftb.worker"
 
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
@@ -67,4 +74,15 @@ func MakeIOProgress(step models.ProgressStep, percent float64) models.Progresser
 		step:    step,
 		percent: percent,
 	}
+}
+
+// JSON _
+func JSON(v interface{}) string {
+	bytes, err := json.Marshal(v)
+
+	if err != nil {
+		return fmt.Sprintf("<failed to generate json: %s>", err)
+	}
+
+	return string(bytes)
 }

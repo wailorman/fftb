@@ -43,6 +43,8 @@ type Filer interface {
 type File struct {
 	fileName string
 	dirPath  string
+	readers  []io.ReadCloser
+	writers  []io.WriteCloser
 }
 
 // NewFile _
@@ -183,36 +185,59 @@ func (f *File) Create() error {
 		return errors.Wrap(err, "Creating parent directory")
 	}
 
-	_, err = os.Create(f.FullPath())
+	sf, err := os.Create(f.FullPath())
+	sf.Close()
 
 	return err
 }
 
 // FileWriter _
 type FileWriter interface {
-	io.Writer
+	io.WriteCloser
 	io.StringWriter
-	io.Closer
 }
 
 // FileReader _
 type FileReader interface {
-	io.Reader
-	io.Closer
+	io.ReadCloser
 }
 
 // ReadContent _
 func (f *File) ReadContent() (FileReader, error) {
-	return os.Open(f.FullPath())
+	reader, err := os.Open(f.FullPath())
+
+	if err != nil {
+		return nil, err
+	}
+
+	f.readers = append(f.readers, reader)
+
+	return reader, nil
 }
 
 // WriteContent _
 func (f *File) WriteContent() (FileWriter, error) {
-	return os.OpenFile(f.FullPath(), os.O_APPEND|os.O_WRONLY, 0644)
+	writer, err := os.OpenFile(f.FullPath(), os.O_APPEND|os.O_WRONLY, 0644)
+
+	if err != nil {
+		return nil, err
+	}
+
+	f.writers = append(f.writers, writer)
+
+	return writer, nil
 }
 
 // Remove _
 func (f *File) Remove() error {
+	for _, reader := range f.readers {
+		reader.Close()
+	}
+
+	for _, writer := range f.writers {
+		writer.Close()
+	}
+
 	return os.Remove(f.FullPath())
 }
 

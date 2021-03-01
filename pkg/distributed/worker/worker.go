@@ -104,6 +104,8 @@ func (w *Instance) Start() (done chan struct{}) {
 
 // proceedSegment _
 func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegment) error {
+	logger := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID())
+
 	convertSegment := freeSegment.(*models.ConvertSegment)
 
 	inputClaim, err := w.dealer.GetInputStorageClaim(w.performer, freeSegment.GetID())
@@ -164,6 +166,8 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 	}()
 
 	_, err = io.Copy(inputFileWriter, iopInputClaimReader)
+	inputFileWriter.Close()
+	inputClaimReader.Close()
 
 	if err != nil {
 		panic(errors.Wrap(err, "Writing segment from storage claim"))
@@ -178,7 +182,14 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 	}
 
 	infoGetter := minfo.New()
-	converter := convert.NewConverter(w.ctx, infoGetter)
+	converter := convert.NewConverter(
+		context.WithValue(
+			w.ctx,
+			ctxlog.LoggerContextKey,
+			logger.WithField(dlog.KeyCallee, dlog.PrefixWorker),
+		),
+		infoGetter,
+	)
 
 	throttled := throttle.New(2000 * time.Millisecond)
 
@@ -187,7 +198,7 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 	for {
 		select {
 		case <-w.ctx.Done():
-			w.logger.Info("Terminating worker thread")
+			logger.Info("Terminating worker thread")
 
 			<-converter.Closed()
 
@@ -235,6 +246,8 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 				}
 
 				_, err = io.Copy(outputClaimWriter, outputFileReader)
+				outputClaimWriter.Close()
+				outputFileReader.Close()
 
 				if err != nil {
 					panic(errors.Wrap(err, "Writing result to output claim"))

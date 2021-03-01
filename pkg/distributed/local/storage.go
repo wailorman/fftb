@@ -166,6 +166,9 @@ func UploadFileToStorageClaim(ctx context.Context, file files.Filer, sc models.I
 
 		_, err = io.Copy(storageWriter, progressReader)
 
+		storageWriter.Close()
+		fileReader.Close()
+
 		if err != nil {
 			failures <- errors.Wrap(err, "Failed to upload")
 			return
@@ -218,6 +221,9 @@ func DownloadFileFromStorageClaim(ctx context.Context, file files.Filer, sc mode
 
 		_, err = io.Copy(fileWriter, storageReader)
 		// _, err = io.Copy(fileWriter, progressReader)
+
+		fileWriter.Close()
+		storageReader.Close()
 
 		if err != nil {
 			failures <- errors.Wrap(err, "Failed to download")

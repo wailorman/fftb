@@ -101,6 +101,8 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 		// _, err = io.Copy(claimWriter, segmentProgressReader)
 
 		_, err = io.Copy(claimWriter, segmentReader)
+		claimWriter.Close()
+		segmentReader.Close()
 
 		if err != nil {
 			return errors.Wrap(err, "Uploading segment to storage")
@@ -141,12 +143,16 @@ func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, co
 	llog.Info("Slicing order")
 
 	segmenter := segm.NewSliceOperation(contracter.ctx)
-	segmenter.Init(segm.SliceRequest{
+	err := segmenter.Init(segm.SliceRequest{
 		InFile:         convOrder.InFile,
 		KeepTimestamps: false,
 		OutPath:        contracter.tempPath,
 		SegmentSec:     DefaultSegmentSize,
 	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Initializing slice operation")
+	}
 
 	reqSegs := make([]*segm.Segment, 0)
 

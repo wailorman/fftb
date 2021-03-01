@@ -22,8 +22,8 @@ var segmentsTestTable = []struct{ segment models.ISegment }{
 			Identity:                   "segment_id_1",
 			OrderIdentity:              "order_id_1",
 			Type:                       models.ConvertV1Type,
-			InputStorageClaimIdentity:  "local/some_dir/some_file",
-			OutputStorageClaimIdentity: "local/some_dir/some_file",
+			InputStorageClaimIdentity:  "local/some_dir/some_in_file",
+			OutputStorageClaimIdentity: "local/some_dir/some_out_file",
 			State:                      models.SegmentStatePublished,
 
 			Params: convert.Params{

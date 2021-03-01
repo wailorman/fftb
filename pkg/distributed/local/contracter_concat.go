@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/media/segm"
@@ -31,6 +32,10 @@ func (c *ContracterInstance) PickOrderForConcat(fctx context.Context) (models.IO
 			return false
 		}
 
+		c.logger.WithField(dlog.KeyOrderID, order.GetID()).
+			WithField("states", dlog.JSON(statesMap)).
+			Trace("Received order segments states map")
+
 		allSegmentsFinished := true
 
 		for _, state := range statesMap {
@@ -56,6 +61,8 @@ func (c *ContracterInstance) PickOrderForConcat(fctx context.Context) (models.IO
 
 // ConcatOrder _
 func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrder) error {
+	logger := c.logger.WithField(dlog.KeyOrderID, order.GetID())
+
 	convOrder, ok := order.(*models.ConvertOrder)
 
 	if !ok {
@@ -73,13 +80,19 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 			slice, err := c.downloadSegment(fctx, order, dSegmentID)
 
 			if err != nil {
-				return errors.Wrap(err, "Downloading segment")
+				return errors.Wrapf(err, "Downloading segment `%s`", dSegmentID)
 			}
 
 			slices = append(slices, slice)
 		}
 
-		concatOperation := segm.NewConcatOperation(c.ctx)
+		concatOperation := segm.NewConcatOperation(
+			context.WithValue(
+				c.ctx,
+				ctxlog.LoggerContextKey,
+				logger.WithField(dlog.KeyCallee, dlog.PrefixContracterConcatWorker),
+			),
+		)
 
 		err := concatOperation.Init(segm.ConcatRequest{
 			OutFile:  convOrder.OutFile,
@@ -100,8 +113,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 				select {
 				case pM, ok := <-cProgress:
 					if ok {
-						c.logger.WithField(dlog.KeyOrderID, order.GetID()).
-							WithField(dlog.KeyPercent, pM.Percent()).
+						logger.WithField(dlog.KeyPercent, pM.Percent()).
 							Info("Concatenating order")
 					}
 				case failure, failed := <-cFailures:

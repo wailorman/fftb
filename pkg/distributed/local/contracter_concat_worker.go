@@ -61,13 +61,15 @@ func (pC *ContracterConcatWorker) Start() {
 					continue
 				}
 
-				pC.logger.WithField(dlog.KeyOrderID, finishedOrder.GetID()).
+				logger := pC.logger.WithField(dlog.KeyOrderID, finishedOrder.GetID())
+
+				logger.WithField(dlog.KeyOrderID, finishedOrder.GetID()).
 					Info("Found finished order for concatenation")
 
 				err = pC.contracter.ConcatOrder(pC.ctx, finishedOrder)
 
 				if err != nil {
-					pC.logger.WithError(err).
+					logger.WithError(err).
 						Warn("Failed to concat finished order")
 				}
 

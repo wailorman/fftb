@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -179,7 +180,10 @@ func (a *DistributedConvertApp) Wait() <-chan struct{} {
 			select {
 			case <-a.ctx.Done():
 				if a.workerInstance != nil {
-					<-a.workerInstance.Closed()
+					select {
+					case <-a.workerInstance.Closed():
+					case <-time.After(3 * time.Second):
+					}
 					a.logger.Debug("Worker terminated")
 				}
 
