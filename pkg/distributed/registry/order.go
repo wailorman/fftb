@@ -105,6 +105,10 @@ func (r *Instance) PersistOrder(modOrder models.IOrder) error {
 		return models.ErrMissingOrder
 	}
 
+	if validationErr := modOrder.Validate(); validationErr != nil {
+		return validationErr
+	}
+
 	data, err := marshalOrderModel(modOrder)
 
 	if err != nil {

@@ -55,7 +55,6 @@ func (a *DistributedConvertApp) Init() error {
 	logger.SetLevel(logrus.TraceLevel)
 	logger.Formatter = &prefixed.TextFormatter{
 		FullTimestamp: true,
-		SpacePadding:  10,
 	}
 	a.logger = logger.WithField("prefix", "fftb")
 

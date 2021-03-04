@@ -87,7 +87,7 @@ const SegmentLockDuration = time.Duration(1 * time.Minute)
 
 // Author _
 type Author struct {
-	Name string
+	Name string `json:"name"`
 }
 
 // GetName _
@@ -104,6 +104,7 @@ func (a *Author) IsEqual(anotherAuthor IAuthor) bool {
 type IContracterRequest interface {
 	GetType() string
 	// GetAuthor() IAuthor
+	Validate() error
 }
 
 // IDealerRequest _
@@ -111,6 +112,7 @@ type IDealerRequest interface {
 	GetID() string
 	GetType() string
 	GetAuthor() IAuthor
+	Validate() error
 }
 
 // IOrder _
@@ -128,6 +130,7 @@ type IOrder interface {
 	// SetState(string)
 	MatchPublisher(IAuthor) bool
 	GetSegmentIDs() []string
+	Validate() error
 }
 
 // ISegment _
@@ -151,6 +154,7 @@ type ISegment interface {
 	MatchPerformer(IAuthor) bool
 	Lock(performer IAuthor)
 	Unlock()
+	Validate() error
 }
 
 // IContracter _

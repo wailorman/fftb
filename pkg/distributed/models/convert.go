@@ -1,6 +1,7 @@
 package models
 
 import (
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
@@ -24,6 +25,14 @@ func (cr *ConvertContracterRequest) GetType() string {
 // GetAuthor _
 func (cr *ConvertContracterRequest) GetAuthor() IAuthor {
 	return cr.Author
+}
+
+// Validate _
+func (cr ConvertContracterRequest) Validate() error {
+	return validation.ValidateStruct(&cr,
+		validation.Field(&cr.InFile, validation.Required),
+		validation.Field(&cr.OutFile, validation.Required),
+		validation.Field(&cr.Author, validation.Required))
 }
 
 // ConvertDealerRequest _
@@ -52,4 +61,14 @@ func (cdr *ConvertDealerRequest) GetType() string {
 // GetAuthor _
 func (cdr *ConvertDealerRequest) GetAuthor() IAuthor {
 	return cdr.Author
+}
+
+// Validate _
+func (cdr ConvertDealerRequest) Validate() error {
+	return validation.ValidateStruct(&cdr,
+		validation.Field(&cdr.Type, validation.Required, validation.In(ConvertV1Type)),
+		validation.Field(&cdr.Identity, validation.Required),
+		validation.Field(&cdr.OrderIdentity, validation.Required),
+		validation.Field(&cdr.Muxer, validation.Required),
+		validation.Field(&cdr.Author, validation.Required))
 }

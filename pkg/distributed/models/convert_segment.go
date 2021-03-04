@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
@@ -18,20 +19,20 @@ const SegmentStateFinished = "finished"
 
 // ConvertSegment _
 type ConvertSegment struct {
-	Identity                   string
-	OrderIdentity              string
-	Type                       string
-	InputStorageClaimIdentity  string
-	OutputStorageClaimIdentity string
-	State                      string
+	Identity                   string `json:"identity"`
+	OrderIdentity              string `json:"order_identity"`
+	Type                       string `json:"type"`
+	InputStorageClaimIdentity  string `json:"input_storage_claim_identity"`
+	OutputStorageClaimIdentity string `json:"output_storage_claim_identity"`
+	State                      string `json:"state"`
 
-	Params   convert.Params
-	Muxer    string
-	Position int
+	Params   convert.Params `json:"params"`
+	Muxer    string         `json:"muxer"`
+	Position int            `json:"position"`
 
-	Publisher   IAuthor
-	LockedUntil *time.Time
-	LockedBy    IAuthor
+	Publisher   IAuthor    `json:"publisher"`
+	LockedUntil *time.Time `json:"locked_until"`
+	LockedBy    IAuthor    `json:"locked_by"`
 }
 
 // GetID _
@@ -168,4 +169,44 @@ func (ct *ConvertSegment) Unlock() {
 // GetPosition _
 func (ct *ConvertSegment) GetPosition() int {
 	return ct.Position
+}
+
+// Validate _
+func (ct ConvertSegment) Validate() error {
+	stateErr := validation.ValidateStruct(&ct,
+		validation.Field(&ct.State,
+			validation.Required,
+			validation.In(
+				SegmentStatePrepared,
+				SegmentStatePublished,
+				SegmentStateFinished)))
+
+	if stateErr != nil {
+		return stateErr
+	}
+
+	if ct.State == SegmentStatePublished {
+		inputClaimErr := validation.ValidateStruct(&ct,
+			validation.Field(&ct.InputStorageClaimIdentity, validation.Required))
+
+		if inputClaimErr != nil {
+			return inputClaimErr
+		}
+	}
+
+	if ct.State == SegmentStateFinished {
+		outputClaimErr := validation.ValidateStruct(&ct,
+			validation.Field(&ct.OutputStorageClaimIdentity, validation.Required))
+
+		if outputClaimErr != nil {
+			return outputClaimErr
+		}
+	}
+
+	return validation.ValidateStruct(&ct,
+		validation.Field(&ct.Type, validation.Required, validation.In(ConvertV1Type)),
+		validation.Field(&ct.Identity, validation.Required),
+		validation.Field(&ct.OrderIdentity, validation.Required),
+		validation.Field(&ct.Muxer, validation.Required),
+		validation.Field(&ct.Publisher, validation.Required))
 }

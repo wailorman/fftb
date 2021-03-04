@@ -166,6 +166,10 @@ func (r *Instance) PersistSegment(modSegment models.ISegment) error {
 		return models.ErrMissingSegment
 	}
 
+	if validationErr := modSegment.Validate(); validationErr != nil {
+		return validationErr
+	}
+
 	data, err := marshalSegmentModel(modSegment)
 
 	if err != nil {

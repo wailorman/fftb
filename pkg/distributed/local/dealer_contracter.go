@@ -12,6 +12,10 @@ import (
 
 // AllocateSegment _
 func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, error) {
+	if validationErr := req.Validate(); validationErr != nil {
+		return nil, validationErr
+	}
+
 	convertReq, ok := req.(*models.ConvertDealerRequest)
 
 	if !ok {
@@ -25,6 +29,7 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 	// TODO: check id is free
 
 	convertSegment := &models.ConvertSegment{
+		Type:          models.ConvertV1Type,
 		Identity:      convertReq.Identity,
 		OrderIdentity: convertReq.OrderIdentity,
 		Params:        convertReq.Params,

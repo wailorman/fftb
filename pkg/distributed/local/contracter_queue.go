@@ -10,6 +10,10 @@ import (
 
 // AddOrderToQueue _
 func (c *ContracterInstance) AddOrderToQueue(req models.IContracterRequest) (models.IOrder, error) {
+	if validationErr := req.Validate(); validationErr != nil {
+		return nil, validationErr
+	}
+
 	convertRequest, ok := req.(*models.ConvertContracterRequest)
 
 	if !ok {

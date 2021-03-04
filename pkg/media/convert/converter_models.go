@@ -28,28 +28,28 @@ type VideoFileFilteringMessage struct {
 
 // BatchTask _
 type BatchTask struct {
-	Parallelism           int    `yaml:"parallelism"`
-	StopConversionOnError bool   `yaml:"stop_conversion_on_error"`
-	Tasks                 []Task `yaml:"tasks"`
+	Parallelism           int    `json:"parallelism" yaml:"parallelism"`
+	StopConversionOnError bool   `json:"stop_conversion_on_error" yaml:"stop_conversion_on_error"`
+	Tasks                 []Task `json:"tasks" yaml:"tasks"`
 }
 
 // Task _
 type Task struct {
-	ID      string `yaml:"id"`
-	InFile  string `yaml:"in_file"`
-	OutFile string `yaml:"out_file"`
-	Params  Params
+	ID      string `json:"id" yaml:"id"`
+	InFile  string `json:"in_file" yaml:"in_file"`
+	OutFile string `json:"out_file" yaml:"out_file"`
+	Params  Params `json:"params" yaml:"params"`
 }
 
 // Params _
 type Params struct {
-	VideoCodec       string `yaml:"video_codec"`
-	HWAccel          string `yaml:"hw_accel"`
-	VideoBitRate     string `yaml:"video_bit_rate"`
-	VideoQuality     int    `yaml:"video_quality"`
-	Preset           string `yaml:"preset"`
-	Scale            string `yaml:"scale"`
-	KeyframeInterval int    `yaml:"keyframe_interval"`
+	VideoCodec       string `json:"video_codec" yaml:"video_codec"`
+	HWAccel          string `json:"hw_accel" yaml:"hw_accel"`
+	VideoBitRate     string `json:"video_bit_rate" yaml:"video_bit_rate"`
+	VideoQuality     int    `json:"video_quality" yaml:"video_quality"`
+	Preset           string `json:"preset" yaml:"preset"`
+	Scale            string `json:"scale" yaml:"scale"`
+	KeyframeInterval int    `json:"keyframe_interval" yaml:"keyframe_interval"`
 }
 
 // ErrFileIsNotVideo _

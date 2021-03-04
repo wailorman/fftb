@@ -2,7 +2,6 @@ package registry
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -25,6 +24,8 @@ var segmentsTestTable = []struct{ segment models.ISegment }{
 			InputStorageClaimIdentity:  "local/some_dir/some_in_file",
 			OutputStorageClaimIdentity: "local/some_dir/some_out_file",
 			State:                      models.SegmentStatePublished,
+
+			Publisher: &models.Author{Name: "somePublisher"},
 
 			Params: convert.Params{
 				HWAccel:          "nvenc",
@@ -50,13 +51,13 @@ func Test__Segment__Marshaling(t *testing.T) {
 
 		segmentBytes, err := marshalSegmentModel(originalSegment)
 
-		assert.Nil(t, err, fmt.Sprintf("item %d: marshalSegmentModel", i))
+		assert.Nilf(t, err, "item %d: marshalSegmentModel error", i)
 
 		newSegment, err := unmarshalSegmentModel(segmentBytes)
 
-		assert.Nil(t, err, fmt.Sprintf("item %d: unmarshalSegmentModel", i))
+		assert.Nilf(t, err, "item %d: unmarshalSegmentModel error", i)
 
-		assert.Equal(t, "", cmp.Diff(newSegment, originalSegment), fmt.Sprintf("item %d: diff", i))
+		assert.Equalf(t, "", cmp.Diff(originalSegment, newSegment), "item %d: diff", i)
 	}
 }
 
@@ -75,11 +76,11 @@ func Test__Segment__Persisting(t *testing.T) {
 
 		err := registry.PersistSegment(originalSegment)
 
-		assert.Nil(t, err, fmt.Sprintf("item %d: registry.PersistSegment", i))
+		assert.Nilf(t, err, "item %d: registry.PersistSegment error", i)
 
 		newSegment, err := registry.FindSegmentByID(originalSegment.GetID())
 
-		assert.Nil(t, err, fmt.Sprintf("item %d: registry.FindSegmentByID", i))
-		assert.Equal(t, "", cmp.Diff(newSegment, originalSegment), fmt.Sprintf("item %d: diff", i))
+		assert.Nilf(t, err, "item %d: registry.FindSegmentByID error", i)
+		assert.Equalf(t, "", cmp.Diff(originalSegment, newSegment), "item %d: diff", i)
 	}
 }
