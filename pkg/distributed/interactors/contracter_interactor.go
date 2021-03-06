@@ -37,8 +37,8 @@ type OrdersListItem struct {
 }
 
 // GetAllOrders _
-func (ci *ContracterInteractor) GetAllOrders(ctx context.Context) ([]*OrdersListItem, error) {
-	orders, err := ci.contracter.GetAllOrders(ctx)
+func (ci *ContracterInteractor) GetAllOrders(ctx context.Context, search models.IOrderSearchCriteria) ([]*OrdersListItem, error) {
+	orders, err := ci.contracter.GetAllOrders(ctx, search)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Getting all orders from contracter")
@@ -47,7 +47,7 @@ func (ci *ContracterInteractor) GetAllOrders(ctx context.Context) ([]*OrdersList
 	allOrders := make([]*OrdersListItem, 0)
 
 	for _, order := range orders {
-		segments, err := ci.contracter.GetSegmentsByOrderID(ctx, order.GetID())
+		segments, err := ci.contracter.GetSegmentsByOrderID(ctx, order.GetID(), models.EmptySegmentFilters())
 
 		if err != nil {
 			return nil, errors.Wrapf(err, "Gettings segments by order id `%s`", order.GetID())
@@ -84,7 +84,7 @@ type OrderItem struct {
 
 // GetOrderByID _
 func (ci *ContracterInteractor) GetOrderByID(ctx context.Context, id string) (*OrderItem, error) {
-	orders, err := ci.contracter.GetAllOrders(ctx)
+	orders, err := ci.contracter.GetAllOrders(ctx, models.EmptyOrderFilters())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Getting all orders from contracter")
@@ -96,7 +96,7 @@ func (ci *ContracterInteractor) GetOrderByID(ctx context.Context, id string) (*O
 		return nil, models.ErrNotFound
 	}
 
-	segments, err := ci.contracter.GetSegmentsByOrderID(ctx, order.GetID())
+	segments, err := ci.contracter.GetSegmentsByOrderID(ctx, order.GetID(), models.EmptySegmentFilters())
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Getting segments by order id `%s`", order.GetID())
@@ -120,11 +120,11 @@ type SegmentsListItem struct {
 }
 
 // GetSegmentsByOrderID _
-func (ci *ContracterInteractor) GetSegmentsByOrderID(ctx context.Context, id string) ([]*SegmentsListItem, error) {
+func (ci *ContracterInteractor) GetSegmentsByOrderID(ctx context.Context, id string, search models.ISegmentSearchCriteria) ([]*SegmentsListItem, error) {
 	var segments []models.ISegment
 
 	if id != "" {
-		orders, err := ci.contracter.GetAllOrders(ctx)
+		orders, err := ci.contracter.GetAllOrders(ctx, models.EmptyOrderFilters())
 
 		if err != nil {
 			return nil, errors.Wrap(err, "Getting all orders from contracter")
@@ -136,14 +136,14 @@ func (ci *ContracterInteractor) GetSegmentsByOrderID(ctx context.Context, id str
 			return nil, models.ErrNotFound
 		}
 
-		segments, err = ci.contracter.GetSegmentsByOrderID(ctx, order.GetID())
+		segments, err = ci.contracter.GetSegmentsByOrderID(ctx, order.GetID(), search)
 
 		if err != nil {
 			return nil, errors.Wrapf(err, "Getting segments by order id `%s`", order.GetID())
 		}
 	} else {
 		var err error
-		segments, err = ci.contracter.GetAllSegments(ctx)
+		segments, err = ci.contracter.GetAllSegments(ctx, search)
 
 		if err != nil {
 			return nil, errors.Wrap(err, "Getting all segments")
@@ -178,7 +178,7 @@ type SegmentItem struct {
 
 // GetSegmentByID _
 func (ci *ContracterInteractor) GetSegmentByID(ctx context.Context, id string) (*SegmentItem, error) {
-	segments, err := ci.contracter.GetAllSegments(ctx)
+	segments, err := ci.contracter.GetAllSegments(ctx, models.EmptySegmentFilters())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Getting all segments")

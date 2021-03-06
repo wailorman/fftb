@@ -175,8 +175,14 @@ func (a *DistributedConvertApp) StartWorker() error {
 }
 
 // ListOrders _
-func (a *DistributedConvertApp) ListOrders() (string, error) {
-	orders, err := a.contracterInteractor.GetAllOrders(a.ctx)
+func (a *DistributedConvertApp) ListOrders(cliCtx *cli.Context) (string, error) {
+	filters := make([]models.IOrderSearchCriteria, 0)
+
+	if cliCtx.String("state") != "" {
+		filters = append(filters, models.OrderStateFilter(cliCtx.String("state")))
+	}
+
+	orders, err := a.contracterInteractor.GetAllOrders(a.ctx, models.MergeOrderFilters(filters...))
 
 	if err != nil {
 		return "", err
@@ -224,8 +230,14 @@ func (a *DistributedConvertApp) ShowOrder(orderID string) (string, error) {
 }
 
 // ListSegments _
-func (a *DistributedConvertApp) ListSegments(orderID string) (string, error) {
-	segmentItems, err := a.contracterInteractor.GetSegmentsByOrderID(a.ctx, orderID)
+func (a *DistributedConvertApp) ListSegments(cliCtx *cli.Context, orderID string) (string, error) {
+	filters := make([]models.ISegmentSearchCriteria, 0)
+
+	if cliCtx.String("state") != "" {
+		filters = append(filters, models.SegmentStateFilter(cliCtx.String("state")))
+	}
+
+	segmentItems, err := a.contracterInteractor.GetSegmentsByOrderID(a.ctx, orderID, models.MergeSegmentFilters(filters...))
 
 	if err != nil {
 		return "", err

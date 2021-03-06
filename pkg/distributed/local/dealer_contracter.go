@@ -169,13 +169,27 @@ func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context, publisher models.I
 }
 
 // GetSegmentsByOrderID _
-func (d *Dealer) GetSegmentsByOrderID(fctx context.Context, orderID string) ([]models.ISegment, error) {
-	return d.registry.FindSegmentsByOrderID(fctx, orderID)
+func (d *Dealer) GetSegmentsByOrderID(fctx context.Context, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
+	segments, err := d.registry.FindSegmentsByOrderID(fctx, orderID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resultSegments := make([]models.ISegment, 0)
+
+	for _, segment := range segments {
+		if search.Select(segment) {
+			resultSegments = append(resultSegments, segment)
+		}
+	}
+
+	return resultSegments, nil
 }
 
 // GetSegmentsStatesByOrderID _
 func (d *Dealer) GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error) {
-	segments, err := d.GetSegmentsByOrderID(fctx, orderID)
+	segments, err := d.GetSegmentsByOrderID(fctx, orderID, models.EmptySegmentFilters())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Getting segments")

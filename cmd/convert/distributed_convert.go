@@ -85,7 +85,12 @@ func DistributedCliConfig() *cli.Command {
 			{
 				Name:    "list-orders",
 				Aliases: []string{"lo"},
-				Flags:   []cli.Flag{},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "state",
+						Usage: "Possible values: queued, in_progress, finished",
+					},
+				},
 				Action: func(c *cli.Context) error {
 					app := &DistributedConvertApp{}
 
@@ -95,7 +100,7 @@ func DistributedCliConfig() *cli.Command {
 						return errors.Wrap(err, "Initializing app")
 					}
 
-					str, err := app.ListOrders()
+					str, err := app.ListOrders(c)
 
 					fmt.Println(str)
 
@@ -137,7 +142,12 @@ func DistributedCliConfig() *cli.Command {
 			{
 				Name:    "list-segments",
 				Aliases: []string{"ls"},
-				Flags:   []cli.Flag{},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:  "state",
+						Usage: "Possible values: prepared, published, finished",
+					},
+				},
 				Action: func(c *cli.Context) error {
 					app := &DistributedConvertApp{}
 
@@ -147,7 +157,7 @@ func DistributedCliConfig() *cli.Command {
 						return errors.Wrap(err, "Initializing app")
 					}
 
-					str, err := app.ListSegments(c.Args().Get(0))
+					str, err := app.ListSegments(c, c.Args().Get(0))
 
 					fmt.Println(str)
 

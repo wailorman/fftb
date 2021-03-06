@@ -166,9 +166,9 @@ type ISegment interface {
 // IContracter _
 type IContracter interface {
 	// PrepareOrder(req IContracterRequest) (IOrder, error)
-	GetAllOrders(ctx context.Context) ([]IOrder, error)
-	GetAllSegments(ctx context.Context) ([]ISegment, error)
-	GetSegmentsByOrderID(fctx context.Context, orderID string) ([]ISegment, error)
+	GetAllOrders(ctx context.Context, search IOrderSearchCriteria) ([]IOrder, error)
+	GetAllSegments(ctx context.Context, search ISegmentSearchCriteria) ([]ISegment, error)
+	GetSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
 	GetSegmentByID(segmentID string) (ISegment, error)
 }
 
@@ -192,7 +192,7 @@ type IContracterDealer interface {
 	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
 	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
 	GetQueuedSegmentsCount(fctx context.Context, publisher IAuthor) (int, error)
-	GetSegmentsByOrderID(fctx context.Context, orderID string) ([]ISegment, error)
+	GetSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
 	GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error)
 	GetSegmentByID(segmentID string) (ISegment, error)
 }

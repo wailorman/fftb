@@ -10,6 +10,7 @@ import (
 	"github.com/wailorman/fftb/pkg/goffmpeg/models"
 )
 
+// DurToSec _
 func DurToSec(dur string) (sec float64) {
 	durAry := strings.Split(dur, ":")
 	var secs float64
@@ -25,6 +26,7 @@ func DurToSec(dur string) (sec float64) {
 	return secs
 }
 
+// GetFFmpegExec _
 func GetFFmpegExec() []string {
 	var platform = runtime.GOOS
 	var command = []string{"", "ffmpeg"}
@@ -41,6 +43,7 @@ func GetFFmpegExec() []string {
 	return command
 }
 
+// GetFFprobeExec _
 func GetFFprobeExec() []string {
 	var platform = runtime.GOOS
 	var command = []string{"", "ffprobe"}
@@ -56,6 +59,7 @@ func GetFFprobeExec() []string {
 	return command
 }
 
+// CheckFileType _
 func CheckFileType(streams []models.Streams) string {
 	for i := 0; i < len(streams); i++ {
 		st := streams[i]
@@ -67,6 +71,7 @@ func CheckFileType(streams []models.Streams) string {
 	return "audio"
 }
 
+// LineSeparator _
 func LineSeparator() string {
 	switch runtime.GOOS {
 	case "windows":
