@@ -10,14 +10,16 @@ import (
 
 // ConvertOrder _
 type ConvertOrder struct {
-	Identity   string         `json:"identity"`
-	Type       string         `json:"type"`
-	State      string         `json:"state"`
-	InFile     files.Filer    `json:"in_file"`
-	OutFile    files.Filer    `json:"out_file"`
-	Params     convert.Params `json:"params"`
-	Publisher  IAuthor        `json:"publisher"`
-	SegmentIDs []string       `json:"segment_ids"`
+	Identity  string         `json:"identity"`
+	Type      string         `json:"type"`
+	State     string         `json:"state"`
+	InFile    files.Filer    `json:"in_file"`
+	OutFile   files.Filer    `json:"out_file"`
+	Params    convert.Params `json:"params"`
+	Publisher IAuthor        `json:"publisher"`
+
+	// TODO: remove this field, we can always walk to dealer
+	SegmentIDs []string `json:"segment_ids"`
 }
 
 // OrderStateQueued _
@@ -28,6 +30,9 @@ const OrderStateInProgress = "in_progress"
 
 // OrderStateFinished _
 const OrderStateFinished = "finished"
+
+// OrderStateCancelled _
+const OrderStateCancelled = "cancelled"
 
 // GetID _
 func (co *ConvertOrder) GetID() string {
@@ -145,6 +150,7 @@ func (co ConvertOrder) Validate() error {
 		validation.Field(&co.State,
 			validation.Required,
 			validation.In(
+				OrderStateCancelled,
 				OrderStateQueued,
 				OrderStateInProgress,
 				OrderStateFinished)))

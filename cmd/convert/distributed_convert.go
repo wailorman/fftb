@@ -170,6 +170,30 @@ func DistributedCliConfig() *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:    "cancel-order",
+				Aliases: []string{"co"},
+				Flags:   []cli.Flag{},
+				Action: func(c *cli.Context) error {
+					app := &DistributedConvertApp{}
+
+					err := app.Init()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app")
+					}
+
+					err = app.CancelOrder(c.Args().Get(0))
+
+					if err != nil {
+						return err
+					}
+
+					app.cancel()
+					<-app.Wait()
+					return nil
+				},
+			},
 		},
 	}
 }

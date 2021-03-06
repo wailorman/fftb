@@ -170,6 +170,7 @@ type IContracter interface {
 	GetAllSegments(ctx context.Context, search ISegmentSearchCriteria) ([]ISegment, error)
 	GetSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
 	GetSegmentByID(segmentID string) (ISegment, error)
+	CancelOrderByID(ctx context.Context, orderID string) error
 }
 
 // IDealer _
@@ -188,6 +189,7 @@ type IContracterDealer interface {
 	NotifyRawUpload(publisher IAuthor, id string, p Progresser) error
 	NotifyResultDownload(publisher IAuthor, id string, p Progresser) error
 	PublishSegment(publisher IAuthor, id string) error
+	RepublishSegment(publisher IAuthor, id string) error
 	CancelSegment(publisher IAuthor, id string) error
 	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
 	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error

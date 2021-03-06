@@ -260,6 +260,11 @@ func (a *DistributedConvertApp) ListSegments(cliCtx *cli.Context, orderID string
 	return renderTable(headers, segmentsData), nil
 }
 
+// CancelOrder _
+func (a *DistributedConvertApp) CancelOrder(orderID string) error {
+	return a.contracterInteractor.CancelOrderByID(a.ctx, orderID)
+}
+
 // Wait _
 func (a *DistributedConvertApp) Wait() <-chan struct{} {
 	cancelSignal := make(chan os.Signal)

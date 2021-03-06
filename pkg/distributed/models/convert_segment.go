@@ -21,6 +21,9 @@ const SegmentStateInProgress = "in_progress"
 // SegmentStateFinished _
 const SegmentStateFinished = "finished"
 
+// SegmentStateCancelled _
+const SegmentStateCancelled = "cancelled"
+
 // ConvertSegment _
 type ConvertSegment struct {
 	Identity                   string `json:"identity"`
@@ -190,6 +193,7 @@ func (ct ConvertSegment) Validate() error {
 		validation.Field(&ct.State,
 			validation.Required,
 			validation.In(
+				SegmentStateCancelled,
 				SegmentStatePrepared,
 				SegmentStatePublished,
 				SegmentStateFinished)))

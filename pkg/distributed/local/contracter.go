@@ -92,3 +92,57 @@ func (contracter *ContracterInstance) GetSegmentsByOrderID(ctx context.Context, 
 func (contracter *ContracterInstance) GetSegmentByID(id string) (models.ISegment, error) {
 	return contracter.dealer.GetSegmentByID(id)
 }
+
+// CancelOrderByID _
+func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, orderID string) error {
+	logger := contracter.logger.WithField(dlog.KeyOrderID, orderID)
+
+	order, err := contracter.registry.FindOrderByID(orderID)
+
+	if err != nil {
+		return errors.Wrapf(err, "Getting order by id `%s`", orderID)
+	}
+
+	convOrder, ok := order.(*models.ConvertOrder)
+
+	if !ok {
+		return errors.Wrapf(models.ErrUnknownOrderType, "Received order of type `%s`", order.GetType())
+	}
+
+	convOrder.State = models.OrderStateCancelled
+
+	for _, segmentID := range convOrder.SegmentIDs {
+		if ctx.Err() != nil {
+			break
+		}
+
+		err = contracter.dealer.CancelSegment(contracter.publisher, segmentID)
+
+		if err != nil {
+			logger.Println()
+			logger.WithField(dlog.KeySegmentID, segmentID).
+				WithError(err).
+				Warn("Problem with cancelling segment via dealer")
+		}
+	}
+
+	if ctx.Err() != nil {
+		for _, segmentID := range convOrder.SegmentIDs {
+			err = contracter.dealer.RepublishSegment(contracter.publisher, segmentID)
+
+			logger.WithField(dlog.KeySegmentID, segmentID).
+				WithError(err).
+				Warn("Problem with republishing segment via dealer")
+		}
+
+		return nil
+	}
+
+	err = contracter.registry.PersistOrder(convOrder)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting order to registry")
+	}
+
+	return nil
+}

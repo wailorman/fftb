@@ -109,7 +109,28 @@ func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID s
 
 // CancelSegment _
 func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string) error {
-	panic(models.ErrNotImplemented)
+	// TODO: lock segment
+
+	segment, err := d.registry.FindSegmentByID(segmentID)
+
+	if err != nil {
+		return err
+	}
+
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return models.ErrUnknownSegmentType
+	}
+
+	d.logger.WithField(dlog.KeyOrderID, convertSegment.GetOrderID()).
+		WithField(dlog.KeySegmentID, convertSegment.GetID()).
+		Info("Cancelling segment")
+
+	convertSegment.State = models.SegmentStateCancelled
+	convertSegment.Unlock()
+
+	return d.registry.PersistSegment(convertSegment)
 }
 
 // NotifyRawUpload _
@@ -141,6 +162,32 @@ func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) erro
 		Info("Publishing segment")
 
 	convertSegment.State = models.SegmentStatePublished
+
+	return d.registry.PersistSegment(convertSegment)
+}
+
+// RepublishSegment _
+func (d *Dealer) RepublishSegment(publisher models.IAuthor, segmentID string) error {
+	// TODO: lock segment
+
+	segment, err := d.registry.FindSegmentByID(segmentID)
+
+	if err != nil {
+		return err
+	}
+
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return models.ErrUnknownSegmentType
+	}
+
+	d.logger.WithField(dlog.KeyOrderID, convertSegment.GetOrderID()).
+		WithField(dlog.KeySegmentID, convertSegment.GetID()).
+		Info("Republishing segment")
+
+	convertSegment.State = models.SegmentStatePublished
+	convertSegment.Unlock()
 
 	return d.registry.PersistSegment(convertSegment)
 }

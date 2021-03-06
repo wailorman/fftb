@@ -203,6 +203,29 @@ func (ci *ContracterInteractor) GetSegmentByID(ctx context.Context, id string) (
 	}, nil
 }
 
+// CancelOrderByID _
+func (ci *ContracterInteractor) CancelOrderByID(ctx context.Context, id string) error {
+	orders, err := ci.contracter.GetAllOrders(ctx, models.EmptyOrderFilters())
+
+	if err != nil {
+		return errors.Wrap(err, "Getting all orders from contracter")
+	}
+
+	order := searchOrderByID(id, orders)
+
+	if order == nil {
+		return models.ErrNotFound
+	}
+
+	err = ci.contracter.CancelOrderByID(ctx, order.GetID())
+
+	if err != nil {
+		return errors.Wrap(err, "Cancelling order")
+	}
+
+	return nil
+}
+
 func searchOrderByID(passedID string, allObjects []models.IOrder) models.IOrder {
 	for _, object := range allObjects {
 		if strings.Index(object.GetID(), passedID) == 0 {
