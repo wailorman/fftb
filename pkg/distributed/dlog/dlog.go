@@ -78,6 +78,10 @@ func MakeIOProgress(step models.ProgressStep, percent float64) models.Progresser
 
 // JSON _
 func JSON(v interface{}) string {
+	if v == nil {
+		return "{}"
+	}
+
 	bytes, err := json.Marshal(v)
 
 	if err != nil {
