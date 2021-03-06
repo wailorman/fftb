@@ -51,7 +51,7 @@ func (pW *ContracterPublishWorker) Start() {
 				close(pW.closed)
 				return
 			case <-ticker.C:
-				queuedSegmentsCount, err := pW.contracter.dealer.GetQueuedSegmentsCount(pW.ctx)
+				queuedSegmentsCount, err := pW.contracter.dealer.GetQueuedSegmentsCount(pW.ctx, pW.contracter.publisher)
 
 				if err != nil {
 					pW.logger.WithError(err).

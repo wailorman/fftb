@@ -17,7 +17,7 @@ type ConvertOrder struct {
 	OutFile    files.Filer    `json:"out_file"`
 	Params     convert.Params `json:"params"`
 	Publisher  IAuthor        `json:"publisher"`
-	SegmentIDs []string       `json:"segment_i_ds"`
+	SegmentIDs []string       `json:"segment_ids"`
 }
 
 // OrderStateQueued _
@@ -109,6 +109,34 @@ func (co *ConvertOrder) MatchPublisher(publisher IAuthor) bool {
 // GetSegmentIDs _
 func (co *ConvertOrder) GetSegmentIDs() []string {
 	return co.SegmentIDs
+}
+
+// CalculateProgress _
+func (co *ConvertOrder) CalculateProgress(segments []ISegment) float64 {
+	if len(segments) == 0 {
+		return 0
+	}
+
+	totalSegments := float64(len(segments))
+	finishedSegments := 0.0
+
+	for _, segment := range segments {
+		if segment.GetState() == SegmentStateFinished {
+			finishedSegments++
+		}
+	}
+
+	return finishedSegments / totalSegments
+}
+
+// GetInputFile _
+func (co *ConvertOrder) GetInputFile() files.Filer {
+	return co.InFile
+}
+
+// GetOutputFile _
+func (co *ConvertOrder) GetOutputFile() files.Filer {
+	return co.OutFile
 }
 
 // Validate _

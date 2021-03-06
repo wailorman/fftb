@@ -1,6 +1,8 @@
 package convert
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
@@ -77,6 +79,84 @@ func DistributedCliConfig() *cli.Command {
 
 					<-app.Wait()
 
+					return nil
+				},
+			},
+			{
+				Name:    "list-orders",
+				Aliases: []string{"lo"},
+				Flags:   []cli.Flag{},
+				Action: func(c *cli.Context) error {
+					app := &DistributedConvertApp{}
+
+					err := app.Init()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app")
+					}
+
+					str, err := app.ListOrders()
+
+					fmt.Println(str)
+
+					if err != nil {
+						return err
+					}
+
+					app.cancel()
+					<-app.Wait()
+					return nil
+				},
+			},
+			{
+				Name:    "show-order",
+				Aliases: []string{"so"},
+				Flags:   []cli.Flag{},
+				Action: func(c *cli.Context) error {
+					app := &DistributedConvertApp{}
+
+					err := app.Init()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app")
+					}
+
+					str, err := app.ShowOrder(c.Args().Get(0))
+
+					fmt.Println(str)
+
+					if err != nil {
+						return err
+					}
+
+					app.cancel()
+					<-app.Wait()
+					return nil
+				},
+			},
+			{
+				Name:    "list-segments",
+				Aliases: []string{"ls"},
+				Flags:   []cli.Flag{},
+				Action: func(c *cli.Context) error {
+					app := &DistributedConvertApp{}
+
+					err := app.Init()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app")
+					}
+
+					str, err := app.ListSegments(c.Args().Get(0))
+
+					fmt.Println(str)
+
+					if err != nil {
+						return err
+					}
+
+					app.cancel()
+					<-app.Wait()
 					return nil
 				},
 			},

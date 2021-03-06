@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"time"
+
+	"github.com/wailorman/fftb/pkg/files"
 )
 
 // ErrUnknownRequestType _
@@ -131,6 +133,9 @@ type IOrder interface {
 	MatchPublisher(IAuthor) bool
 	GetSegmentIDs() []string
 	Validate() error
+	GetInputFile() files.Filer
+	GetOutputFile() files.Filer
+	CalculateProgress([]ISegment) float64
 }
 
 // ISegment _
@@ -147,6 +152,7 @@ type ISegment interface {
 	GetLockedUntil() *time.Time
 	// TODO: use specific type for state
 	GetState() string
+	GetCurrentState() string
 	GetPublisher() IAuthor
 	GetPerformer() IAuthor
 	GetPosition() int
@@ -159,7 +165,11 @@ type ISegment interface {
 
 // IContracter _
 type IContracter interface {
-	PrepareOrder(req IContracterRequest) (IOrder, error)
+	// PrepareOrder(req IContracterRequest) (IOrder, error)
+	GetAllOrders(ctx context.Context) ([]IOrder, error)
+	GetAllSegments(ctx context.Context) ([]ISegment, error)
+	GetSegmentsByOrderID(fctx context.Context, orderID string) ([]ISegment, error)
+	GetSegmentByID(segmentID string) (ISegment, error)
 }
 
 // IDealer _
@@ -181,7 +191,8 @@ type IContracterDealer interface {
 	CancelSegment(publisher IAuthor, id string) error
 	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
 	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
-	GetQueuedSegmentsCount(ctx context.Context) (int, error)
+	GetQueuedSegmentsCount(fctx context.Context, publisher IAuthor) (int, error)
+	GetSegmentsByOrderID(fctx context.Context, orderID string) ([]ISegment, error)
 	GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error)
 	GetSegmentByID(segmentID string) (ISegment, error)
 }

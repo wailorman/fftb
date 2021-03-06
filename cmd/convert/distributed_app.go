@@ -2,8 +2,10 @@ package convert
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/distributed/interactors"
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
@@ -33,16 +36,17 @@ import (
 
 // DistributedConvertApp _
 type DistributedConvertApp struct {
-	storage        models.IStorageController
-	publisher      models.IAuthor
-	registry       models.IRegistry
-	dealer         models.IDealer
-	contracter     *local.ContracterInstance
-	workerInstance *worker.Instance
-	ctx            context.Context
-	cancel         func()
-	logger         *logrus.Entry
-	closed         chan struct{}
+	storage              models.IStorageController
+	publisher            models.IAuthor
+	registry             models.IRegistry
+	dealer               models.IDealer
+	contracter           *local.ContracterInstance
+	contracterInteractor *interactors.ContracterInteractor
+	workerInstance       *worker.Instance
+	ctx                  context.Context
+	cancel               func()
+	logger               *logrus.Entry
+	closed               chan struct{}
 }
 
 // Init _
@@ -92,6 +96,8 @@ func (a *DistributedConvertApp) Init() error {
 	if err != nil {
 		return errors.Wrap(err, "Initializing contracter")
 	}
+
+	a.contracterInteractor = interactors.NewContracterInteractor(a.contracter)
 
 	return nil
 }
@@ -166,6 +172,80 @@ func (a *DistributedConvertApp) StartWorker() error {
 	a.workerInstance.Start()
 
 	return nil
+}
+
+// ListOrders _
+func (a *DistributedConvertApp) ListOrders() (string, error) {
+	orders, err := a.contracterInteractor.GetAllOrders(a.ctx)
+
+	if err != nil {
+		return "", err
+	}
+
+	headers := []string{"ID", "Input file", "Output file", "Progress", "State"}
+
+	ordersData := make([][]string, 0)
+
+	for _, orderItem := range orders {
+		ordersData = append(ordersData,
+			[]string{
+				orderItem.ID,
+				files.NewFile(orderItem.InputFile).Name(),
+				files.NewFile(orderItem.OutputFile).Name(),
+				fmt.Sprintf("%.2f%%", orderItem.Progress*100),
+				orderItem.State,
+			},
+		)
+	}
+
+	return renderTable(headers, ordersData), nil
+}
+
+// ShowOrder _
+func (a *DistributedConvertApp) ShowOrder(orderID string) (string, error) {
+	orderItem, err := a.contracterInteractor.GetOrderByID(a.ctx, orderID)
+
+	if err != nil {
+		return "", err
+	}
+
+	headers := []string{"Attribute", "Value"}
+
+	data := [][]string{
+		{"ID", orderItem.ID},
+		{"Input file", orderItem.InputFile},
+		{"Output file", orderItem.OutputFile},
+		{"State", orderItem.State},
+		{"Progress", fmt.Sprintf("%.2f%%", orderItem.Progress*100)},
+		{"Segments count", strconv.Itoa(orderItem.SegmentsCount)},
+	}
+
+	return renderTable(headers, data), nil
+}
+
+// ListSegments _
+func (a *DistributedConvertApp) ListSegments(orderID string) (string, error) {
+	segmentItems, err := a.contracterInteractor.GetSegmentsByOrderID(a.ctx, orderID)
+
+	if err != nil {
+		return "", err
+	}
+
+	headers := []string{"ID", "State", "Performer"}
+
+	segmentsData := make([][]string, 0)
+
+	for _, segmentItem := range segmentItems {
+		segmentsData = append(segmentsData,
+			[]string{
+				segmentItem.ID,
+				segmentItem.State,
+				segmentItem.Performer,
+			},
+		)
+	}
+
+	return renderTable(headers, segmentsData), nil
 }
 
 // Wait _

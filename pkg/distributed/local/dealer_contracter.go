@@ -153,9 +153,12 @@ func (d *Dealer) AllocatePublisherAuthority(name string) (models.IAuthor, error)
 }
 
 // GetQueuedSegmentsCount _
-func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context) (int, error) {
+func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context, publisher models.IAuthor) (int, error) {
 	segments, err := d.registry.SearchAllSegments(fctx, func(segment models.ISegment) bool {
-		return segment.GetState() == models.SegmentStatePublished && !segment.GetIsLocked()
+		return segment.GetState() == models.SegmentStatePublished &&
+			!segment.GetIsLocked() &&
+			segment.GetPublisher() != nil &&
+			segment.GetPublisher().IsEqual(publisher)
 	})
 
 	if err != nil {
@@ -165,9 +168,14 @@ func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context) (int, error) {
 	return len(segments), nil
 }
 
+// GetSegmentsByOrderID _
+func (d *Dealer) GetSegmentsByOrderID(fctx context.Context, orderID string) ([]models.ISegment, error) {
+	return d.registry.FindSegmentsByOrderID(fctx, orderID)
+}
+
 // GetSegmentsStatesByOrderID _
 func (d *Dealer) GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error) {
-	segments, err := d.registry.FindSegmentsByOrderID(fctx, orderID)
+	segments, err := d.GetSegmentsByOrderID(fctx, orderID)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Getting segments")

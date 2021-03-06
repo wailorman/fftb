@@ -14,6 +14,10 @@ const SegmentStatePrepared = "prepared"
 // SegmentStatePublished _
 const SegmentStatePublished = "published"
 
+// SegmentStateInProgress is dynamic state, used only in some presenters.
+// Can be returned by GetCurrentState()
+const SegmentStateInProgress = "in_progress"
+
 // SegmentStateFinished _
 const SegmentStateFinished = "finished"
 
@@ -109,6 +113,15 @@ func (ct *ConvertSegment) GetLockedUntil() *time.Time {
 
 // GetState _
 func (ct *ConvertSegment) GetState() string {
+	return ct.State
+}
+
+// GetCurrentState _
+func (ct *ConvertSegment) GetCurrentState() string {
+	if ct.GetIsLocked() {
+		return SegmentStateInProgress
+	}
+
 	return ct.State
 }
 
