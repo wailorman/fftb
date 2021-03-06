@@ -144,8 +144,6 @@ func (r *Instance) searchOrders(fctx context.Context, multiple bool, check func(
 				return nil, errors.Wrap(err, "Searching for free order")
 			}
 
-			return orders, nil
-
 		case res, ok := <-results:
 			if !ok {
 				return orders, nil

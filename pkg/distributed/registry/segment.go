@@ -80,8 +80,6 @@ func (r *Instance) searchSegments(fctx context.Context, multiple bool, check fun
 				return nil, errors.Wrap(err, "Searching for free order")
 			}
 
-			return segments, nil
-
 		case res, ok := <-results:
 			if !ok {
 				return segments, nil
