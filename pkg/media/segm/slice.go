@@ -4,7 +4,10 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/wailorman/fftb/pkg/chwg"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/ff"
 )
@@ -25,6 +28,7 @@ type SliceOperation struct {
 	segmentSec     int
 	initialized    bool
 	started        bool
+	logger         logrus.FieldLogger
 }
 
 // SliceRequest _
@@ -39,7 +43,13 @@ type SliceRequest struct {
 func NewSliceOperation(ctx context.Context) *SliceOperation {
 	ffctx, ffcancel := context.WithCancel(ctx)
 
+	var logger logrus.FieldLogger
+	if logger = ctxlog.FromContext(ctx, dlog.PrefixSegmSliceOperation); logger == nil {
+		logger = ctxlog.New(dlog.PrefixSegmSliceOperation)
+	}
+
 	return &SliceOperation{
+		logger:   logger,
 		ffctx:    ffctx,
 		ffcancel: ffcancel,
 		ctx:      ctx,
@@ -65,6 +75,10 @@ func (so *SliceOperation) Init(req SliceRequest) error {
 	if err != nil {
 		return errors.Wrap(err, "Create temp path for segments")
 	}
+
+	so.logger = so.logger.WithField("output_path", req.OutPath.FullPath()).
+		WithField("input_file", req.InFile.FullPath()).
+		WithField("tmp_path", so.tmpPath.FullPath())
 
 	so.ffworker = ff.New(so.ffctx)
 	err = so.ffworker.Init(req.InFile, so.tmpPath.BuildFile(segmentPrefix+"%06d"+req.InFile.Extension()))
@@ -99,6 +113,8 @@ func (so *SliceOperation) Run() (
 	segments = make(chan *Segment)
 	failures = make(chan error)
 	so.wg.Add(1)
+
+	so.logger.Debug("Slicing file")
 
 	go func() {
 		defer close(progress)
@@ -156,13 +172,18 @@ func (so *SliceOperation) Run() (
 	return progress, segments, failures
 }
 
-// Purge removes all segments from tmp directory & also tmp directory itself
+// Purge _
 func (so *SliceOperation) Purge() error {
+	var err error
+
 	if so.tmpPath != nil {
-		return so.tmpPath.Destroy()
+		err = so.tmpPath.Destroy()
 	}
 
-	return nil
+	so.logger.WithError(err).
+		Debug("Purging tmp path")
+
+	return err
 }
 
 // Closed _

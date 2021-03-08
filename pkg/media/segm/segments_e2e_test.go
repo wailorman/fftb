@@ -134,7 +134,7 @@ func Test__splitAndConcat(t *testing.T) {
 			segmentsDir.Destroy()
 			concatOutputFile.Remove()
 			sliceOperation.Purge()
-			concatOperation.Prune()
+			concatOperation.Purge()
 		}()
 	}
 }

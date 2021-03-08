@@ -50,29 +50,8 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 
 // GetOutputStorageClaim _
 func (d *Dealer) GetOutputStorageClaim(publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
-	segment, err := d.registry.FindSegmentByID(segmentID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	convertSegment, ok := segment.(*models.ConvertSegment)
-
-	if !ok {
-		return nil, models.ErrUnknownSegmentType
-	}
-
-	if convertSegment.OutputStorageClaimIdentity == "" {
-		return nil, errors.Wrap(models.ErrMissingStorageClaim, "Getting output storage claim identity")
-	}
-
-	claim, err := d.storageController.BuildStorageClaim(convertSegment.OutputStorageClaimIdentity)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Building storage claim from identity")
-	}
-
-	return claim, nil
+	// TODO: match publisher
+	return d.getOutputStorageClaim(segmentID)
 }
 
 // AllocateInputStorageClaim _
@@ -89,7 +68,7 @@ func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID s
 		return nil, models.ErrUnknownSegmentType
 	}
 
-	iClaimID := fmt.Sprintf("%s/%s/input_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
+	iClaimID := fmt.Sprintf("input_%s_%s_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
 	iClaim, err := d.storageController.AllocateStorageClaim(iClaimID)
 
 	if err != nil {
@@ -131,6 +110,41 @@ func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string) error
 	convertSegment.Unlock()
 
 	return d.registry.PersistSegment(convertSegment)
+}
+
+// AcceptSegment _
+func (d *Dealer) AcceptSegment(publisher models.IAuthor, segmentID string) error {
+	// TODO: lock segment
+
+	logger := d.logger.WithField(dlog.KeySegmentID, segmentID)
+
+	segment, err := d.registry.FindSegmentByID(segmentID)
+
+	if err != nil {
+		return err
+	}
+
+	convertSegment, ok := segment.(*models.ConvertSegment)
+
+	if !ok {
+		return models.ErrUnknownSegmentType
+	}
+
+	logger = logger.WithField(dlog.KeyOrderID, segment.GetOrderID())
+
+	logger.Info("Accepting segment")
+
+	convertSegment.State = models.SegmentStateAccepted
+
+	err = d.registry.PersistSegment(convertSegment)
+
+	if err != nil {
+		return errors.Wrapf(err, "Persisting segment `%s`", segmentID)
+	}
+
+	d.tryPurgeOutputStorageClaim(segmentID)
+
+	return nil
 }
 
 // NotifyRawUpload _

@@ -181,36 +181,49 @@ type IDealer interface {
 
 // IContracterDealer _
 type IContracterDealer interface {
-	GetOutputStorageClaim(publisher IAuthor, segmentID string) (IStorageClaim, error)
 	AllocatePublisherAuthority(name string) (IAuthor, error)
 	AllocateSegment(req IDealerRequest) (ISegment, error)
+
+	GetOutputStorageClaim(publisher IAuthor, segmentID string) (IStorageClaim, error)
 	AllocateInputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
+
 	// FindSegmentByID(id string) (ISegment, error)
-	NotifyRawUpload(publisher IAuthor, id string, p Progresser) error
-	NotifyResultDownload(publisher IAuthor, id string, p Progresser) error
-	PublishSegment(publisher IAuthor, id string) error
-	RepublishSegment(publisher IAuthor, id string) error
-	CancelSegment(publisher IAuthor, id string) error
-	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
-	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
 	GetQueuedSegmentsCount(fctx context.Context, publisher IAuthor) (int, error)
 	GetSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
 	GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error)
 	GetSegmentByID(segmentID string) (ISegment, error)
+
+	NotifyRawUpload(publisher IAuthor, id string, p Progresser) error
+	NotifyResultDownload(publisher IAuthor, id string, p Progresser) error
+
+	PublishSegment(publisher IAuthor, id string) error
+	RepublishSegment(publisher IAuthor, id string) error
+	CancelSegment(publisher IAuthor, id string) error
+	AcceptSegment(publisher IAuthor, id string) error
+
+	// TODO: remove, we dont need it now
+	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
+	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
 }
 
 // IWorkerDealer _
 type IWorkerDealer interface {
-	GetInputStorageClaim(performer IAuthor, segmentID string) (IStorageClaim, error)
 	AllocatePerformerAuthority(name string) (IAuthor, error)
+
 	FindFreeSegment(performer IAuthor) (ISegment, error)
+
 	NotifyRawDownload(performer IAuthor, id string, p Progresser) error
 	NotifyResultUpload(performer IAuthor, id string, p Progresser) error
 	NotifyProcess(performer IAuthor, id string, p Progresser) error
+
 	FinishSegment(performer IAuthor, id string) error
 	QuitSegment(performer IAuthor, id string) error
 	FailSegment(performer IAuthor, id string, err error) error
+
+	GetInputStorageClaim(performer IAuthor, segmentID string) (IStorageClaim, error)
 	AllocateOutputStorageClaim(performer IAuthor, id string) (IStorageClaim, error)
+
+	// TODO: remove, we dont need it now
 	WaitOnSegmentCancelled(ctx context.Context, id string) <-chan struct{}
 }
 

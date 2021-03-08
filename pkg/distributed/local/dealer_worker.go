@@ -37,29 +37,8 @@ func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, err
 
 // GetInputStorageClaim _
 func (d *Dealer) GetInputStorageClaim(performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
-	segment, err := d.registry.FindSegmentByID(segmentID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	convertSegment, ok := segment.(*models.ConvertSegment)
-
-	if !ok {
-		return nil, models.ErrUnknownSegmentType
-	}
-
-	if convertSegment.InputStorageClaimIdentity == "" {
-		return nil, errors.Wrap(models.ErrMissingStorageClaim, "Getting input storage claim identity")
-	}
-
-	claim, err := d.storageController.BuildStorageClaim(convertSegment.InputStorageClaimIdentity)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Building storage claim from identity")
-	}
-
-	return claim, nil
+	// TODO: match performer
+	return d.getInputStorageClaim(segmentID)
 }
 
 // AllocateOutputStorageClaim _
@@ -76,7 +55,7 @@ func (d *Dealer) AllocateOutputStorageClaim(performer models.IAuthor, segmentID 
 		return nil, models.ErrUnknownSegmentType
 	}
 
-	oClaimID := fmt.Sprintf("%s/%s/output_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
+	oClaimID := fmt.Sprintf("output_%s_%s_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
 	oClaim, err := d.storageController.AllocateStorageClaim(oClaimID)
 
 	if err != nil {
@@ -115,7 +94,15 @@ func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error
 	convertSegment.State = models.SegmentStateFinished
 	convertSegment.Unlock()
 
-	return d.registry.PersistSegment(convertSegment)
+	err = d.registry.PersistSegment(convertSegment)
+
+	if err != nil {
+		return errors.Wrapf(err, "Persisting segment `%s`", segmentID)
+	}
+
+	d.tryPurgeInputStorageClaim(segmentID)
+
+	return nil
 }
 
 // NotifyProcess _

@@ -18,6 +18,9 @@ const SegmentStatePublished = "published"
 // Can be returned by GetCurrentState()
 const SegmentStateInProgress = "in_progress"
 
+// SegmentStateAccepted _
+const SegmentStateAccepted = "accepted"
+
 // SegmentStateFinished _
 const SegmentStateFinished = "finished"
 
@@ -196,6 +199,7 @@ func (ct ConvertSegment) Validate() error {
 				SegmentStateCancelled,
 				SegmentStatePrepared,
 				SegmentStatePublished,
+				SegmentStateAccepted,
 				SegmentStateFinished)))
 
 	if stateErr != nil {

@@ -5,7 +5,10 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/wailorman/fftb/pkg/chwg"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/ff"
 )
@@ -23,6 +26,7 @@ type ConcatOperation struct {
 	ffworker         *ff.Instance
 	initialized      bool
 	started          bool
+	logger           logrus.FieldLogger
 }
 
 // ConcatRequest _
@@ -35,7 +39,13 @@ type ConcatRequest struct {
 func NewConcatOperation(ctx context.Context) *ConcatOperation {
 	ffctx, ffcancel := context.WithCancel(ctx)
 
+	var logger logrus.FieldLogger
+	if logger = ctxlog.FromContext(ctx, dlog.PrefixSegmConcatOperation); logger == nil {
+		logger = ctxlog.New(dlog.PrefixSegmConcatOperation)
+	}
+
 	return &ConcatOperation{
+		logger:   logger,
 		ctx:      ctx,
 		ffctx:    ffctx,
 		ffcancel: ffcancel,
@@ -59,6 +69,9 @@ func (co *ConcatOperation) Init(req ConcatRequest) error {
 	if err != nil {
 		return errors.Wrap(err, "Create temp path for segments list file")
 	}
+
+	co.logger = co.logger.WithField("output_file", req.OutFile.FullPath()).
+		WithField("tmp_path", co.tmpPath.FullPath())
 
 	co.segmentsListFile = co.tmpPath.BuildFile("segments.txt")
 
@@ -107,6 +120,8 @@ func (co *ConcatOperation) Run() (progress chan ff.Progressable, failures chan e
 
 	co.wg.Add(1)
 
+	co.logger.Debug("Concatenating segments")
+
 	go func() {
 		defer close(progress)
 		defer close(failures)
@@ -147,13 +162,18 @@ func (co *ConcatOperation) Run() (progress chan ff.Progressable, failures chan e
 	return progress, failures
 }
 
-// Prune _
-func (co *ConcatOperation) Prune() error {
-	if co.segmentsListFile != nil && co.segmentsListFile.IsExist() {
-		return co.segmentsListFile.Remove()
+// Purge _
+func (co *ConcatOperation) Purge() error {
+	var err error
+
+	if co.tmpPath != nil {
+		err = co.tmpPath.Destroy()
 	}
 
-	return nil
+	co.logger.WithError(err).
+		Debug("Purging tmp path")
+
+	return err
 }
 
 // Closed _

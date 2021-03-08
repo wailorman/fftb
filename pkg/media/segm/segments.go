@@ -85,7 +85,7 @@ func getSegmentFromFile(file files.Filer) *Segment {
 
 func createTmpSubdir(dir files.Pather) (files.Pather, error) {
 	id := fmt.Sprint(rand.Int())
-	tmpPath := dir.BuildSubpath("_fftb_chunks_" + id)
+	tmpPath := dir.BuildSubpath("_fftb_segments_" + id)
 	err := tmpPath.Create()
 
 	if err != nil {

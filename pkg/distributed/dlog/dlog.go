@@ -29,6 +29,9 @@ const KeyStorePayload = "store_payload"
 // KeyCallee _
 const KeyCallee = "callee"
 
+// KeyStorageClaim _
+const KeyStorageClaim = "storage_claim"
+
 // PrefixContracterPublishWorker _
 const PrefixContracterPublishWorker = "fftb.contracter.publish_worker"
 
@@ -40,6 +43,12 @@ const PrefixContracter = "fftb.contracter"
 
 // PrefixWorker _
 const PrefixWorker = "fftb.worker"
+
+// PrefixSegmConcatOperation _
+const PrefixSegmConcatOperation = "fftb.segm.concat_operation"
+
+// PrefixSegmSliceOperation _
+const PrefixSegmSliceOperation = "fftb.segm.slice_operation"
 
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {

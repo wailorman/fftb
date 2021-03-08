@@ -138,11 +138,10 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 			return err
 		}
 
-		err = concatOperation.Prune()
+		err = concatOperation.Purge()
 
 		if err != nil {
-			c.logger.WithField(dlog.KeyOrderID, order.GetID()).
-				WithError(err).
+			logger.WithError(err).
 				Warn("Failed to prune concat operation files")
 		}
 
@@ -150,11 +149,20 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 			err = slice.File.Remove()
 
 			if err != nil {
-				c.logger.WithField(dlog.KeyOrderID, order.GetID()).
-					WithField("path", slice.File.FullPath()).
+				logger.WithField("path", slice.File.FullPath()).
 					WithField("position", slice.Position).
 					WithError(err).
 					Warn("Failed to remove segment file")
+			}
+		}
+
+		for _, dSegmentID := range dSegmentsIDs {
+			err = c.dealer.AcceptSegment(c.publisher, dSegmentID)
+
+			if err != nil {
+				logger.WithField(dlog.KeySegmentID, dSegmentID).
+					WithError(err).
+					Warn("Problem with marking segment accepted via dealer")
 			}
 		}
 
