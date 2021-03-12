@@ -15,6 +15,13 @@ type ChannelledWaitGroup struct {
 	wg      *sync.WaitGroup
 }
 
+// WaitGrouper _
+type WaitGrouper interface {
+	Add(delta int)
+	Done()
+	Wait()
+}
+
 // Add _
 func (cwg *ChannelledWaitGroup) Add(delta int) {
 	cwg.counter++

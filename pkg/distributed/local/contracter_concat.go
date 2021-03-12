@@ -195,13 +195,15 @@ func (c *ContracterInstance) downloadSegment(fctx context.Context, order models.
 		return nil, errors.Wrapf(err, "Creating segments output directory `%s`", segmentsOutputDir.FullPath())
 	}
 
-	sliceFile := c.tempPath.BuildSubpath(order.GetID()).BuildFile(dSegment.GetID())
+	// var sliceFile files.Filer
 
-	err = sliceFile.Create()
+	// sliceFile := c.tempPath.BuildSubpath(order.GetID()).BuildFile(dSegment.GetID())
 
-	if err != nil {
-		return nil, errors.Wrapf(err, "Creating file for segment output `%s`", sliceFile.FullPath())
-	}
+	// err = sliceFile.Create()
+
+	// if err != nil {
+	// 	return nil, errors.Wrapf(err, "Creating file for segment output `%s`", sliceFile.FullPath())
+	// }
 
 	outputStorageClaim, err := c.dealer.GetOutputStorageClaim(c.publisher, segmentID)
 
@@ -209,32 +211,34 @@ func (c *ContracterInstance) downloadSegment(fctx context.Context, order models.
 		return nil, errors.Wrap(err, "Getting output storage claim")
 	}
 
-	dg := new(errgroup.Group)
+	sliceFile, err := c.storageClient.MakeLocalCopy(c.ctx, outputStorageClaim, nil)
 
-	dg.Go(func() error {
-		pChan, errChan := DownloadFileFromStorageClaim(fctx, sliceFile, outputStorageClaim)
+	// dg := new(errgroup.Group)
 
-		for {
-			select {
-			case p := <-pChan:
-				if p != nil {
-					c.logger.WithField(dlog.KeyPercent, p.Percent()).
-						WithField(dlog.KeyOrderID, order.GetID()).
-						WithField(dlog.KeySegmentID, dSegment.GetID()).
-						Info("Downloading segment output")
-				}
+	// dg.Go(func() error {
+	// 	pChan, errChan := c.storageClient.DownloadFileFromStorageClaim(fctx, sliceFile, outputStorageClaim)
 
-			case failure := <-errChan:
-				if failure == nil {
-					return nil
-				}
+	// 	for {
+	// 		select {
+	// 		case p := <-pChan:
+	// 			if p != nil {
+	// 				c.logger.WithField(dlog.KeyPercent, p.Percent()).
+	// 					WithField(dlog.KeyOrderID, order.GetID()).
+	// 					WithField(dlog.KeySegmentID, dSegment.GetID()).
+	// 					Info("Downloading segment output")
+	// 			}
 
-				return failure
-			}
-		}
-	})
+	// 		case failure := <-errChan:
+	// 			if failure == nil {
+	// 				return nil
+	// 			}
 
-	err = dg.Wait()
+	// 			return failure
+	// 		}
+	// 	}
+	// })
+
+	// err = dg.Wait()
 
 	if err != nil {
 		return nil, err

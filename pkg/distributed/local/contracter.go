@@ -18,17 +18,24 @@ const DefaultSegmentSize = 10
 
 // ContracterInstance _
 type ContracterInstance struct {
-	ctx       context.Context
-	tempPath  files.Pather
-	dealer    models.IContracterDealer
-	publisher models.IAuthor
-	registry  models.IContracterRegistry
-	wg        *sync.WaitGroup
-	logger    logrus.FieldLogger
+	ctx           context.Context
+	tempPath      files.Pather
+	dealer        models.IContracterDealer
+	publisher     models.IAuthor
+	registry      models.IContracterRegistry
+	wg            *sync.WaitGroup
+	logger        logrus.FieldLogger
+	storageClient models.IStorageClient
 }
 
 // NewContracter _
-func NewContracter(ctx context.Context, dealer models.IContracterDealer, registry models.IContracterRegistry, tempPath files.Pather) (*ContracterInstance, error) {
+func NewContracter(
+	ctx context.Context,
+	dealer models.IContracterDealer,
+	registry models.IContracterRegistry,
+	storageClient models.IStorageClient,
+	tempPath files.Pather) (*ContracterInstance, error) {
+
 	publisher, err := dealer.AllocatePublisherAuthority("local")
 
 	if err != nil {
@@ -41,13 +48,14 @@ func NewContracter(ctx context.Context, dealer models.IContracterDealer, registr
 	}
 
 	return &ContracterInstance{
-		ctx:       ctx,
-		tempPath:  tempPath,
-		dealer:    dealer,
-		publisher: publisher,
-		registry:  registry,
-		wg:        &sync.WaitGroup{},
-		logger:    logger,
+		ctx:           ctx,
+		tempPath:      tempPath,
+		dealer:        dealer,
+		publisher:     publisher,
+		registry:      registry,
+		wg:            &sync.WaitGroup{},
+		logger:        logger,
+		storageClient: storageClient,
 	}, nil
 }
 

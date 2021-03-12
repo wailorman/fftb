@@ -303,9 +303,16 @@ type IStorageController interface {
 type IStorageClaim interface {
 	GetID() string
 	GetName() string
-	GetSize() (int, error)
+	GetSize() int
 	GetWriter() (io.WriteCloser, error)
 	GetReader() (io.ReadCloser, error)
+}
+
+// IStorageClient _
+type IStorageClient interface {
+	RemoveLocalCopy(ctx context.Context, sc IStorageClaim) error
+	MakeLocalCopy(ctx context.Context, sc IStorageClaim, p chan Progresser) (files.Filer, error)
+	MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc IStorageClaim, p chan Progresser) error
 }
 
 // Progresser _

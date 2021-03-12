@@ -3,11 +3,10 @@ package worker
 import (
 	"context"
 	"fmt"
-	"io"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/machinebox/progress"
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/throttle"
 
@@ -29,16 +28,25 @@ const FreeTaskTimeout = time.Duration(3) * time.Second
 
 // Instance _
 type Instance struct {
-	ctx       context.Context
-	tmpPath   files.Pather
-	dealer    models.IWorkerDealer
-	logger    logrus.FieldLogger
-	closed    chan struct{}
-	performer models.IAuthor
+	ctx           context.Context
+	tmpPath       files.Pather
+	dealer        models.IWorkerDealer
+	logger        logrus.FieldLogger
+	performer     models.IAuthor
+	storageClient models.IStorageClient
+	wg            *chwg.ChannelledWaitGroup
+}
+
+// segmentIO _
+type segmentIO struct {
+	inputClaim  models.IStorageClaim
+	outputClaim models.IStorageClaim
+	inputFile   files.Filer
+	outputFile  files.Filer
 }
 
 // NewWorker _
-func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkerDealer) (*Instance, error) {
+func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkerDealer, storageClient models.IStorageClient) (*Instance, error) {
 	var logger logrus.FieldLogger
 	if logger = ctxlog.FromContext(ctx, "fftb.worker"); logger == nil {
 		logger = ctxlog.New("fftb.worker")
@@ -51,144 +59,98 @@ func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkerD
 	}
 
 	return &Instance{
-		ctx:       ctx,
-		tmpPath:   tmpPath,
-		dealer:    dealer,
-		logger:    logger,
-		performer: performer,
-		closed:    make(chan struct{}),
+		ctx:           ctx,
+		tmpPath:       tmpPath,
+		dealer:        dealer,
+		logger:        logger,
+		performer:     performer,
+		storageClient: storageClient,
+		wg:            chwg.New(),
 	}, nil
 }
 
 // Start _
-func (w *Instance) Start() (done chan struct{}) {
+func (w *Instance) Start() {
 	go func() {
 		for {
-			select {
-			case <-w.ctx.Done():
-				close(w.closed)
-				return
-			default:
-				freeSegment, err := w.dealer.FindFreeSegment(w.performer)
-
-				if err != nil {
-					if errors.Is(err, models.ErrNotFound) {
-						w.logger.Debug("Free segment not found")
-						time.Sleep(FreeTaskDelay)
-					} else {
-						w.logger.WithError(err).Warn("Searching free segment error")
-					}
-
-					continue
-				}
-
-				slog := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID()).
-					WithField(dlog.KeyOrderID, freeSegment.GetOrderID()).
-					WithField(dlog.KeyPerformer, w.performer.GetName())
-
-				slog.Info("Found free segment")
-
-				err = w.proceedSegment(slog, freeSegment)
-
-				if err != nil {
-					slog.WithError(err).Warn("Processing segment error")
-				}
-			}
-			// freeSegment, err := w.dealer.FindFreeSegment(w.performer)
-
-		}
-	}()
-
-	return w.closed
-}
-
-// proceedSegment _
-func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegment) error {
-	logger := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID())
-
-	convertSegment := freeSegment.(*models.ConvertSegment)
-
-	inputClaim, err := w.dealer.GetInputStorageClaim(w.performer, freeSegment.GetID())
-
-	if err != nil {
-		panic(errors.Wrap(err, "Getting input storage claim"))
-	}
-
-	outputClaim, err := w.dealer.AllocateOutputStorageClaim(w.performer, freeSegment.GetID())
-
-	if err != nil {
-		panic(errors.Wrap(err, "Getting output storage claim"))
-	}
-
-	inputFile := w.tmpPath.BuildFile(fmt.Sprintf("%s.%s", inputClaim.GetID(), convertSegment.Muxer))
-
-	err = inputFile.Create()
-
-	if err != nil {
-		panic(errors.Wrap(err, "Getting output storage claim"))
-	}
-
-	inputFileWriter, err := inputFile.WriteContent()
-
-	if err != nil {
-		panic(errors.Wrap(err, "Building input file writer"))
-	}
-
-	inputClaimReader, err := inputClaim.GetReader()
-
-	if err != nil {
-		panic(errors.Wrap(err, "Building input claim reader"))
-	}
-
-	outputClaimWriter, err := outputClaim.GetWriter()
-
-	if err != nil {
-		panic(errors.Wrap(err, "Building output claim reader"))
-	}
-
-	inputSize, err := inputClaim.GetSize()
-
-	if err != nil {
-		panic(errors.Wrap(err, "Getting input size"))
-	}
-
-	iopInputClaimReader := progress.NewReader(inputClaimReader)
-	iopProgressChan := progress.NewTicker(w.ctx, iopInputClaimReader, int64(inputSize), 1*time.Second)
-
-	go func() {
-		for p := range iopProgressChan {
-			err = w.dealer.NotifyRawDownload(w.performer, freeSegment.GetID(), makeIoProgresser(p, models.DownloadingInputStep))
+			freeSegment, err := w.dealer.FindFreeSegment(w.performer)
 
 			if err != nil {
-				slog.WithError(err).Warn("Problem with notifying raw download")
+				if errors.Is(err, models.ErrNotFound) {
+					w.logger.Debug("Free segment not found")
+					time.Sleep(FreeTaskDelay)
+				} else {
+					w.logger.WithError(err).Warn("Searching free segment error")
+				}
+
+				continue
+			}
+
+			logger := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID()).
+				WithField(dlog.KeyOrderID, freeSegment.GetOrderID()).
+				WithField(dlog.KeyPerformer, w.performer.GetName())
+
+			logger.Info("Found free segment")
+
+			err = proceedSegment(
+				w.ctx,
+				w.wg,
+				logger,
+				w.performer,
+				w.dealer,
+				w.storageClient,
+				w.tmpPath,
+				freeSegment)
+
+			if err != nil {
+				logger.WithError(err).Warn("Processing segment error")
 			}
 		}
 	}()
+}
 
-	_, err = io.Copy(inputFileWriter, iopInputClaimReader)
-	inputFileWriter.Close()
-	inputClaimReader.Close()
+func proceedSegment(
+	ctx context.Context,
+	wg chwg.WaitGrouper,
+	logger *logrus.Entry,
+	performer models.IAuthor,
+	dealer models.IWorkerDealer,
+	storageClient models.IStorageClient,
+	tmpPath files.Pather,
+	freeSegment models.ISegment) error {
 
-	if err != nil {
-		panic(errors.Wrap(err, "Writing segment from storage claim"))
+	wg.Add(1)
+	defer wg.Done()
+
+	fail := func(err error) error {
+		return failSegment(logger, wg, performer, dealer, freeSegment, err)
 	}
 
-	outputFile := w.tmpPath.BuildFile(fmt.Sprintf("%s.%s", outputClaim.GetID(), convertSegment.Muxer))
+	convertSegment, ok := freeSegment.(*models.ConvertSegment)
+
+	if !ok {
+		return fail(errors.Wrapf(models.ErrUnknownSegmentType, "Received type `%s`", freeSegment.GetType()))
+	}
+
+	sio, err := prepareSegmentIO(ctx, performer, dealer, storageClient, convertSegment, tmpPath)
+
+	if err != nil {
+		return fail(err)
+	}
 
 	task := convert.Task{
-		InFile:  inputFile.FullPath(),
-		OutFile: outputFile.FullPath(),
+		InFile:  sio.inputFile.FullPath(),
+		OutFile: sio.outputFile.FullPath(),
 		Params:  convertSegment.Params,
 	}
 
-	infoGetter := minfo.New()
 	converter := convert.NewConverter(
 		context.WithValue(
-			w.ctx,
+			ctx,
 			ctxlog.LoggerContextKey,
 			logger.WithField(dlog.KeyCallee, dlog.PrefixWorker),
 		),
-		infoGetter,
+		minfo.New(),
 	)
 
 	throttled := throttle.New(2000 * time.Millisecond)
@@ -197,91 +159,140 @@ func (w *Instance) proceedSegment(slog *logrus.Entry, freeSegment models.ISegmen
 
 	for {
 		select {
-		case <-w.ctx.Done():
+		case <-ctx.Done():
 			logger.Info("Terminating worker thread")
 
-			<-converter.Closed()
+			// <-converter.Closed()
 
-			err = w.dealer.QuitSegment(w.performer, freeSegment.GetID())
-
-			if err != nil {
-				slog.WithError(err).Warn("Problem with quiting segment")
+			if err = dealer.QuitSegment(performer, freeSegment.GetID()); err != nil {
+				logger.WithError(err).Warn("Problem with quiting segment")
 			}
 
-			err = inputFile.Remove()
-
-			if err != nil {
-				slog.WithError(err).Warn("Problem with removing input file")
+			if err = storageClient.RemoveLocalCopy(ctx, sio.inputClaim); err != nil {
+				logger.WithError(err).Warn("Problem with removing input local copy file")
 			}
 
-			err = outputFile.Remove()
-
-			if err != nil {
-				slog.WithError(err).Warn("Problem with removing output file")
+			if err = sio.outputFile.Remove(); err != nil {
+				logger.WithError(err).Warn("Problem with removing output file")
 			}
 
-			return nil
+			return ctx.Err()
 
 		case pmsg, ok := <-progressChan:
 			if ok {
 				throttled(func() {
 					modProgress := makeProgresserFromConvert(pmsg)
 
-					err = w.dealer.NotifyProcess(w.performer, freeSegment.GetID(), modProgress)
-
-					if err != nil {
-						slog.WithError(err).Warn("Problem with notifying process")
+					if err = dealer.NotifyProcess(performer, freeSegment.GetID(), modProgress); err != nil {
+						logger.WithError(err).Warn("Problem with notifying process")
 					}
 
-					dlog.SegmentProgress(w.logger, freeSegment, modProgress)
+					dlog.SegmentProgress(logger, freeSegment, modProgress)
 				})
 			}
 
 		case cErr, failed := <-errChan:
 			if !failed {
-				outputFileReader, err := outputFile.ReadContent()
+				err := moveOutput(ctx, storageClient, sio.outputFile, sio.outputClaim)
 
 				if err != nil {
-					panic(errors.Wrap(err, "Building output file reader"))
+					return fail(errors.Wrap(err, "Uploading output & removing local copy"))
 				}
 
-				_, err = io.Copy(outputClaimWriter, outputFileReader)
-				outputClaimWriter.Close()
-				outputFileReader.Close()
+				err = storageClient.RemoveLocalCopy(ctx, sio.inputClaim)
 
 				if err != nil {
-					panic(errors.Wrap(err, "Writing result to output claim"))
+					logger.WithError(err).Warn("Problem with removing input file")
 				}
 
-				err = outputFile.Remove()
+				logger.Info("Segment is done")
 
-				if err != nil {
-					panic(errors.Wrap(err, "Removing output file after uploading to storage"))
-				}
-
-				err = inputFile.Remove()
-
-				if err != nil {
-					panic(errors.Wrap(err, "Removing input file after processing it"))
-				}
-
-				slog.Info("Segment is done")
-
-				err = w.dealer.FinishSegment(w.performer, freeSegment.GetID())
-
-				if err != nil {
-					panic(errors.Wrap(err, "Sending segment finish notification"))
+				if err = dealer.FinishSegment(performer, freeSegment.GetID()); err != nil {
+					return fail(errors.Wrap(err, "Sending segment finish report"))
 				}
 
 				return nil
 			}
 
-			panic(errors.Wrap(cErr, "Error processing convert task"))
+			return fail(errors.Wrap(cErr, "Error processing convert task"))
 		}
 	}
 }
 
+func moveOutput(
+	ctx context.Context,
+	storageClient models.IStorageClient,
+	outputFile files.Filer,
+	outputClaim models.IStorageClaim) error {
+
+	err := storageClient.MoveFileToStorageClaim(ctx, outputFile, outputClaim, nil)
+
+	if err != nil {
+		return errors.Wrap(err, "Moving (uploading) output file to storage claim")
+	}
+
+	return nil
+}
+
+func failSegment(
+	logger logrus.FieldLogger,
+	wg chwg.WaitGrouper,
+	performer models.IAuthor,
+	dealer models.IWorkerDealer,
+	segment models.ISegment,
+	err error) error {
+
+	wg.Add(1)
+
+	dErr := dealer.FailSegment(performer, segment.GetID(), err)
+
+	if dErr != nil {
+		logger.WithError(err).
+			Warn("Failed to report segment failure")
+	}
+
+	wg.Done()
+
+	return err
+}
+
+func prepareSegmentIO(
+	ctx context.Context,
+	performer models.IAuthor,
+	dealer models.IWorkerDealer,
+	storageClient models.IStorageClient,
+	convSegment *models.ConvertSegment,
+	tmpPath files.Pather) (*segmentIO, error) {
+
+	inputClaim, err := dealer.GetInputStorageClaim(performer, convSegment.GetID())
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Getting input storage claim")
+	}
+
+	outputClaim, err := dealer.AllocateOutputStorageClaim(performer, convSegment.GetID())
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Getting output storage claim")
+	}
+
+	inputFile, err := storageClient.MakeLocalCopy(ctx, inputClaim, nil)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Downloading local copy of input storage claim")
+	}
+
+	outputFile := tmpPath.BuildFile(fmt.Sprintf("%s.%s", outputClaim.GetID(), convSegment.Muxer))
+
+	return &segmentIO{
+		inputClaim:  inputClaim,
+		outputClaim: outputClaim,
+		inputFile:   inputFile,
+		outputFile:  outputFile,
+	}, nil
+}
+
 // Closed _
 func (w *Instance) Closed() <-chan struct{} {
-	return w.closed
+	return w.wg.Closed()
 }

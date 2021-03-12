@@ -43,6 +43,7 @@ type DistributedConvertApp struct {
 	contracter           *local.ContracterInstance
 	contracterInteractor *interactors.ContracterInteractor
 	workerInstance       *worker.Instance
+	storageClient        models.IStorageClient
 	ctx                  context.Context
 	cancel               func()
 	logger               *logrus.Entry
@@ -56,7 +57,7 @@ func (a *DistributedConvertApp) Init() error {
 	a.closed = make(chan struct{})
 
 	logger := logrus.New()
-	logger.SetLevel(logrus.TraceLevel)
+	logger.SetLevel(logrus.DebugLevel)
 	logger.Formatter = &prefixed.TextFormatter{
 		FullTimestamp: true,
 	}
@@ -68,6 +69,12 @@ func (a *DistributedConvertApp) Init() error {
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing storage")
+	}
+
+	a.storageClient, err = initStorageClient()
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing storage client")
 	}
 
 	a.registry, err = initRegistry(a.ctx)
@@ -91,7 +98,7 @@ func (a *DistributedConvertApp) Init() error {
 		return errors.Wrap(err, "Creating tmp path for contracter")
 	}
 
-	a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, contracterTmpPath)
+	a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, a.storageClient, contracterTmpPath)
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing contracter")
@@ -107,8 +114,8 @@ func (a *DistributedConvertApp) StartContracter() error {
 	publishWorker := local.NewContracterPublishWorker(a.ctx, a.contracter)
 	concatWorker := local.NewContracterConcatWorker(a.ctx, a.contracter)
 
-	publishWorker.Start()
-	concatWorker.Start()
+	go publishWorker.Start()
+	go concatWorker.Start()
 
 	return nil
 }
@@ -162,7 +169,7 @@ func (a *DistributedConvertApp) StartWorker() error {
 		return errors.Wrap(err, "Initializing worker path")
 	}
 
-	a.workerInstance, err = worker.NewWorker(a.ctx, workerPath, a.dealer)
+	a.workerInstance, err = worker.NewWorker(a.ctx, workerPath, a.dealer, a.storageClient)
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing worker instance")
@@ -330,4 +337,18 @@ func initRegistry(ctx context.Context) (models.IRegistry, error) {
 	}
 
 	return registry, nil
+}
+
+func initStorageClient() (models.IStorageClient, error) {
+	storageClientPath := files.NewPath(".fftb/storage_client")
+
+	err := storageClientPath.Create()
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Initializing storage client path")
+	}
+
+	storageClient := local.NewStorageClient(storageClientPath.FullPath())
+
+	return storageClient, nil
 }
