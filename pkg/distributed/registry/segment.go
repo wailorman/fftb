@@ -28,6 +28,9 @@ type Segment struct {
 	State                      string     `json:"state"`
 	Publisher                  string     `json:"publisher"`
 	Position                   int        `json:"position"`
+
+	RetriesCount int        `json:"retries_count"`
+	RetryAt      *time.Time `json:"retry_at"`
 }
 
 // ConvertSegmentPayload _
@@ -247,6 +250,8 @@ func (dbSegment *Segment) toModel() (models.ISegment, error) {
 	modSeg.InputStorageClaimIdentity = dbSegment.InputStorageClaimIdentity
 	modSeg.OutputStorageClaimIdentity = dbSegment.OutputStorageClaimIdentity
 	modSeg.Position = dbSegment.Position
+	modSeg.RetriesCount = dbSegment.RetriesCount
+	modSeg.RetryAt = dbSegment.RetryAt
 
 	modSeg.LockedUntil = dbSegment.LockedUntil
 
@@ -283,6 +288,8 @@ func (dbSegment *Segment) fromModel(modSegment models.ISegment) error {
 	dbSegment.OutputStorageClaimIdentity = modSegment.GetOutputStorageClaimIdentity()
 	dbSegment.LockedUntil = modSegment.GetLockedUntil()
 	dbSegment.Position = modSegment.GetPosition()
+	dbSegment.RetriesCount = modSegment.GetRetriesCount()
+	dbSegment.RetryAt = modSegment.GetRetryAt()
 
 	if lockedBy := modSegment.GetLockedBy(); lockedBy != nil {
 		dbSegment.LockedBy = lockedBy.GetName()

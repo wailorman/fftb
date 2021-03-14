@@ -27,6 +27,9 @@ type Order struct {
 	Publisher  string   `json:"publisher"`
 	State      string   `json:"state"`
 	SegmentIDs []string `json:"segment_ids"`
+
+	RetriesCount int        `json:"retries_count"`
+	RetryAt      *time.Time `json:"retry_at"`
 }
 
 // ConvertOrderPayload _
@@ -57,18 +60,18 @@ func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
 	return modOrder, nil
 }
 
-// PickOrderFromQueue _
-func (r *Instance) PickOrderFromQueue(fctx context.Context) (models.IOrder, error) {
-	if !r.orderQueueLock.TryLockTimeout(OrderQueueTimeout) {
-		return nil, models.ErrLockTimeoutReached
-	}
+// // PickOrderFromQueue _
+// func (r *Instance) PickOrderFromQueue(fctx context.Context) (models.IOrder, error) {
+// 	if !r.orderQueueLock.TryLockTimeout(OrderQueueTimeout) {
+// 		return nil, models.ErrLockTimeoutReached
+// 	}
 
-	defer r.orderQueueLock.Unlock()
+// 	defer r.orderQueueLock.Unlock()
 
-	return r.SearchOrder(fctx, func(modOrder models.IOrder) bool {
-		return modOrder.GetState() == models.OrderStateQueued
-	})
-}
+// 	return r.SearchOrder(fctx, func(modOrder models.IOrder) bool {
+// 		return modOrder.GetState() == models.OrderStateQueued
+// 	})
+// }
 
 // SearchOrder _
 func (r *Instance) SearchOrder(fctx context.Context, check func(models.IOrder) bool) (models.IOrder, error) {
@@ -138,10 +141,10 @@ func (r *Instance) searchOrders(fctx context.Context, multiple bool, check func(
 	for {
 		select {
 		case <-r.ctx.Done():
-			return orders, models.ErrCancelled
+			return orders, r.ctx.Err()
 
 		case <-fctx.Done():
-			return orders, models.ErrCancelled
+			return orders, fctx.Err()
 
 		case err := <-failures:
 			if err != nil {
@@ -213,10 +216,11 @@ func (dbOrder *Order) toModel() (models.IOrder, error) {
 	switch dbOrder.Kind {
 	case models.ConvertV1Type:
 		convOrder := &models.ConvertOrder{
-			Identity:   dbOrder.ID,
-			Type:       dbOrder.Kind,
-			State:      dbOrder.State,
-			SegmentIDs: dbOrder.SegmentIDs,
+			Identity:     dbOrder.ID,
+			Type:         dbOrder.Kind,
+			State:        dbOrder.State,
+			RetriesCount: dbOrder.RetriesCount,
+			RetryAt:      dbOrder.RetryAt,
 		}
 
 		if dbOrder.Publisher != "" {
@@ -242,7 +246,8 @@ func (dbOrder *Order) fromModel(modOrder models.IOrder) error {
 	dbOrder.ID = modOrder.GetID()
 	dbOrder.Kind = modOrder.GetType()
 	dbOrder.State = modOrder.GetState()
-	dbOrder.SegmentIDs = modOrder.GetSegmentIDs()
+	dbOrder.RetriesCount = modOrder.GetRetriesCount()
+	dbOrder.RetryAt = modOrder.GetRetryAt()
 
 	if modOrder.GetPublisher() != nil {
 		dbOrder.Publisher = modOrder.GetPublisher().GetName()

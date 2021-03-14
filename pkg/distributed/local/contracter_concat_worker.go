@@ -53,6 +53,7 @@ func (pC *ContracterConcatWorker) Start() {
 
 				if err != nil {
 					if errors.Is(err, models.ErrNotFound) {
+						pC.logger.Debug("Concatenatable orders not found")
 						continue
 					}
 
@@ -71,6 +72,13 @@ func (pC *ContracterConcatWorker) Start() {
 				if err != nil {
 					logger.WithError(err).
 						Warn("Failed to concat finished order")
+
+					failErr := pC.contracter.FailOrderByID(pC.ctx, finishedOrder.GetID(), err)
+
+					if err != nil {
+						logger.WithError(failErr).
+							Warn("Failed to report failed order")
+					}
 				}
 
 				continue

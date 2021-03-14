@@ -32,6 +32,9 @@ const KeyCallee = "callee"
 // KeyStorageClaim _
 const KeyStorageClaim = "storage_claim"
 
+// KeyReason _
+const KeyReason = "reason"
+
 // PrefixContracterPublishWorker _
 const PrefixContracterPublishWorker = "fftb.contracter.publish_worker"
 
@@ -40,6 +43,9 @@ const PrefixContracterConcatWorker = "fftb.contracter.concat_worker"
 
 // PrefixContracter _
 const PrefixContracter = "fftb.contracter"
+
+// PrefixDealer _
+const PrefixDealer = "fftb.dealer"
 
 // PrefixWorker _
 const PrefixWorker = "fftb.worker"

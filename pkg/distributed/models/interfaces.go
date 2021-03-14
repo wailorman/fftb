@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
 )
 
@@ -33,14 +34,17 @@ var ErrNotFound = errors.New("Not found")
 // ErrTimeoutReached _
 var ErrTimeoutReached = errors.New("Timeout reached")
 
-// ErrFreeSegmentLockTimeout _
-var ErrFreeSegmentLockTimeout = errors.New("Free segment lock timeout") // TODO: Subst. with ErrLockTimeoutReached
+// ErrLockTimeout _
+var ErrLockTimeout = errors.New("Free segment lock timeout") // TODO: Subst. with ErrLockTimeoutReached
 
 // ErrLockTimeoutReached _
 var ErrLockTimeoutReached = errors.New("Lock timeout reached")
 
 // ErrMissingLockAuthor _
 var ErrMissingLockAuthor = errors.New("Missing lock author")
+
+// ErrSegmentIsLocked _
+var ErrSegmentIsLocked = errors.New("Segment is locked")
 
 // ErrMissingSegment _
 var ErrMissingSegment = errors.New("Missing Segment")
@@ -57,8 +61,8 @@ var ErrMissingPerformer = errors.New("Missing performer")
 // ErrPerformerMismatch _
 var ErrPerformerMismatch = errors.New("Performer mismatch")
 
-// ErrCancelled _
-var ErrCancelled = errors.New("Cancelled")
+// // ErrCancelled _
+// var ErrCancelled = errors.New("Cancelled")
 
 // ProgressStep _
 type ProgressStep string
@@ -81,11 +85,29 @@ const DownloadingOutputStep ProgressStep = "downloading_output"
 // SegmentLockDuration _
 const SegmentLockDuration = time.Duration(1 * time.Minute)
 
+// MaxRetriesCount _
+const MaxRetriesCount = 3
+
+// NextRetryOffset _
+const NextRetryOffset = time.Duration(30 * time.Second)
+
 // // LocalAuthorName _
 // var LocalAuthorName = "local"
 
 // // LocalAuthor _
 // var LocalAuthor = &Author{name: LocalAuthorName}
+
+// CancellationReasonFailed _
+const CancellationReasonFailed = "failed"
+
+// CancellationReasonByUser _
+const CancellationReasonByUser = "by_user"
+
+// CancellationReasonOrderCancelled _
+const CancellationReasonOrderCancelled = "order_cancelled"
+
+// CancellationReasonNotAccepted _
+const CancellationReasonNotAccepted = "not_accepted"
 
 // Author _
 type Author struct {
@@ -131,11 +153,30 @@ type IOrder interface {
 	GetState() string
 	// SetState(string)
 	MatchPublisher(IAuthor) bool
-	GetSegmentIDs() []string
 	Validate() error
 	GetInputFile() files.Filer
 	GetOutputFile() files.Filer
 	CalculateProgress([]ISegment) float64
+	GetRetriesCount() int
+	GetRetryAt() *time.Time
+	GetCanRetry() bool
+	GetCanPublish() bool
+	GetCanConcat(segments []ISegment) bool
+
+	setLastError(err error)
+	incrementRetriesCount()
+	cancel(reason string)
+}
+
+// SegmentCanceller _
+type SegmentCanceller interface {
+	CancelSegment(segment ISegment, reason string) error
+}
+
+// IOrderMutator _
+type IOrderMutator interface {
+	CancelOrder(segmentMutator SegmentCanceller, order IOrder, segments []ISegment, reason string) error
+	FailOrder(segmentMutator SegmentCanceller, order IOrder, segments []ISegment, err error) error
 }
 
 // ISegment _
@@ -158,19 +199,44 @@ type ISegment interface {
 	GetPosition() int
 	MatchPublisher(IAuthor) bool
 	MatchPerformer(IAuthor) bool
-	Lock(performer IAuthor)
-	Unlock()
 	Validate() error
+	GetRetriesCount() int
+	GetRetryAt() *time.Time
+	GetCanRetry() bool
+	GetCanPerform() bool
+
+	lock(performer IAuthor)
+	unlock()
+	incrementRetriesCount()
+	setLastError(err error)
+	cancel(reason string)
+	publish()
+	finish()
+}
+
+// ISegmentMutator _
+type ISegmentMutator interface {
+	// UnlockSegment
+	PublishSegment(segment ISegment) error
+	FinishSegment(segment ISegment) error
+	// RepublishSegment(segment ISegment) error
+	CancelSegment(segment ISegment, reason string) error
+	FailSegment(segment ISegment, err error) error
+	LockSegment(segment ISegment, performer IAuthor) error
+	UnlockSegment(segment ISegment) error
 }
 
 // IContracter _
 type IContracter interface {
 	// PrepareOrder(req IContracterRequest) (IOrder, error)
-	GetAllOrders(ctx context.Context, search IOrderSearchCriteria) ([]IOrder, error)
-	GetAllSegments(ctx context.Context, search ISegmentSearchCriteria) ([]ISegment, error)
-	GetSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
+	GetAllOrders(ctx context.Context) ([]IOrder, error)
+	SearchAllOrders(ctx context.Context, search IOrderSearchCriteria) ([]IOrder, error)
+	GetAllSegments(ctx context.Context) ([]ISegment, error)
+	SearchAllSegments(ctx context.Context, search ISegmentSearchCriteria) ([]ISegment, error)
+	GetSegmentsByOrderID(fctx context.Context, orderID string) ([]ISegment, error)
+	SearchSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
 	GetSegmentByID(segmentID string) (ISegment, error)
-	CancelOrderByID(ctx context.Context, orderID string) error
+	CancelOrderByID(ctx context.Context, orderID string, reason string) error
 }
 
 // IDealer _
@@ -190,7 +256,7 @@ type IContracterDealer interface {
 	// FindSegmentByID(id string) (ISegment, error)
 	GetQueuedSegmentsCount(fctx context.Context, publisher IAuthor) (int, error)
 	GetSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
-	GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error)
+	// GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error)
 	GetSegmentByID(segmentID string) (ISegment, error)
 
 	NotifyRawUpload(publisher IAuthor, id string, p Progresser) error
@@ -198,8 +264,10 @@ type IContracterDealer interface {
 
 	PublishSegment(publisher IAuthor, id string) error
 	RepublishSegment(publisher IAuthor, id string) error
-	CancelSegment(publisher IAuthor, id string) error
+	CancelSegment(publisher IAuthor, id string, reason string) error
 	AcceptSegment(publisher IAuthor, id string) error
+
+	ObserveSegments(ctx context.Context, wg chwg.WaitGrouper)
 
 	// TODO: remove, we dont need it now
 	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
@@ -231,13 +299,13 @@ type IWorkerDealer interface {
 type IRegistry interface {
 	FindOrderByID(id string) (IOrder, error)
 	PersistOrder(order IOrder) error
-	PickOrderFromQueue(context.Context) (IOrder, error)
+	// PickOrderFromQueue(context.Context) (IOrder, error)
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
 	PersistSegment(ISegment) error
 	SearchOrder(fctx context.Context, check func(IOrder) bool) (IOrder, error)
 	SearchAllOrders(fctx context.Context, check func(IOrder) bool) ([]IOrder, error)
-	FindNotLockedSegment(ctx context.Context) (ISegment, error)
+	// FindNotLockedSegment(ctx context.Context) (ISegment, error)
 	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
 	// UnlockSegmentByID(segmentID string) error
 	SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
@@ -254,7 +322,7 @@ type IContracterRegistry interface {
 
 	FindOrderByID(id string) (IOrder, error)
 	PersistOrder(order IOrder) error
-	PickOrderFromQueue(context.Context) (IOrder, error)
+	// PickOrderFromQueue(context.Context) (IOrder, error)
 
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
@@ -282,7 +350,7 @@ type IDealerRegistry interface {
 
 	FindSegmentByID(id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	FindNotLockedSegment(ctx context.Context) (ISegment, error)
+	// FindNotLockedSegment(ctx context.Context) (ISegment, error)
 	PersistSegment(ISegment) error
 	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
 	// UnlockSegmentByID(segmentID string) error

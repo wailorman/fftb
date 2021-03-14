@@ -180,8 +180,10 @@ func (so *SliceOperation) Purge() error {
 		err = so.tmpPath.Destroy()
 	}
 
-	so.logger.WithError(err).
-		Debug("Purging tmp path")
+	if err != nil {
+		so.logger.WithError(err).
+			Debug("Purging tmp path")
+	}
 
 	return err
 }

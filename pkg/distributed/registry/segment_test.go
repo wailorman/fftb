@@ -41,6 +41,9 @@ var segmentsTestTable = []struct{ segment models.ISegment }{
 
 			LockedUntil: &someTime,
 			LockedBy:    &models.Author{Name: "v1/publishers/local/0009"},
+
+			RetriesCount: 5,
+			RetryAt:      &someTime,
 		},
 	},
 }

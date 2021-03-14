@@ -57,7 +57,6 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 		dealerConvertSegment := dealerSegment.(*models.ConvertSegment)
 
 		dSegments = append(dSegments, dealerConvertSegment)
-		convOrder.SegmentIDs = append(convOrder.SegmentIDs, dealerSegment.GetID())
 	}
 
 	for i, slice := range slices {

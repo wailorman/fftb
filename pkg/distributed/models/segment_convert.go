@@ -43,6 +43,11 @@ type ConvertSegment struct {
 	Publisher   IAuthor    `json:"publisher"`
 	LockedUntil *time.Time `json:"locked_until"`
 	LockedBy    IAuthor    `json:"locked_by"`
+
+	RetriesCount       int        `json:"retries_count"`
+	RetryAt            *time.Time `json:"retry_at"`
+	LastError          string     `json:"last_error"`
+	CancellationReason string     `json:"cancellation_reason"`
 }
 
 // GetID _
@@ -122,6 +127,22 @@ func (ct *ConvertSegment) GetState() string {
 	return ct.State
 }
 
+func (ct *ConvertSegment) cancel(reason string) {
+	ct.State = SegmentStateCancelled
+	ct.CancellationReason = reason
+	ct.unlock()
+}
+
+func (ct *ConvertSegment) publish() {
+	ct.State = SegmentStatePublished
+	ct.unlock()
+}
+
+func (ct *ConvertSegment) finish() {
+	ct.State = SegmentStateFinished
+	ct.unlock()
+}
+
 // GetCurrentState _
 func (ct *ConvertSegment) GetCurrentState() string {
 	if ct.GetIsLocked() {
@@ -171,16 +192,14 @@ func (ct *ConvertSegment) MatchPerformer(performer IAuthor) bool {
 	return ct.LockedBy == performer
 }
 
-// Lock _
-func (ct *ConvertSegment) Lock(performer IAuthor) {
+func (ct *ConvertSegment) lock(performer IAuthor) {
 	lockedUntil := time.Now().Add(SegmentLockDuration)
 
 	ct.LockedBy = performer
 	ct.LockedUntil = &lockedUntil
 }
 
-// Unlock _
-func (ct *ConvertSegment) Unlock() {
+func (ct *ConvertSegment) unlock() {
 	ct.LockedBy = nil
 	ct.LockedUntil = nil
 }
@@ -190,9 +209,57 @@ func (ct *ConvertSegment) GetPosition() int {
 	return ct.Position
 }
 
+// GetRetriesCount _
+func (ct *ConvertSegment) GetRetriesCount() int {
+	return ct.RetriesCount
+}
+
+// GetRetryAt _
+func (ct *ConvertSegment) GetRetryAt() *time.Time {
+	return ct.RetryAt
+}
+
+// GetCanRetry _
+func (ct *ConvertSegment) GetCanRetry() bool {
+	if ct.GetRetriesCount() >= MaxRetriesCount {
+		return false
+	}
+
+	if ct.GetRetryAt() != nil {
+		return time.Now().After(*ct.GetRetryAt())
+	}
+
+	return true
+}
+
+func (ct *ConvertSegment) incrementRetriesCount() {
+	ct.RetriesCount++
+}
+
+func (ct *ConvertSegment) setLastError(err error) {
+	ct.LastError = err.Error()
+}
+
+// GetCanPerform _
+func (ct *ConvertSegment) GetCanPerform() bool {
+	canRetry := true
+
+	if ct.GetRetryAt() != nil {
+		canRetry = time.Now().After(*ct.GetRetryAt())
+	}
+
+	return !ct.GetIsLocked() &&
+		ct.GetRetriesCount() < MaxRetriesCount &&
+		canRetry &&
+		ct.GetState() == SegmentStatePublished
+
+}
+
 // Validate _
 func (ct ConvertSegment) Validate() error {
-	stateErr := validation.ValidateStruct(&ct,
+	validators := make([]*validation.FieldRules, 0)
+
+	validators = append(validators,
 		validation.Field(&ct.State,
 			validation.Required,
 			validation.In(
@@ -202,32 +269,28 @@ func (ct ConvertSegment) Validate() error {
 				SegmentStateAccepted,
 				SegmentStateFinished)))
 
-	if stateErr != nil {
-		return stateErr
-	}
-
 	if ct.State == SegmentStatePublished {
-		inputClaimErr := validation.ValidateStruct(&ct,
+		validators = append(validators,
 			validation.Field(&ct.InputStorageClaimIdentity, validation.Required))
-
-		if inputClaimErr != nil {
-			return inputClaimErr
-		}
 	}
 
 	if ct.State == SegmentStateFinished {
-		outputClaimErr := validation.ValidateStruct(&ct,
+		validators = append(validators,
 			validation.Field(&ct.OutputStorageClaimIdentity, validation.Required))
-
-		if outputClaimErr != nil {
-			return outputClaimErr
-		}
 	}
 
-	return validation.ValidateStruct(&ct,
+	if ct.State == SegmentStateCancelled {
+		validators = append(validators,
+			validation.Field(&ct.CancellationReason,
+				validation.Required))
+	}
+
+	validators = append(validators,
 		validation.Field(&ct.Type, validation.Required, validation.In(ConvertV1Type)),
 		validation.Field(&ct.Identity, validation.Required),
 		validation.Field(&ct.OrderIdentity, validation.Required),
 		validation.Field(&ct.Muxer, validation.Required),
 		validation.Field(&ct.Publisher, validation.Required))
+
+	return validation.ValidateStruct(&ct, validators...)
 }

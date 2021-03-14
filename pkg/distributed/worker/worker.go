@@ -183,6 +183,7 @@ func proceedSegment(
 				throttled(func() {
 					modProgress := makeProgresserFromConvert(pmsg)
 
+					// TODO: stop on dealer errors
 					if err = dealer.NotifyProcess(performer, freeSegment.GetID(), modProgress); err != nil {
 						logger.WithError(err).Warn("Problem with notifying process")
 					}
@@ -241,6 +242,10 @@ func failSegment(
 	dealer models.IWorkerDealer,
 	segment models.ISegment,
 	err error) error {
+
+	if errors.Is(err, context.Canceled) {
+		return err
+	}
 
 	wg.Add(1)
 

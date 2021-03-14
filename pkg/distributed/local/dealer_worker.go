@@ -13,26 +13,32 @@ import (
 // FindFreeSegment _
 func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, error) {
 	if !d.freeSegmentLock.TryLockTimeout(LockSegmentTimeout) {
-		return nil, models.ErrFreeSegmentLockTimeout
+		return nil, models.ErrLockTimeout
 	}
 
 	defer d.freeSegmentLock.Unlock()
 
-	freeSegment, err := d.registry.FindNotLockedSegment(d.ctx)
+	segment, err := d.registry.SearchSegment(context.TODO(), func(segment models.ISegment) bool {
+		return segment.GetCanPerform()
+	})
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Looking for free segment")
 	}
 
-	freeSegment.Lock(performer)
-
-	err = d.registry.PersistSegment(freeSegment)
+	err = d.segmentMutator.LockSegment(segment, performer)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Persisting locked segment")
+		return nil, errors.Wrap(err, "Locking segment")
 	}
 
-	return freeSegment, nil
+	err = d.registry.PersistSegment(segment)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Persisting segment")
+	}
+
+	return segment, nil
 }
 
 // GetInputStorageClaim _
@@ -91,13 +97,16 @@ func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error
 		WithField(dlog.KeyOrderID, segment.GetOrderID()).
 		Info("Segment is finished")
 
-	convertSegment.State = models.SegmentStateFinished
-	convertSegment.Unlock()
+	err = d.segmentMutator.FinishSegment(convertSegment)
+
+	if err != nil {
+		return errors.Wrap(err, "Finishing segment")
+	}
 
 	err = d.registry.PersistSegment(convertSegment)
 
 	if err != nil {
-		return errors.Wrapf(err, "Persisting segment `%s`", segmentID)
+		return errors.Wrap(err, "Persisting segment")
 	}
 
 	d.tryPurgeInputStorageClaim(segmentID)
@@ -129,12 +138,16 @@ func (d *Dealer) segmentProgress(performer models.IAuthor, segmentID string, p m
 
 	dlog.SegmentProgress(d.logger, seg, p)
 
-	seg.Lock(performer)
+	err = d.segmentMutator.LockSegment(seg, performer)
+
+	if err != nil {
+		return errors.Wrap(err, "Locking segment")
+	}
 
 	err = d.registry.PersistSegment(seg)
 
 	if err != nil {
-		return errors.Wrap(err, "Prolongating segment lock")
+		return errors.Wrap(err, "Persisting segment")
 	}
 
 	return nil
@@ -163,8 +176,30 @@ func (d *Dealer) WaitOnSegmentCancelled(ctx context.Context, id string) <-chan s
 }
 
 // FailSegment _
-func (d *Dealer) FailSegment(performer models.IAuthor, id string, err error) error {
-	panic("not implemented")
+func (d *Dealer) FailSegment(performer models.IAuthor, id string, reportedErr error) error {
+	segment, err := d.registry.FindSegmentByID(id)
+
+	if err != nil {
+		return errors.Wrapf(err, "Searching segment by id `%s`", id)
+	}
+
+	d.logger.WithField(dlog.KeySegmentID, segment.GetID()).
+		WithError(reportedErr).
+		Info("Received segment failure")
+
+	err = d.segmentMutator.FailSegment(segment, reportedErr)
+
+	if err != nil {
+		return errors.Wrap(err, "Failing segment")
+	}
+
+	err = d.registry.PersistSegment(segment)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting segment")
+	}
+
+	return nil
 }
 
 // QuitSegment _
@@ -187,7 +222,17 @@ func (d *Dealer) QuitSegment(performer models.IAuthor, id string) error {
 		return errors.Wrap(models.ErrPerformerMismatch, fmt.Sprintf("Received performer `%s`, locked by performer `%s`", performer, seg.GetPerformer()))
 	}
 
-	seg.Unlock()
+	err = d.segmentMutator.LockSegment(seg, performer)
 
-	return d.registry.PersistSegment(seg)
+	if err != nil {
+		return errors.Wrap(err, "Locking segment")
+	}
+
+	err = d.registry.PersistSegment(seg)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting segment")
+	}
+
+	return nil
 }

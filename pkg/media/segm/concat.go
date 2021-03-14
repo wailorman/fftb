@@ -170,8 +170,10 @@ func (co *ConcatOperation) Purge() error {
 		err = co.tmpPath.Destroy()
 	}
 
-	co.logger.WithError(err).
-		Debug("Purging tmp path")
+	if err != nil {
+		co.logger.WithError(err).
+			Debug("Purging tmp path")
+	}
 
 	return err
 }

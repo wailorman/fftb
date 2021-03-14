@@ -12,8 +12,7 @@ func New(contextName string) *logrus.Entry {
 	loggerInstance.SetLevel(logrus.TraceLevel)
 	loggerInstance.Formatter = new(prefixed.TextFormatter)
 
-	return loggerInstance.
-		WithField("prefix", contextName)
+	return WithPrefix(loggerInstance, contextName)
 }
 
 // DefaultContext _
@@ -42,5 +41,10 @@ func FromContext(ctx context.Context, prefix string) logrus.FieldLogger {
 		return nil
 	}
 
+	return logger.WithField("prefix", prefix)
+}
+
+// WithPrefix _
+func WithPrefix(logger logrus.FieldLogger, prefix string) *logrus.Entry {
 	return logger.WithField("prefix", prefix)
 }

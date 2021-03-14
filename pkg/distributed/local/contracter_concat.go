@@ -15,42 +15,21 @@ import (
 
 // PickOrderForConcat _
 func (c *ContracterInstance) PickOrderForConcat(fctx context.Context) (models.IOrder, error) {
-	var searchErr error
+	// TODO: lock
 
-	ffctx, cancel := context.WithCancel(fctx)
-
-	order, err := c.registry.SearchOrder(ffctx, func(order models.IOrder) bool {
-		if order.GetState() != models.OrderStateInProgress {
-			return false
-		}
-
-		statesMap, err := c.dealer.GetSegmentsStatesByOrderID(fctx, order.GetID())
+	order, err := c.registry.SearchOrder(fctx, func(order models.IOrder) bool {
+		segments, err := c.dealer.GetSegmentsByOrderID(fctx, order.GetID(), models.EmptySegmentFilters())
 
 		if err != nil {
-			searchErr = errors.Wrap(err, "Getting segments states from dealer")
-			cancel()
+			c.logger.WithField(dlog.KeyOrderID, order.GetID()).
+				WithError(err).
+				Warn("Failed to get order segments")
+
 			return false
 		}
 
-		c.logger.WithField(dlog.KeyOrderID, order.GetID()).
-			WithField("states", dlog.JSON(statesMap)).
-			Trace("Received order segments states map")
-
-		allSegmentsFinished := true
-
-		for _, state := range statesMap {
-			if state != models.SegmentStateFinished {
-				allSegmentsFinished = false
-				break
-			}
-		}
-
-		return allSegmentsFinished
+		return order.GetCanConcat(segments)
 	})
-
-	if errors.Is(err, models.ErrCancelled) && searchErr != nil {
-		return nil, searchErr
-	}
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Searching for finished order")
@@ -61,6 +40,8 @@ func (c *ContracterInstance) PickOrderForConcat(fctx context.Context) (models.IO
 
 // ConcatOrder _
 func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrder) error {
+	// TODO: concat in local function
+
 	logger := c.logger.WithField(dlog.KeyOrderID, order.GetID())
 
 	convOrder, ok := order.(*models.ConvertOrder)
@@ -72,18 +53,16 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 	g := new(errgroup.Group)
 
 	g.Go(func() error {
-		slices := make([]*segm.Segment, 0)
+		segments, err := c.dealer.GetSegmentsByOrderID(fctx, order.GetID(), models.EmptySegmentFilters())
 
-		dSegmentsIDs := order.GetSegmentIDs()
+		if err != nil {
+			return errors.Wrap(err, "Getting order segments")
+		}
 
-		for _, dSegmentID := range dSegmentsIDs {
-			slice, err := c.downloadSegment(fctx, order, dSegmentID)
+		slices, err := downloadSegments(c.ctx, c.dealer, c.publisher, c.storageClient, segments)
 
-			if err != nil {
-				return errors.Wrapf(err, "Downloading segment `%s`", dSegmentID)
-			}
-
-			slices = append(slices, slice)
+		if err != nil {
+			return errors.Wrap(err, "Downloading segments")
 		}
 
 		concatOperation := segm.NewConcatOperation(
@@ -94,7 +73,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 			),
 		)
 
-		err := concatOperation.Init(segm.ConcatRequest{
+		err = concatOperation.Init(segm.ConcatRequest{
 			OutFile:  convOrder.OutFile,
 			Segments: slices,
 		})
@@ -156,11 +135,11 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 			}
 		}
 
-		for _, dSegmentID := range dSegmentsIDs {
-			err = c.dealer.AcceptSegment(c.publisher, dSegmentID)
+		for _, segment := range segments {
+			err = c.dealer.AcceptSegment(c.publisher, segment.GetID())
 
 			if err != nil {
-				logger.WithField(dlog.KeySegmentID, dSegmentID).
+				logger.WithField(dlog.KeySegmentID, segment.GetID()).
 					WithError(err).
 					Warn("Problem with marking segment accepted via dealer")
 			}
@@ -180,74 +159,35 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 	return c.registry.PersistOrder(convOrder)
 }
 
-func (c *ContracterInstance) downloadSegment(fctx context.Context, order models.IOrder, segmentID string) (*segm.Segment, error) {
-	dSegment, err := c.dealer.GetSegmentByID(segmentID)
+func downloadSegments(
+	ctx context.Context,
+	dealer models.IContracterDealer,
+	publisher models.IAuthor,
+	storageClient models.IStorageClient,
+	segments []models.ISegment) ([]*segm.Segment, error) {
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Getting segment info from dealer")
+	slices := make([]*segm.Segment, 0)
+
+	for _, segment := range segments {
+		outputStorageClaim, err := dealer.GetOutputStorageClaim(publisher, segment.GetID())
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "Getting output storage claim for segment `%s`", segment.GetID())
+		}
+
+		sliceFile, err := storageClient.MakeLocalCopy(ctx, outputStorageClaim, nil)
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "Downloading output for segment `%s`", segment.GetID())
+		}
+
+		slice := &segm.Segment{
+			Position: segment.GetPosition(),
+			File:     sliceFile,
+		}
+
+		slices = append(slices, slice)
 	}
 
-	segmentsOutputDir := c.tempPath.BuildSubpath("segments_output").BuildSubpath(order.GetID())
-
-	err = segmentsOutputDir.Create()
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "Creating segments output directory `%s`", segmentsOutputDir.FullPath())
-	}
-
-	// var sliceFile files.Filer
-
-	// sliceFile := c.tempPath.BuildSubpath(order.GetID()).BuildFile(dSegment.GetID())
-
-	// err = sliceFile.Create()
-
-	// if err != nil {
-	// 	return nil, errors.Wrapf(err, "Creating file for segment output `%s`", sliceFile.FullPath())
-	// }
-
-	outputStorageClaim, err := c.dealer.GetOutputStorageClaim(c.publisher, segmentID)
-
-	if err != nil {
-		return nil, errors.Wrap(err, "Getting output storage claim")
-	}
-
-	sliceFile, err := c.storageClient.MakeLocalCopy(c.ctx, outputStorageClaim, nil)
-
-	// dg := new(errgroup.Group)
-
-	// dg.Go(func() error {
-	// 	pChan, errChan := c.storageClient.DownloadFileFromStorageClaim(fctx, sliceFile, outputStorageClaim)
-
-	// 	for {
-	// 		select {
-	// 		case p := <-pChan:
-	// 			if p != nil {
-	// 				c.logger.WithField(dlog.KeyPercent, p.Percent()).
-	// 					WithField(dlog.KeyOrderID, order.GetID()).
-	// 					WithField(dlog.KeySegmentID, dSegment.GetID()).
-	// 					Info("Downloading segment output")
-	// 			}
-
-	// 		case failure := <-errChan:
-	// 			if failure == nil {
-	// 				return nil
-	// 			}
-
-	// 			return failure
-	// 		}
-	// 	}
-	// })
-
-	// err = dg.Wait()
-
-	if err != nil {
-		return nil, err
-	}
-
-	slice := &segm.Segment{
-		Position: dSegment.GetPosition(),
-		File:     sliceFile,
-	}
-
-	return slice, nil
+	return slices, nil
 }

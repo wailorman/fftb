@@ -12,8 +12,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/ctxlog"
-	"github.com/wailorman/fftb/pkg/distributed/interactors"
+	"github.com/wailorman/fftb/pkg/distributed/adapters"
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
@@ -41,13 +42,14 @@ type DistributedConvertApp struct {
 	registry             models.IRegistry
 	dealer               models.IDealer
 	contracter           *local.ContracterInstance
-	contracterInteractor *interactors.ContracterInteractor
+	contracterInteractor *adapters.ContracterAdapter
 	workerInstance       *worker.Instance
 	storageClient        models.IStorageClient
 	ctx                  context.Context
 	cancel               func()
 	logger               *logrus.Entry
 	closed               chan struct{}
+	wg                   *chwg.ChannelledWaitGroup
 }
 
 // Init _
@@ -55,6 +57,7 @@ func (a *DistributedConvertApp) Init() error {
 	var err error
 
 	a.closed = make(chan struct{})
+	a.wg = chwg.New()
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -83,7 +86,7 @@ func (a *DistributedConvertApp) Init() error {
 		return errors.Wrap(err, "Initializing registry")
 	}
 
-	a.dealer, err = local.NewDealer(a.ctx, a.storage, a.registry)
+	a.dealer, err = local.NewDealer(a.ctx, a.storage, a.registry, models.NewSegmentMutation())
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing delaer")
@@ -98,24 +101,32 @@ func (a *DistributedConvertApp) Init() error {
 		return errors.Wrap(err, "Creating tmp path for contracter")
 	}
 
-	a.contracter, err = local.NewContracter(a.ctx, a.dealer, a.registry, a.storageClient, contracterTmpPath)
+	a.contracter, err = local.NewContracter(
+		a.ctx,
+		a.dealer,
+		a.registry,
+		a.storageClient,
+		models.NewOrderMutation(logger), contracterTmpPath)
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing contracter")
 	}
 
-	a.contracterInteractor = interactors.NewContracterInteractor(a.contracter)
+	a.contracterInteractor = adapters.NewContracterAdapter(a.contracter)
 
 	return nil
 }
 
 // StartContracter _
 func (a *DistributedConvertApp) StartContracter() error {
-	publishWorker := local.NewContracterPublishWorker(a.ctx, a.contracter)
+	publishWorker := local.NewContracterPublishWorker(a.ctx, a.contracter, models.NewOrderMutation(a.logger))
 	concatWorker := local.NewContracterConcatWorker(a.ctx, a.contracter)
 
 	go publishWorker.Start()
 	go concatWorker.Start()
+
+	a.dealer.ObserveSegments(a.ctx, a.wg)
+	a.contracter.ObserveOrders(a.ctx, a.wg)
 
 	return nil
 }
@@ -285,9 +296,10 @@ func (a *DistributedConvertApp) Wait() <-chan struct{} {
 				if a.workerInstance != nil {
 					select {
 					case <-a.workerInstance.Closed():
+						a.logger.Debug("Worker terminated")
 					case <-time.After(3 * time.Second):
+						a.logger.Debug("Worker killed")
 					}
-					a.logger.Debug("Worker terminated")
 				}
 
 				err := a.registry.Persist()

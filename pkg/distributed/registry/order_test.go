@@ -29,9 +29,11 @@ var ordersTestTable = []struct{ order models.IOrder }{
 				VideoQuality:     30,
 				VideoCodec:       "h264",
 			},
-			SegmentIDs: []string{"seg_id_1", "seg_id_2"},
-			InFile:     files.NewFile("/tmp/some_file_in"),
-			OutFile:    files.NewFile("/tmp/some_file_out"),
+			InFile:  files.NewFile("/tmp/some_file_in"),
+			OutFile: files.NewFile("/tmp/some_file_out"),
+
+			RetriesCount: 5,
+			RetryAt:      &someTime,
 		},
 	},
 }

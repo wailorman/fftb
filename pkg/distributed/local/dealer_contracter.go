@@ -59,7 +59,7 @@ func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID s
 	segment, err := d.registry.FindSegmentByID(segmentID)
 
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
 	convertSegment, ok := segment.(*models.ConvertSegment)
@@ -87,29 +87,39 @@ func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID s
 }
 
 // CancelSegment _
-func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string) error {
+func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string, reason string) error {
 	// TODO: lock segment
+	// TODO: receive multiple segment ids
+	// TODO: match publisher
 
 	segment, err := d.registry.FindSegmentByID(segmentID)
 
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
-	convertSegment, ok := segment.(*models.ConvertSegment)
+	// convertSegment, ok := segment.(*models.ConvertSegment)
 
-	if !ok {
-		return models.ErrUnknownSegmentType
-	}
+	// if !ok {
+	// 	return models.ErrUnknownSegmentType
+	// }
 
-	d.logger.WithField(dlog.KeyOrderID, convertSegment.GetOrderID()).
-		WithField(dlog.KeySegmentID, convertSegment.GetID()).
+	d.logger.WithField(dlog.KeyOrderID, segment.GetOrderID()).
+		WithField(dlog.KeySegmentID, segment.GetID()).
+		WithField(dlog.KeyReason, reason).
 		Info("Cancelling segment")
 
-	convertSegment.State = models.SegmentStateCancelled
-	convertSegment.Unlock()
+	if segment.GetState() == models.SegmentStateCancelled {
+		return nil
+	}
 
-	return d.registry.PersistSegment(convertSegment)
+	err = d.segmentMutator.CancelSegment(segment, reason)
+
+	if err != nil {
+		return errors.Wrap(err, "Cancelling segment")
+	}
+
+	return d.registry.PersistSegment(segment)
 }
 
 // AcceptSegment _
@@ -121,7 +131,7 @@ func (d *Dealer) AcceptSegment(publisher models.IAuthor, segmentID string) error
 	segment, err := d.registry.FindSegmentByID(segmentID)
 
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
 	convertSegment, ok := segment.(*models.ConvertSegment)
@@ -159,25 +169,31 @@ func (d *Dealer) NotifyResultDownload(publisher models.IAuthor, segmentID string
 
 // PublishSegment _
 func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) error {
+	// TODO: lock segment
+
 	segment, err := d.registry.FindSegmentByID(segmentID)
 
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
-	convertSegment, ok := segment.(*models.ConvertSegment)
-
-	if !ok {
-		return models.ErrUnknownSegmentType
-	}
-
-	d.logger.WithField(dlog.KeyOrderID, convertSegment.GetOrderID()).
-		WithField(dlog.KeySegmentID, convertSegment.GetID()).
+	d.logger.WithField(dlog.KeyOrderID, segment.GetOrderID()).
+		WithField(dlog.KeySegmentID, segment.GetID()).
 		Info("Publishing segment")
 
-	convertSegment.State = models.SegmentStatePublished
+	err = d.segmentMutator.PublishSegment(segment)
 
-	return d.registry.PersistSegment(convertSegment)
+	if err != nil {
+		return errors.Wrap(err, "Publishing segment")
+	}
+
+	err = d.registry.PersistSegment(segment)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting segment")
+	}
+
+	return nil
 }
 
 // RepublishSegment _
@@ -187,23 +203,26 @@ func (d *Dealer) RepublishSegment(publisher models.IAuthor, segmentID string) er
 	segment, err := d.registry.FindSegmentByID(segmentID)
 
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
-	convertSegment, ok := segment.(*models.ConvertSegment)
-
-	if !ok {
-		return models.ErrUnknownSegmentType
-	}
-
-	d.logger.WithField(dlog.KeyOrderID, convertSegment.GetOrderID()).
-		WithField(dlog.KeySegmentID, convertSegment.GetID()).
+	d.logger.WithField(dlog.KeyOrderID, segment.GetOrderID()).
+		WithField(dlog.KeySegmentID, segment.GetID()).
 		Info("Republishing segment")
 
-	convertSegment.State = models.SegmentStatePublished
-	convertSegment.Unlock()
+	err = d.segmentMutator.PublishSegment(segment)
 
-	return d.registry.PersistSegment(convertSegment)
+	if err != nil {
+		return errors.Wrap(err, "Republishing segment")
+	}
+
+	err = d.registry.PersistSegment(segment)
+
+	if err != nil {
+		return errors.Wrap(err, "Persisting segment")
+	}
+
+	return nil
 }
 
 // AllocatePublisherAuthority _

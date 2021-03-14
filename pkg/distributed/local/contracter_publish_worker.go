@@ -19,24 +19,26 @@ const ThresholdQueuedSegmentsCount = 15
 
 // ContracterPublishWorker _
 type ContracterPublishWorker struct {
-	ctx        context.Context
-	contracter *ContracterInstance
-	closed     chan struct{}
-	logger     logrus.FieldLogger
+	ctx          context.Context
+	contracter   *ContracterInstance
+	closed       chan struct{}
+	logger       logrus.FieldLogger
+	orderMutator models.IOrderMutator
 }
 
 // NewContracterPublishWorker _
-func NewContracterPublishWorker(ctx context.Context, contracter *ContracterInstance) *ContracterPublishWorker {
+func NewContracterPublishWorker(ctx context.Context, contracter *ContracterInstance, orderMutator models.IOrderMutator) *ContracterPublishWorker {
 	var logger logrus.FieldLogger
 	if logger = ctxlog.FromContext(ctx, dlog.PrefixContracterPublishWorker); logger == nil {
 		logger = ctxlog.New(dlog.PrefixContracterPublishWorker)
 	}
 
 	return &ContracterPublishWorker{
-		ctx:        ctx,
-		contracter: contracter,
-		closed:     make(chan struct{}),
-		logger:     logger,
+		ctx:          ctx,
+		contracter:   contracter,
+		closed:       make(chan struct{}),
+		logger:       logger,
+		orderMutator: orderMutator,
 	}
 }
 
@@ -60,7 +62,7 @@ func (pW *ContracterPublishWorker) Start() {
 				}
 
 				if queuedSegmentsCount < ThresholdQueuedSegmentsCount {
-					queuedOrder, err := pW.contracter.registry.PickOrderFromQueue(pW.ctx)
+					order, err := pW.contracter.PickOrderFromQueue(pW.ctx)
 
 					if err != nil {
 						if errors.Is(err, models.ErrNotFound) {
@@ -72,11 +74,21 @@ func (pW *ContracterPublishWorker) Start() {
 						continue
 					}
 
-					err = pW.contracter.publishOrder(pW.ctx, queuedOrder)
+					oLogger := pW.logger.WithField(dlog.KeyOrderID, order.GetID())
+
+					err = pW.contracter.publishOrder(pW.ctx, order)
 
 					if err != nil {
-						pW.logger.WithError(err).
+						oLogger.WithError(err).
 							Warn("Failed to publish new order")
+
+						failErr := pW.contracter.FailOrderByID(pW.ctx, order.GetID(), err)
+
+						if err != nil {
+							oLogger.WithError(failErr).
+								Warn("Failed to report order failure")
+						}
+
 						continue
 					}
 				}
