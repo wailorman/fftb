@@ -267,7 +267,7 @@ func (contracter *ContracterInstance) ObserveOrders(ctx context.Context, wg chwg
 		wg.Add(1)
 		defer wg.Done()
 
-		ticker := time.NewTicker(QueuedSegmentsPollingInterval)
+		ticker := time.NewTicker(PollingInterval)
 		unretryableLogger := ctxlog.WithPrefix(contracter.logger, dlog.PrefixContracter+".orders_observer.unretryable")
 
 		for {

@@ -11,11 +11,8 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 )
 
-// QueuedSegmentsPollingInterval _
-const QueuedSegmentsPollingInterval = time.Duration(5 * time.Second)
-
-// ThresholdQueuedSegmentsCount _
-const ThresholdQueuedSegmentsCount = 15
+// MaxQueuedSegmentsForNextOrder _
+const MaxQueuedSegmentsForNextOrder = 15
 
 // ContracterPublishWorker _
 type ContracterPublishWorker struct {
@@ -45,52 +42,51 @@ func NewContracterPublishWorker(ctx context.Context, contracter *ContracterInsta
 // Start _
 func (pW *ContracterPublishWorker) Start() {
 	go func() {
-		ticker := time.NewTicker(QueuedSegmentsPollingInterval)
-
 		for {
-			select {
-			case <-pW.ctx.Done():
-				close(pW.closed)
+			if pW.ctx.Err() != nil {
 				return
-			case <-ticker.C:
-				queuedSegmentsCount, err := pW.contracter.dealer.GetQueuedSegmentsCount(pW.ctx, pW.contracter.publisher)
+			}
+
+			queuedSegmentsCount, err := pW.contracter.dealer.GetQueuedSegmentsCount(pW.ctx, pW.contracter.publisher)
+
+			if err != nil {
+				pW.logger.WithError(err).
+					Warn("Failed to count queued segments")
+				time.Sleep(PollingInterval)
+				continue
+			}
+
+			if queuedSegmentsCount >= MaxQueuedSegmentsForNextOrder {
+				time.Sleep(PollingInterval)
+				continue
+			}
+
+			order, err := pW.contracter.PickOrderFromQueue(pW.ctx)
+
+			if err != nil {
+				if errors.Is(err, models.ErrNotFound) {
+					pW.logger.Debug("Queued orders not found")
+				} else {
+					pW.logger.WithError(err).
+						Warn("Failed to pick new order from queue")
+				}
+				time.Sleep(PollingInterval)
+				continue
+			}
+
+			oLogger := pW.logger.WithField(dlog.KeyOrderID, order.GetID())
+
+			err = pW.contracter.publishOrder(pW.ctx, order)
+
+			if err != nil {
+				oLogger.WithError(err).
+					Warn("Failed to publish new order")
+
+				failErr := pW.contracter.FailOrderByID(pW.ctx, order.GetID(), err)
 
 				if err != nil {
-					pW.logger.WithError(err).
-						Warn("Failed to count queued segments")
-					continue
-				}
-
-				if queuedSegmentsCount < ThresholdQueuedSegmentsCount {
-					order, err := pW.contracter.PickOrderFromQueue(pW.ctx)
-
-					if err != nil {
-						if errors.Is(err, models.ErrNotFound) {
-							pW.logger.Debug("Queued orders not found")
-						} else {
-							pW.logger.WithError(err).
-								Warn("Failed to pick new order from queue")
-						}
-						continue
-					}
-
-					oLogger := pW.logger.WithField(dlog.KeyOrderID, order.GetID())
-
-					err = pW.contracter.publishOrder(pW.ctx, order)
-
-					if err != nil {
-						oLogger.WithError(err).
-							Warn("Failed to publish new order")
-
-						failErr := pW.contracter.FailOrderByID(pW.ctx, order.GetID(), err)
-
-						if err != nil {
-							oLogger.WithError(failErr).
-								Warn("Failed to report order failure")
-						}
-
-						continue
-					}
+					oLogger.WithError(failErr).
+						Warn("Failed to report order failure")
 				}
 			}
 		}

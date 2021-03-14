@@ -61,66 +61,15 @@ func (d *Dealer) ObserveSegments(ctx context.Context, wg chwg.WaitGrouper) {
 		wg.Add(1)
 		defer wg.Done()
 
-		// ticker := time.NewTicker(QueuedSegmentsPollingInterval)
-		// unretryableLogger := ctxlog.WithPrefix(d.logger, dlog.PrefixDealer+".segments_observer.unretryable")
-
 		for {
 			if ctx.Err() != nil {
 				return
 			}
 
-			time.Sleep(QueuedSegmentsPollingInterval)
-
-			// select {
-			// case <-ctx.Done():
-			// 	return
-
-			// case <-ticker.C:
-			// 	err = cancelUnretryableSegments(ctx,
-			// 		unretryableLogger,
-			// 		d.registry)
-
-			// 	if err != nil {
-			// 		unretryableLogger.WithError(err).
-			// 			Warn("Failed to cancel unretryable segments")
-			// 	}
-			// }
+			time.Sleep(PollingInterval)
 		}
 	}()
 }
-
-// // ISegmentSearcher _
-// type ISegmentSearcher interface {
-// 	SearchSegment(fctx context.Context, check func(models.ISegment) bool) (models.ISegment, error)
-// }
-
-// func cancelUnretryableSegments(
-// 	ctx context.Context,
-// 	logger logrus.FieldLogger,
-// 	registry ISegmentSearcher,
-// 	segmentMutator models.ISegmentInteractor) error {
-
-// 	_, sErr := registry.SearchSegment(ctx, func(segment models.ISegment) bool {
-// 		if !segment.GetCanRetry() && segment.GetState() != models.SegmentStateCancelled {
-// 			sLogger := logger.WithField(dlog.KeySegmentID, segment.GetID())
-
-// 			err := segmentMutator.CancelSegment(ctx, segment, models.CancellationReasonFailed)
-
-// 			if err != nil {
-// 				sLogger.WithError(err).Warn("Failed to cancel segment")
-// 				return false
-// 			}
-// 		}
-
-// 		return false
-// 	})
-
-// 	if sErr != nil && !errors.Is(sErr, models.ErrNotFound) {
-// 		return sErr
-// 	}
-
-// 	return nil
-// }
 
 func (d *Dealer) getInputStorageClaim(segmentID string) (models.IStorageClaim, error) {
 	segment, err := d.registry.FindSegmentByID(segmentID)

@@ -164,6 +164,8 @@ func (co *ConvertOrder) GetCanConcat(segments []ISegment) bool {
 
 func (co *ConvertOrder) incrementRetriesCount() {
 	co.RetriesCount++
+	nextRetry := time.Now().Add(NextRetryOffset)
+	co.RetryAt = &nextRetry
 }
 
 func (co *ConvertOrder) setLastError(err error) {

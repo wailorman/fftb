@@ -234,6 +234,8 @@ func (ct *ConvertSegment) GetCanRetry() bool {
 
 func (ct *ConvertSegment) incrementRetriesCount() {
 	ct.RetriesCount++
+	nextRetry := time.Now().Add(NextRetryOffset)
+	ct.RetryAt = &nextRetry
 }
 
 func (ct *ConvertSegment) setLastError(err error) {

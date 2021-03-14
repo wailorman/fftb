@@ -40,48 +40,44 @@ func NewContracterConcatWorker(ctx context.Context, contracter *ContracterInstan
 // Start _
 func (pC *ContracterConcatWorker) Start() {
 	go func() {
-		ticker := time.NewTicker(QueuedSegmentsPollingInterval)
-
 		for {
-			select {
-			case <-pC.ctx.Done():
-				close(pC.closed)
+			if pC.ctx.Err() != nil {
 				return
+			}
 
-			case <-ticker.C:
-				finishedOrder, err := pC.contracter.PickOrderForConcat(pC.ctx)
+			finishedOrder, err := pC.contracter.PickOrderForConcat(pC.ctx)
 
-				if err != nil {
-					if errors.Is(err, models.ErrNotFound) {
-						pC.logger.Debug("Concatenatable orders not found")
-						continue
-					}
-
-					pC.logger.WithError(err).
-						Warn("Failed to pick finished order")
+			if err != nil {
+				if errors.Is(err, models.ErrNotFound) {
+					pC.logger.Debug("Concatenatable orders not found")
+					time.Sleep(PollingInterval)
 					continue
 				}
 
-				logger := pC.logger.WithField(dlog.KeyOrderID, finishedOrder.GetID())
+				pC.logger.WithError(err).
+					Warn("Failed to pick finished order")
 
-				logger.WithField(dlog.KeyOrderID, finishedOrder.GetID()).
-					Info("Found finished order for concatenation")
+				time.Sleep(PollingInterval)
+				continue
+			}
 
-				err = pC.contracter.ConcatOrder(pC.ctx, finishedOrder)
+			logger := pC.logger.WithField(dlog.KeyOrderID, finishedOrder.GetID())
+
+			logger.WithField(dlog.KeyOrderID, finishedOrder.GetID()).
+				Info("Found finished order for concatenation")
+
+			err = pC.contracter.ConcatOrder(pC.ctx, finishedOrder)
+
+			if err != nil {
+				logger.WithError(err).
+					Warn("Failed to concat finished order")
+
+				failErr := pC.contracter.FailOrderByID(pC.ctx, finishedOrder.GetID(), err)
 
 				if err != nil {
-					logger.WithError(err).
-						Warn("Failed to concat finished order")
-
-					failErr := pC.contracter.FailOrderByID(pC.ctx, finishedOrder.GetID(), err)
-
-					if err != nil {
-						logger.WithError(failErr).
-							Warn("Failed to report failed order")
-					}
+					logger.WithError(failErr).
+						Warn("Failed to report failed order")
 				}
-
-				continue
 			}
 		}
 	}()
