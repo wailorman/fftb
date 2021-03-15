@@ -135,7 +135,7 @@ func proceedSegment(
 	sio, err := prepareSegmentIO(ctx, performer, dealer, storageClient, convertSegment, tmpPath)
 
 	if err != nil {
-		return fail(err)
+		return fail(errors.Wrap(err, "Preparing segment IO"))
 	}
 
 	task := convert.Task{
