@@ -93,8 +93,7 @@ func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error
 		return models.ErrUnknownSegmentType
 	}
 
-	d.logger.WithField(dlog.KeySegmentID, convertSegment.GetID()).
-		WithField(dlog.KeyOrderID, segment.GetOrderID()).
+	dlog.WithSegment(d.logger, segment).
 		Info("Segment is finished")
 
 	err = d.segmentMutator.FinishSegment(convertSegment)
@@ -183,7 +182,7 @@ func (d *Dealer) FailSegment(performer models.IAuthor, id string, reportedErr er
 		return errors.Wrapf(err, "Searching segment by id `%s`", id)
 	}
 
-	d.logger.WithField(dlog.KeySegmentID, segment.GetID()).
+	dlog.WithSegment(d.logger, segment).
 		WithError(reportedErr).
 		Info("Received segment failure")
 
@@ -204,15 +203,15 @@ func (d *Dealer) FailSegment(performer models.IAuthor, id string, reportedErr er
 
 // QuitSegment _
 func (d *Dealer) QuitSegment(performer models.IAuthor, id string) error {
-	d.logger.WithField(dlog.KeyPerformer, performer.GetName()).
-		WithField(dlog.KeySegmentID, id).
-		Debug("Quitting segment")
-
 	seg, err := d.registry.FindSegmentByID(id)
 
 	if err != nil {
 		return err
 	}
+
+	dlog.WithSegment(d.logger, seg).
+		WithField(dlog.KeyPerformer, performer.GetName()).
+		Debug("Quitting segment")
 
 	if seg.GetPerformer() == nil {
 		return nil

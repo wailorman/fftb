@@ -21,7 +21,7 @@ func (c *ContracterInstance) PickOrderForConcat(fctx context.Context) (models.IO
 		segments, err := c.dealer.GetSegmentsByOrderID(fctx, order.GetID(), models.EmptySegmentFilters())
 
 		if err != nil {
-			c.logger.WithField(dlog.KeyOrderID, order.GetID()).
+			dlog.WithOrder(c.logger, order).
 				WithError(err).
 				Warn("Failed to get order segments")
 
@@ -42,7 +42,7 @@ func (c *ContracterInstance) PickOrderForConcat(fctx context.Context) (models.IO
 func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrder) error {
 	// TODO: concat in local function
 
-	logger := c.logger.WithField(dlog.KeyOrderID, order.GetID())
+	logger := dlog.WithOrder(c.logger, order)
 
 	convOrder, ok := order.(*models.ConvertOrder)
 
@@ -139,7 +139,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 			err = c.dealer.AcceptSegment(c.publisher, segment.GetID())
 
 			if err != nil {
-				logger.WithField(dlog.KeySegmentID, segment.GetID()).
+				dlog.WithSegment(logger, segment).
 					WithError(err).
 					Warn("Problem with marking segment accepted via dealer")
 			}

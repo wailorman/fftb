@@ -86,8 +86,7 @@ func (w *Instance) Start() {
 				continue
 			}
 
-			logger := w.logger.WithField(dlog.KeySegmentID, freeSegment.GetID()).
-				WithField(dlog.KeyOrderID, freeSegment.GetOrderID()).
+			logger := dlog.WithSegment(w.logger, freeSegment).
 				WithField(dlog.KeyPerformer, w.performer.GetName())
 
 			logger.Info("Found free segment")

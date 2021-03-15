@@ -74,7 +74,7 @@ func (pW *ContracterPublishWorker) Start() {
 				continue
 			}
 
-			oLogger := pW.logger.WithField(dlog.KeyOrderID, order.GetID())
+			oLogger := dlog.WithOrder(pW.logger, order)
 
 			err = pW.contracter.publishOrder(pW.ctx, order)
 

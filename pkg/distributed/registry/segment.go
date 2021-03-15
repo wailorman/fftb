@@ -162,9 +162,9 @@ func (r *Instance) FindSegmentsByOrderID(fctx context.Context, orderID string) (
 func (r *Instance) PersistSegment(modSegment models.ISegment) error {
 	segmentBefore, _ := r.FindSegmentByID(modSegment.GetID())
 
-	r.logger.WithField("after", dlog.JSON(modSegment)).
+	dlog.WithSegment(r.logger, modSegment).
+		WithField("after", dlog.JSON(modSegment)).
 		WithField("before", dlog.JSON(segmentBefore)).
-		WithField(dlog.KeySegmentID, modSegment.GetID()).
 		Trace("Persisting segment")
 
 	if modSegment == nil {

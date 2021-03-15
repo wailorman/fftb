@@ -132,17 +132,13 @@ func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, order
 	contracter.wg.Add(1)
 	defer contracter.wg.Done()
 
-	logger := contracter.logger.WithField(dlog.KeyOrderID, orderID)
-
 	order, err := contracter.registry.FindOrderByID(orderID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Getting order by id `%s`", orderID)
 	}
 
-	// if order.GetState() != models.OrderStateCancelled {
-	// 	order.Cancel(reason)
-	// }
+	logger := dlog.WithOrder(contracter.logger, order)
 
 	segments, err := contracter.GetSegmentsByOrderID(ctx, orderID)
 
@@ -166,33 +162,6 @@ func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, order
 		return errors.Wrap(err, "Cancel order")
 	}
 
-	// for _, segment := range segments {
-	// 	if ctx.Err() != nil {
-	// 		break
-	// 	}
-
-	// 	err = contracter.dealer.CancelSegment(contracter.publisher, segment.GetID(), models.CancellationReasonOrderCancelled)
-
-	// 	if err != nil {
-	// 		logger.Println()
-	// 		logger.WithField(dlog.KeySegmentID, segment.GetID()).
-	// 			WithError(err).
-	// 			Warn("Problem with cancelling segment via dealer")
-	// 	}
-	// }
-
-	// if ctx.Err() != nil {
-	// 	for _, segment := range segments {
-	// 		err = contracter.dealer.RepublishSegment(contracter.publisher, segment.GetID())
-
-	// 		logger.WithField(dlog.KeySegmentID, segment.GetID()).
-	// 			WithError(err).
-	// 			Warn("Problem with republishing segment via dealer")
-	// 	}
-
-	// 	return nil
-	// }
-
 	err = contracter.registry.PersistOrder(order)
 
 	if err != nil {
@@ -205,13 +174,13 @@ func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, order
 // FailOrderByID _
 func (contracter *ContracterInstance) FailOrderByID(ctx context.Context, orderID string, reportedErr error) error {
 
-	logger := contracter.logger.WithField(dlog.KeyOrderID, orderID)
-
 	order, err := contracter.registry.FindOrderByID(orderID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Getting order by id `%s`", orderID)
 	}
+
+	logger := dlog.WithOrder(contracter.logger, order)
 
 	segments, err := contracter.GetSegmentsByOrderID(ctx, orderID)
 
@@ -318,8 +287,7 @@ func cancelUnretryableOrders(
 			cErr := orderCanceller.CancelOrderByID(ctx, order.GetID(), models.CancellationReasonFailed)
 
 			if cErr != nil {
-				logger.
-					WithField(dlog.KeyOrderID, order.GetID()).
+				dlog.WithOrder(logger, order).
 					WithError(cErr).
 					Warn("Failed to cancel order")
 			}
@@ -349,8 +317,7 @@ func cancelOrdersWithCancelledSegments(
 			segments, segmentsErr := segmentsGetter.GetSegmentsByOrderID(ctx, order.GetID())
 
 			if segmentsErr != nil {
-				logger.
-					WithField(dlog.KeyOrderID, order.GetID()).
+				dlog.WithOrder(logger, order).
 					WithError(segmentsErr).
 					Warn("Failed to get order segments")
 
@@ -362,8 +329,7 @@ func cancelOrdersWithCancelledSegments(
 					cancellationErr := orderCanceller.CancelOrderByID(ctx, order.GetID(), models.CancellationReasonFailed)
 
 					if cancellationErr != nil {
-						logger.
-							WithField(dlog.KeyOrderID, order.GetID()).
+						dlog.WithOrder(logger, order).
 							WithError(cancellationErr).
 							Warn("Failed to cancel order")
 					}

@@ -103,9 +103,9 @@ func (r *Instance) SearchAllOrders(fctx context.Context, check func(models.IOrde
 func (r *Instance) PersistOrder(modOrder models.IOrder) error {
 	orderBefore, _ := r.FindOrderByID(modOrder.GetID())
 
-	r.logger.WithField("after", dlog.JSON(modOrder)).
+	dlog.WithOrder(r.logger, modOrder).
+		WithField("after", dlog.JSON(modOrder)).
 		WithField("before", dlog.JSON(orderBefore)).
-		WithField(dlog.KeyOrderID, modOrder.GetID()).
 		Trace("Persisting order")
 
 	if modOrder == nil {

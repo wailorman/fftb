@@ -137,7 +137,7 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 
 // SliceConvertOrder _
 func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, convOrder *models.ConvertOrder) ([]*segm.Segment, error) {
-	llog := contracter.logger.WithField(dlog.KeyOrderID, convOrder.GetID())
+	llog := dlog.WithOrder(contracter.logger, convOrder)
 
 	llog.Info("Slicing order")
 

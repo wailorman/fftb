@@ -58,11 +58,9 @@ const PrefixSegmSliceOperation = "fftb.segm.slice_operation"
 
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
-	entry := logger.
+	entry := WithSegment(logger, seg).
 		WithField(KeyPercent, fmt.Sprintf("%.4f", p.Percent())).
-		WithField(KeySegmentID, seg.GetID()).
-		WithField(KeySegmentState, p.Step()).
-		WithField(KeyOrderID, seg.GetOrderID())
+		WithField(KeySegmentState, p.Step())
 
 	entry.Debug("Processing segment")
 }
@@ -81,6 +79,17 @@ func (bP *basicProgress) Step() models.ProgressStep {
 // Percent _
 func (bP *basicProgress) Percent() float64 {
 	return bP.percent
+}
+
+// WithOrder _
+func WithOrder(logger logrus.FieldLogger, order models.IOrder) logrus.FieldLogger {
+	return logger.WithField(KeyOrderID, order.GetID())
+}
+
+// WithSegment _
+func WithSegment(logger logrus.FieldLogger, segment models.ISegment) logrus.FieldLogger {
+	return logger.WithField(KeyOrderID, segment.GetOrderID()).
+		WithField(KeySegmentID, segment.GetID())
 }
 
 // MakeIOProgress _

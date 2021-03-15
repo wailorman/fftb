@@ -104,8 +104,7 @@ func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string, reaso
 	// 	return models.ErrUnknownSegmentType
 	// }
 
-	d.logger.WithField(dlog.KeyOrderID, segment.GetOrderID()).
-		WithField(dlog.KeySegmentID, segment.GetID()).
+	dlog.WithSegment(d.logger, segment).
 		WithField(dlog.KeyReason, reason).
 		Info("Cancelling segment")
 
@@ -126,21 +125,19 @@ func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string, reaso
 func (d *Dealer) AcceptSegment(publisher models.IAuthor, segmentID string) error {
 	// TODO: lock segment
 
-	logger := d.logger.WithField(dlog.KeySegmentID, segmentID)
-
 	segment, err := d.registry.FindSegmentByID(segmentID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
+	logger := dlog.WithSegment(d.logger, segment)
+
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
 		return models.ErrUnknownSegmentType
 	}
-
-	logger = logger.WithField(dlog.KeyOrderID, segment.GetOrderID())
 
 	logger.Info("Accepting segment")
 
@@ -177,8 +174,7 @@ func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) erro
 		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
-	d.logger.WithField(dlog.KeyOrderID, segment.GetOrderID()).
-		WithField(dlog.KeySegmentID, segment.GetID()).
+	dlog.WithSegment(d.logger, segment).
 		Info("Publishing segment")
 
 	err = d.segmentMutator.PublishSegment(segment)
@@ -206,8 +202,7 @@ func (d *Dealer) RepublishSegment(publisher models.IAuthor, segmentID string) er
 		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
 	}
 
-	d.logger.WithField(dlog.KeyOrderID, segment.GetOrderID()).
-		WithField(dlog.KeySegmentID, segment.GetID()).
+	dlog.WithSegment(d.logger, segment).
 		Info("Republishing segment")
 
 	err = d.segmentMutator.PublishSegment(segment)

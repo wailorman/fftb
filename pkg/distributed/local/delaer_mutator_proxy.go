@@ -53,7 +53,8 @@ func (dp *DelaerMutatorProxy) CancelSegment(segment models.ISegment, reason stri
 
 	if err != nil {
 		if dp.ignoreErrors {
-			dp.logger.WithField(dlog.KeySegmentID, segment.GetID()).Warn("Failed to cancel segment")
+			dlog.WithSegment(dp.logger, segment).
+				Warn("Failed to cancel segment")
 		} else {
 			return err
 		}
