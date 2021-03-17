@@ -84,7 +84,7 @@ func (pW *ContracterPublishWorker) Start() {
 
 				failErr := pW.contracter.FailOrderByID(pW.ctx, order.GetID(), err)
 
-				if err != nil {
+				if failErr != nil {
 					oLogger.WithError(failErr).
 						Warn("Failed to report order failure")
 				}

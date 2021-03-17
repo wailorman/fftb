@@ -213,18 +213,10 @@ func (d *Dealer) QuitSegment(ctx context.Context, performer models.IAuthor, id s
 		WithField(dlog.KeyPerformer, performer.GetName()).
 		Debug("Quitting segment")
 
-	if seg.GetPerformer() == nil {
-		return nil
-	}
-
-	if !seg.GetPerformer().IsEqual(performer) {
-		return errors.Wrap(models.ErrPerformerMismatch, fmt.Sprintf("Received performer `%s`, locked by performer `%s`", performer, seg.GetPerformer()))
-	}
-
-	err = d.segmentMutator.LockSegment(seg, performer)
+	err = d.segmentMutator.UnlockSegment(seg)
 
 	if err != nil {
-		return errors.Wrap(err, "Locking segment")
+		return errors.Wrap(err, "Unlocking segment")
 	}
 
 	err = d.registry.PersistSegment(ctx, seg)
