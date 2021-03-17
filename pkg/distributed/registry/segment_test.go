@@ -77,11 +77,11 @@ func Test__Segment__Persisting(t *testing.T) {
 	for i, testItem := range segmentsTestTable {
 		originalSegment := testItem.segment
 
-		err := registry.PersistSegment(originalSegment)
+		err := registry.PersistSegment(context.Background(), originalSegment)
 
 		assert.Nilf(t, err, "item %d: registry.PersistSegment error", i)
 
-		newSegment, err := registry.FindSegmentByID(originalSegment.GetID())
+		newSegment, err := registry.FindSegmentByID(context.Background(), originalSegment.GetID())
 
 		assert.Nilf(t, err, "item %d: registry.FindSegmentByID error", i)
 		assert.Equalf(t, "", cmp.Diff(originalSegment, newSegment), "item %d: diff", i)

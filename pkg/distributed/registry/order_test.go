@@ -67,11 +67,11 @@ func Test__Order__Persisting(t *testing.T) {
 	for i, testItem := range ordersTestTable {
 		originalOrder := testItem.order
 
-		err := registry.PersistOrder(originalOrder)
+		err := registry.PersistOrder(context.Background(), originalOrder)
 
 		assert.Nil(t, err, fmt.Sprintf("item %d: registry.PersistOrder", i))
 
-		newOrder, err := registry.FindOrderByID(originalOrder.GetID())
+		newOrder, err := registry.FindOrderByID(context.Background(), originalOrder.GetID())
 
 		assert.Nil(t, err, fmt.Sprintf("item %d: registry.FindOrderByID", i))
 		assert.Equal(t, "", cmp.Diff(newOrder, originalOrder), fmt.Sprintf("item %d: diff", i))

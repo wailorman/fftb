@@ -11,7 +11,7 @@ import (
 )
 
 // AllocateSegment _
-func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, error) {
+func (d *Dealer) AllocateSegment(ctx context.Context, publisher models.IAuthor, req models.IDealerRequest) (models.ISegment, error) {
 	if validationErr := req.Validate(); validationErr != nil {
 		return nil, validationErr
 	}
@@ -36,10 +36,10 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 		Muxer:         convertReq.Muxer,
 		Position:      convertReq.Position,
 		State:         models.SegmentStatePrepared,
-		Publisher:     req.GetAuthor(),
+		Publisher:     publisher,
 	}
 
-	err := d.registry.PersistSegment(convertSegment)
+	err := d.registry.PersistSegment(ctx, convertSegment)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Persisting segment")
@@ -49,14 +49,14 @@ func (d *Dealer) AllocateSegment(req models.IDealerRequest) (models.ISegment, er
 }
 
 // GetOutputStorageClaim _
-func (d *Dealer) GetOutputStorageClaim(publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
+func (d *Dealer) GetOutputStorageClaim(ctx context.Context, publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
 	// TODO: match publisher
-	return d.getOutputStorageClaim(segmentID)
+	return d.getOutputStorageClaim(ctx, segmentID)
 }
 
 // AllocateInputStorageClaim _
-func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
-	segment, err := d.registry.FindSegmentByID(segmentID)
+func (d *Dealer) AllocateInputStorageClaim(ctx context.Context, publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
@@ -69,7 +69,7 @@ func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID s
 	}
 
 	iClaimID := fmt.Sprintf("input_%s_%s_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
-	iClaim, err := d.storageController.AllocateStorageClaim(iClaimID)
+	iClaim, err := d.storageController.AllocateStorageClaim(ctx, iClaimID)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Allocating input storage claim")
@@ -77,7 +77,7 @@ func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID s
 
 	convertSegment.InputStorageClaimIdentity = iClaimID
 
-	err = d.registry.PersistSegment(convertSegment)
+	err = d.registry.PersistSegment(ctx, convertSegment)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Persisting input claim identity")
@@ -87,12 +87,12 @@ func (d *Dealer) AllocateInputStorageClaim(publisher models.IAuthor, segmentID s
 }
 
 // CancelSegment _
-func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string, reason string) error {
+func (d *Dealer) CancelSegment(ctx context.Context, publisher models.IAuthor, segmentID string, reason string) error {
 	// TODO: lock segment
 	// TODO: receive multiple segment ids
 	// TODO: match publisher
 
-	segment, err := d.registry.FindSegmentByID(segmentID)
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
@@ -118,14 +118,14 @@ func (d *Dealer) CancelSegment(publisher models.IAuthor, segmentID string, reaso
 		return errors.Wrap(err, "Cancelling segment")
 	}
 
-	return d.registry.PersistSegment(segment)
+	return d.registry.PersistSegment(ctx, segment)
 }
 
 // AcceptSegment _
-func (d *Dealer) AcceptSegment(publisher models.IAuthor, segmentID string) error {
+func (d *Dealer) AcceptSegment(ctx context.Context, publisher models.IAuthor, segmentID string) error {
 	// TODO: lock segment
 
-	segment, err := d.registry.FindSegmentByID(segmentID)
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
@@ -143,7 +143,7 @@ func (d *Dealer) AcceptSegment(publisher models.IAuthor, segmentID string) error
 
 	convertSegment.State = models.SegmentStateAccepted
 
-	err = d.registry.PersistSegment(convertSegment)
+	err = d.registry.PersistSegment(ctx, convertSegment)
 
 	if err != nil {
 		return errors.Wrapf(err, "Persisting segment `%s`", segmentID)
@@ -155,20 +155,20 @@ func (d *Dealer) AcceptSegment(publisher models.IAuthor, segmentID string) error
 }
 
 // NotifyRawUpload _
-func (d *Dealer) NotifyRawUpload(publisher models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.Progresser) error {
 	panic(models.ErrNotImplemented)
 }
 
 // NotifyResultDownload _
-func (d *Dealer) NotifyResultDownload(publisher models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.Progresser) error {
 	panic(models.ErrNotImplemented)
 }
 
 // PublishSegment _
-func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) error {
+func (d *Dealer) PublishSegment(ctx context.Context, publisher models.IAuthor, segmentID string) error {
 	// TODO: lock segment
 
-	segment, err := d.registry.FindSegmentByID(segmentID)
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
@@ -183,7 +183,7 @@ func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) erro
 		return errors.Wrap(err, "Publishing segment")
 	}
 
-	err = d.registry.PersistSegment(segment)
+	err = d.registry.PersistSegment(ctx, segment)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting segment")
@@ -193,10 +193,10 @@ func (d *Dealer) PublishSegment(publisher models.IAuthor, segmentID string) erro
 }
 
 // RepublishSegment _
-func (d *Dealer) RepublishSegment(publisher models.IAuthor, segmentID string) error {
+func (d *Dealer) RepublishSegment(ctx context.Context, publisher models.IAuthor, segmentID string) error {
 	// TODO: lock segment
 
-	segment, err := d.registry.FindSegmentByID(segmentID)
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Finding segment by id `%s`", segmentID)
@@ -211,7 +211,7 @@ func (d *Dealer) RepublishSegment(publisher models.IAuthor, segmentID string) er
 		return errors.Wrap(err, "Republishing segment")
 	}
 
-	err = d.registry.PersistSegment(segment)
+	err = d.registry.PersistSegment(ctx, segment)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting segment")
@@ -221,7 +221,7 @@ func (d *Dealer) RepublishSegment(publisher models.IAuthor, segmentID string) er
 }
 
 // AllocatePublisherAuthority _
-func (d *Dealer) AllocatePublisherAuthority(name string) (models.IAuthor, error) {
+func (d *Dealer) AllocatePublisherAuthority(ctx context.Context, name string) (models.IAuthor, error) {
 	authorName := fmt.Sprintf("v1/publishers/%s", name)
 
 	return &models.Author{Name: authorName}, nil
@@ -244,8 +244,8 @@ func (d *Dealer) GetQueuedSegmentsCount(fctx context.Context, publisher models.I
 }
 
 // GetSegmentsByOrderID _
-func (d *Dealer) GetSegmentsByOrderID(fctx context.Context, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
-	segments, err := d.registry.FindSegmentsByOrderID(fctx, orderID)
+func (d *Dealer) GetSegmentsByOrderID(ctx context.Context, publisher models.IAuthor, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
+	segments, err := d.registry.FindSegmentsByOrderID(ctx, orderID)
 
 	if err != nil {
 		return nil, err
@@ -262,28 +262,30 @@ func (d *Dealer) GetSegmentsByOrderID(fctx context.Context, orderID string, sear
 	return resultSegments, nil
 }
 
-// GetSegmentsStatesByOrderID _
-func (d *Dealer) GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error) {
-	segments, err := d.GetSegmentsByOrderID(fctx, orderID, models.EmptySegmentFilters())
+// // GetSegmentsStatesByOrderID _
+// func (d *Dealer) GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error) {
+// 	segments, err := d.GetSegmentsByOrderID(fctx, orderID, models.EmptySegmentFilters())
 
-	if err != nil {
-		return nil, errors.Wrap(err, "Getting segments")
-	}
+// 	if err != nil {
+// 		return nil, errors.Wrap(err, "Getting segments")
+// 	}
 
-	if len(segments) == 0 {
-		return nil, models.ErrNotFound
-	}
+// 	if len(segments) == 0 {
+// 		return nil, models.ErrNotFound
+// 	}
 
-	statesMap := make(map[string]string)
+// 	statesMap := make(map[string]string)
 
-	for _, segment := range segments {
-		statesMap[segment.GetID()] = segment.GetState()
-	}
+// 	for _, segment := range segments {
+// 		statesMap[segment.GetID()] = segment.GetState()
+// 	}
 
-	return statesMap, nil
-}
+// 	return statesMap, nil
+// }
 
 // GetSegmentByID _
-func (d *Dealer) GetSegmentByID(segmentID string) (models.ISegment, error) {
-	return d.registry.FindSegmentByID(segmentID)
+func (d *Dealer) GetSegmentByID(ctx context.Context, publisher models.IAuthor, segmentID string) (models.ISegment, error) {
+	// TODO: match publisher
+
+	return d.registry.FindSegmentByID(ctx, segmentID)
 }

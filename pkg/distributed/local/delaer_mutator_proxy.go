@@ -10,7 +10,7 @@ import (
 
 // DealerSegmentCanceller _
 type DealerSegmentCanceller interface {
-	CancelSegment(publisher models.IAuthor, id string, reason string) error
+	CancelSegment(ctx context.Context, publisher models.IAuthor, id string, reason string) error
 }
 
 // DelaerMutatorProxy _
@@ -49,7 +49,7 @@ func NewDelaerMutatorProxy(
 
 // CancelSegment _
 func (dp *DelaerMutatorProxy) CancelSegment(segment models.ISegment, reason string) error {
-	err := dp.dealer.CancelSegment(dp.author, segment.GetID(), reason)
+	err := dp.dealer.CancelSegment(dp.ctx, dp.author, segment.GetID(), reason)
 
 	if err != nil {
 		if dp.ignoreErrors {

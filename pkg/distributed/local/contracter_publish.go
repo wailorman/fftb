@@ -46,7 +46,7 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 			Position:      slice.Position,
 		}
 
-		dealerSegment, err := contracter.dealer.AllocateSegment(dealerReq)
+		dealerSegment, err := contracter.dealer.AllocateSegment(fctx, contracter.publisher, dealerReq)
 
 		if err != nil {
 			errObj := errors.Wrap(err, fmt.Sprintf("Allocating dealer segment #%d", i))
@@ -62,7 +62,7 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 	for i, slice := range slices {
 		dSeg := dSegments[i]
 		// seg := segs[i]
-		claim, err := contracter.dealer.AllocateInputStorageClaim(contracter.publisher, dSeg.Identity)
+		claim, err := contracter.dealer.AllocateInputStorageClaim(fctx, contracter.publisher, dSeg.Identity)
 
 		if err != nil {
 			errObj := errors.Wrap(
@@ -115,7 +115,7 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 	}
 
 	for _, dSeg := range dSegments {
-		err := contracter.dealer.PublishSegment(contracter.publisher, dSeg.Identity)
+		err := contracter.dealer.PublishSegment(fctx, contracter.publisher, dSeg.Identity)
 
 		if err != nil {
 			errObj := errors.Wrap(err, fmt.Sprintf("Publishing segment %s", dSeg.Identity))
@@ -126,7 +126,7 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 	}
 
 	convOrder.State = models.OrderStateInProgress
-	err = contracter.registry.PersistOrder(convOrder)
+	err = contracter.registry.PersistOrder(fctx, convOrder)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting order")

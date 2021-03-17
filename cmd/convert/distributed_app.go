@@ -152,7 +152,7 @@ func (a *DistributedConvertApp) AddTask(c *cli.Context) error {
 	// 	return errors.Wrap(err, "Initializing contracter")
 	// }
 
-	_, err = a.contracter.AddOrderToQueue(&models.ConvertContracterRequest{
+	_, err = a.contracter.AddOrderToQueue(a.ctx, &models.ConvertContracterRequest{
 		InFile:  inFile,
 		OutFile: outFile,
 		Params:  convertParamsFromFlags(c),

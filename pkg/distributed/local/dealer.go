@@ -71,8 +71,8 @@ func (d *Dealer) ObserveSegments(ctx context.Context, wg chwg.WaitGrouper) {
 	}()
 }
 
-func (d *Dealer) getInputStorageClaim(segmentID string) (models.IStorageClaim, error) {
-	segment, err := d.registry.FindSegmentByID(segmentID)
+func (d *Dealer) getInputStorageClaim(ctx context.Context, segmentID string) (models.IStorageClaim, error) {
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return nil, err
@@ -97,8 +97,8 @@ func (d *Dealer) getInputStorageClaim(segmentID string) (models.IStorageClaim, e
 	return claim, nil
 }
 
-func (d *Dealer) getOutputStorageClaim(segmentID string) (models.IStorageClaim, error) {
-	segment, err := d.registry.FindSegmentByID(segmentID)
+func (d *Dealer) getOutputStorageClaim(ctx context.Context, segmentID string) (models.IStorageClaim, error) {
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return nil, err
@@ -124,9 +124,11 @@ func (d *Dealer) getOutputStorageClaim(segmentID string) (models.IStorageClaim, 
 }
 
 func (d *Dealer) tryPurgeInputStorageClaim(segmentID string) {
+	ctx := context.Background()
+
 	logger := d.logger.WithField(dlog.KeySegmentID, segmentID)
 
-	inputClaim, err := d.getInputStorageClaim(segmentID)
+	inputClaim, err := d.getInputStorageClaim(ctx, segmentID)
 
 	if err != nil {
 		logger.WithError(err).
@@ -134,7 +136,7 @@ func (d *Dealer) tryPurgeInputStorageClaim(segmentID string) {
 	}
 
 	if inputClaim != nil {
-		err = d.storageController.PurgeStorageClaim(inputClaim)
+		err = d.storageController.PurgeStorageClaim(ctx, inputClaim)
 
 		if err != nil {
 			logger.WithError(err).
@@ -145,9 +147,11 @@ func (d *Dealer) tryPurgeInputStorageClaim(segmentID string) {
 }
 
 func (d *Dealer) tryPurgeOutputStorageClaim(segmentID string) {
+	ctx := context.Background()
+
 	logger := d.logger.WithField(dlog.KeySegmentID, segmentID)
 
-	outputClaim, err := d.getOutputStorageClaim(segmentID)
+	outputClaim, err := d.getOutputStorageClaim(ctx, segmentID)
 
 	if err != nil {
 		logger.WithError(err).
@@ -155,7 +159,7 @@ func (d *Dealer) tryPurgeOutputStorageClaim(segmentID string) {
 	}
 
 	if outputClaim != nil {
-		err = d.storageController.PurgeStorageClaim(outputClaim)
+		err = d.storageController.PurgeStorageClaim(ctx, outputClaim)
 
 		if err != nil {
 			logger.WithError(err).

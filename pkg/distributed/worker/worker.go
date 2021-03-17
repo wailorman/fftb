@@ -52,7 +52,7 @@ func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkerD
 		logger = ctxlog.New("fftb.worker")
 	}
 
-	performer, err := dealer.AllocatePerformerAuthority(uuid.New().String())
+	performer, err := dealer.AllocatePerformerAuthority(ctx, uuid.New().String())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Obtaining performer authority")
@@ -73,7 +73,7 @@ func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkerD
 func (w *Instance) Start() {
 	go func() {
 		for {
-			freeSegment, err := w.dealer.FindFreeSegment(w.performer)
+			freeSegment, err := w.dealer.FindFreeSegment(w.ctx, w.performer)
 
 			if err != nil {
 				if errors.Is(err, models.ErrNotFound) {
@@ -122,7 +122,7 @@ func proceedSegment(
 	defer wg.Done()
 
 	fail := func(err error) error {
-		return failSegment(logger, wg, performer, dealer, freeSegment, err)
+		return failSegment(ctx, logger, wg, performer, dealer, freeSegment, err)
 	}
 
 	convertSegment, ok := freeSegment.(*models.ConvertSegment)
@@ -163,7 +163,7 @@ func proceedSegment(
 
 			// <-converter.Closed()
 
-			if err = dealer.QuitSegment(performer, freeSegment.GetID()); err != nil {
+			if err = dealer.QuitSegment(ctx, performer, freeSegment.GetID()); err != nil {
 				logger.WithError(err).Warn("Problem with quiting segment")
 			}
 
@@ -183,7 +183,7 @@ func proceedSegment(
 					modProgress := makeProgresserFromConvert(pmsg)
 
 					// TODO: stop on dealer errors
-					if err = dealer.NotifyProcess(performer, freeSegment.GetID(), modProgress); err != nil {
+					if err = dealer.NotifyProcess(ctx, performer, freeSegment.GetID(), modProgress); err != nil {
 						logger.WithError(err).Warn("Problem with notifying process")
 					}
 
@@ -207,7 +207,7 @@ func proceedSegment(
 
 				logger.Info("Segment is done")
 
-				if err = dealer.FinishSegment(performer, freeSegment.GetID()); err != nil {
+				if err = dealer.FinishSegment(ctx, performer, freeSegment.GetID()); err != nil {
 					return fail(errors.Wrap(err, "Sending segment finish report"))
 				}
 
@@ -235,6 +235,7 @@ func moveOutput(
 }
 
 func failSegment(
+	ctx context.Context,
 	logger logrus.FieldLogger,
 	wg chwg.WaitGrouper,
 	performer models.IAuthor,
@@ -248,7 +249,7 @@ func failSegment(
 
 	wg.Add(1)
 
-	dErr := dealer.FailSegment(performer, segment.GetID(), err)
+	dErr := dealer.FailSegment(ctx, performer, segment.GetID(), err)
 
 	if dErr != nil {
 		logger.WithError(err).
@@ -268,13 +269,13 @@ func prepareSegmentIO(
 	convSegment *models.ConvertSegment,
 	tmpPath files.Pather) (*segmentIO, error) {
 
-	inputClaim, err := dealer.GetInputStorageClaim(performer, convSegment.GetID())
+	inputClaim, err := dealer.GetInputStorageClaim(ctx, performer, convSegment.GetID())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Getting input storage claim")
 	}
 
-	outputClaim, err := dealer.AllocateOutputStorageClaim(performer, convSegment.GetID())
+	outputClaim, err := dealer.AllocateOutputStorageClaim(ctx, performer, convSegment.GetID())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Getting output storage claim")

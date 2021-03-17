@@ -40,7 +40,7 @@ type ConvertOrderPayload struct {
 }
 
 // FindOrderByID _
-func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
+func (r *Instance) FindOrderByID(ctx context.Context, id string) (models.IOrder, error) {
 	data, err := r.store.Get(fmt.Sprintf("v1/orders/%s", id))
 
 	if err != nil {
@@ -74,8 +74,8 @@ func (r *Instance) FindOrderByID(id string) (models.IOrder, error) {
 // }
 
 // SearchOrder _
-func (r *Instance) SearchOrder(fctx context.Context, check func(models.IOrder) bool) (models.IOrder, error) {
-	orders, err := r.searchOrders(fctx, false, check)
+func (r *Instance) SearchOrder(ctx context.Context, check func(models.IOrder) bool) (models.IOrder, error) {
+	orders, err := r.searchOrders(ctx, false, check)
 
 	if err != nil {
 		return nil, err
@@ -89,8 +89,8 @@ func (r *Instance) SearchOrder(fctx context.Context, check func(models.IOrder) b
 }
 
 // SearchAllOrders _
-func (r *Instance) SearchAllOrders(fctx context.Context, check func(models.IOrder) bool) ([]models.IOrder, error) {
-	orders, err := r.searchOrders(fctx, true, check)
+func (r *Instance) SearchAllOrders(ctx context.Context, check func(models.IOrder) bool) ([]models.IOrder, error) {
+	orders, err := r.searchOrders(ctx, true, check)
 
 	if err != nil {
 		return nil, err
@@ -100,8 +100,8 @@ func (r *Instance) SearchAllOrders(fctx context.Context, check func(models.IOrde
 }
 
 // PersistOrder _
-func (r *Instance) PersistOrder(modOrder models.IOrder) error {
-	orderBefore, _ := r.FindOrderByID(modOrder.GetID())
+func (r *Instance) PersistOrder(ctx context.Context, modOrder models.IOrder) error {
+	orderBefore, _ := r.FindOrderByID(ctx, modOrder.GetID())
 
 	dlog.WithOrder(r.logger, modOrder).
 		WithField("after", dlog.JSON(modOrder)).

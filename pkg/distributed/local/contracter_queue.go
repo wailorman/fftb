@@ -1,6 +1,7 @@
 package local
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -9,7 +10,7 @@ import (
 )
 
 // AddOrderToQueue _
-func (c *ContracterInstance) AddOrderToQueue(req models.IContracterRequest) (models.IOrder, error) {
+func (c *ContracterInstance) AddOrderToQueue(ctx context.Context, req models.IContracterRequest) (models.IOrder, error) {
 	if validationErr := req.Validate(); validationErr != nil {
 		return nil, validationErr
 	}
@@ -34,7 +35,7 @@ func (c *ContracterInstance) AddOrderToQueue(req models.IContracterRequest) (mod
 		OutFile:   convertRequest.OutFile,
 	}
 
-	err := c.registry.PersistOrder(order)
+	err := c.registry.PersistOrder(ctx, order)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Persisting order")

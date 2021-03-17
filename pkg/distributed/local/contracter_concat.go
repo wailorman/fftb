@@ -18,7 +18,7 @@ func (c *ContracterInstance) PickOrderForConcat(fctx context.Context) (models.IO
 	// TODO: lock
 
 	order, err := c.registry.SearchOrder(fctx, func(order models.IOrder) bool {
-		segments, err := c.dealer.GetSegmentsByOrderID(fctx, order.GetID(), models.EmptySegmentFilters())
+		segments, err := c.dealer.GetSegmentsByOrderID(fctx, c.publisher, order.GetID(), models.EmptySegmentFilters())
 
 		if err != nil {
 			dlog.WithOrder(c.logger, order).
@@ -53,7 +53,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 	g := new(errgroup.Group)
 
 	g.Go(func() error {
-		segments, err := c.dealer.GetSegmentsByOrderID(fctx, order.GetID(), models.EmptySegmentFilters())
+		segments, err := c.dealer.GetSegmentsByOrderID(fctx, c.publisher, order.GetID(), models.EmptySegmentFilters())
 
 		if err != nil {
 			return errors.Wrap(err, "Getting order segments")
@@ -136,7 +136,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 		}
 
 		for _, segment := range segments {
-			err = c.dealer.AcceptSegment(c.publisher, segment.GetID())
+			err = c.dealer.AcceptSegment(fctx, c.publisher, segment.GetID())
 
 			if err != nil {
 				dlog.WithSegment(logger, segment).
@@ -156,7 +156,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 
 	convOrder.State = models.OrderStateFinished
 
-	return c.registry.PersistOrder(convOrder)
+	return c.registry.PersistOrder(fctx, convOrder)
 }
 
 func downloadSegments(
@@ -169,7 +169,7 @@ func downloadSegments(
 	slices := make([]*segm.Segment, 0)
 
 	for _, segment := range segments {
-		outputStorageClaim, err := dealer.GetOutputStorageClaim(publisher, segment.GetID())
+		outputStorageClaim, err := dealer.GetOutputStorageClaim(ctx, publisher, segment.GetID())
 
 		if err != nil {
 			return nil, errors.Wrapf(err, "Getting output storage claim for segment `%s`", segment.GetID())

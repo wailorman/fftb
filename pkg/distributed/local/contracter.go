@@ -45,7 +45,7 @@ func NewContracter(
 	orderMutator models.IOrderMutator,
 	tempPath files.Pather) (*ContracterInstance, error) {
 
-	publisher, err := dealer.AllocatePublisherAuthority("local")
+	publisher, err := dealer.AllocatePublisherAuthority(ctx, "local")
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Allocating publisher authority")
@@ -100,7 +100,7 @@ func (contracter *ContracterInstance) SearchAllSegments(ctx context.Context, sea
 			return nil, ctx.Err()
 		}
 
-		segments, err := contracter.dealer.GetSegmentsByOrderID(ctx, order.GetID(), search)
+		segments, err := contracter.dealer.GetSegmentsByOrderID(ctx, contracter.publisher, order.GetID(), search)
 
 		if err != nil {
 			return nil, errors.Wrapf(err, "Getting segments by order id `%s`", order.GetID())
@@ -114,17 +114,17 @@ func (contracter *ContracterInstance) SearchAllSegments(ctx context.Context, sea
 
 // GetSegmentsByOrderID _
 func (contracter *ContracterInstance) GetSegmentsByOrderID(ctx context.Context, orderID string) ([]models.ISegment, error) {
-	return contracter.dealer.GetSegmentsByOrderID(ctx, orderID, models.EmptySegmentFilters())
+	return contracter.dealer.GetSegmentsByOrderID(ctx, contracter.publisher, orderID, models.EmptySegmentFilters())
 }
 
 // SearchSegmentsByOrderID _
 func (contracter *ContracterInstance) SearchSegmentsByOrderID(ctx context.Context, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
-	return contracter.dealer.GetSegmentsByOrderID(ctx, orderID, search)
+	return contracter.dealer.GetSegmentsByOrderID(ctx, contracter.publisher, orderID, search)
 }
 
 // GetSegmentByID _
-func (contracter *ContracterInstance) GetSegmentByID(id string) (models.ISegment, error) {
-	return contracter.dealer.GetSegmentByID(id)
+func (contracter *ContracterInstance) GetSegmentByID(ctx context.Context, id string) (models.ISegment, error) {
+	return contracter.dealer.GetSegmentByID(ctx, contracter.publisher, id)
 }
 
 // CancelOrderByID _
@@ -132,7 +132,7 @@ func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, order
 	contracter.wg.Add(1)
 	defer contracter.wg.Done()
 
-	order, err := contracter.registry.FindOrderByID(orderID)
+	order, err := contracter.registry.FindOrderByID(ctx, orderID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Getting order by id `%s`", orderID)
@@ -162,7 +162,7 @@ func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, order
 		return errors.Wrap(err, "Cancel order")
 	}
 
-	err = contracter.registry.PersistOrder(order)
+	err = contracter.registry.PersistOrder(ctx, order)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting order to registry")
@@ -174,7 +174,7 @@ func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, order
 // FailOrderByID _
 func (contracter *ContracterInstance) FailOrderByID(ctx context.Context, orderID string, reportedErr error) error {
 
-	order, err := contracter.registry.FindOrderByID(orderID)
+	order, err := contracter.registry.FindOrderByID(ctx, orderID)
 
 	if err != nil {
 		return errors.Wrapf(err, "Getting order by id `%s`", orderID)
@@ -204,7 +204,7 @@ func (contracter *ContracterInstance) FailOrderByID(ctx context.Context, orderID
 		return errors.Wrap(err, "Fail order")
 	}
 
-	err = contracter.registry.PersistOrder(order)
+	err = contracter.registry.PersistOrder(ctx, order)
 
 	if err != nil {
 		return errors.Wrap(err, "Persist order")

@@ -1,6 +1,8 @@
 package local
 
 import (
+	"context"
+
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/files"
@@ -27,7 +29,7 @@ func NewStorageControl(path files.Pather) *StorageControl {
 }
 
 // AllocateStorageClaim _
-func (sc *StorageControl) AllocateStorageClaim(identity string) (models.IStorageClaim, error) {
+func (sc *StorageControl) AllocateStorageClaim(ctx context.Context, identity string) (models.IStorageClaim, error) {
 	file := sc.storagePath.BuildFile(identity)
 
 	err := file.EnsureParentDirExists()
@@ -76,7 +78,7 @@ func (sc *StorageControl) BuildStorageClaim(identity string) (models.IStorageCla
 }
 
 // PurgeStorageClaim _
-func (sc *StorageControl) PurgeStorageClaim(claim models.IStorageClaim) error {
+func (sc *StorageControl) PurgeStorageClaim(ctx context.Context, claim models.IStorageClaim) error {
 	localClaim, ok := claim.(*StorageClaim)
 
 	if !ok {

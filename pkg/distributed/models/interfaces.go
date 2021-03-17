@@ -135,7 +135,7 @@ type IContracterRequest interface {
 type IDealerRequest interface {
 	GetID() string
 	GetType() string
-	GetAuthor() IAuthor
+	// GetAuthor() IAuthor
 	Validate() error
 }
 
@@ -233,9 +233,9 @@ type IContracter interface {
 	SearchAllOrders(ctx context.Context, search IOrderSearchCriteria) ([]IOrder, error)
 	GetAllSegments(ctx context.Context) ([]ISegment, error)
 	SearchAllSegments(ctx context.Context, search ISegmentSearchCriteria) ([]ISegment, error)
-	GetSegmentsByOrderID(fctx context.Context, orderID string) ([]ISegment, error)
-	SearchSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
-	GetSegmentByID(segmentID string) (ISegment, error)
+	GetSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
+	SearchSegmentsByOrderID(ctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
+	GetSegmentByID(ctx context.Context, segmentID string) (ISegment, error)
 	CancelOrderByID(ctx context.Context, orderID string, reason string) error
 }
 
@@ -247,123 +247,90 @@ type IDealer interface {
 
 // IContracterDealer _
 type IContracterDealer interface {
-	AllocatePublisherAuthority(name string) (IAuthor, error)
-	AllocateSegment(req IDealerRequest) (ISegment, error)
+	AllocatePublisherAuthority(ctx context.Context, name string) (IAuthor, error)
+	AllocateSegment(ctx context.Context, publisher IAuthor, req IDealerRequest) (ISegment, error)
 
-	GetOutputStorageClaim(publisher IAuthor, segmentID string) (IStorageClaim, error)
-	AllocateInputStorageClaim(publisher IAuthor, id string) (IStorageClaim, error)
+	GetOutputStorageClaim(ctx context.Context, publisher IAuthor, segmentID string) (IStorageClaim, error)
+	AllocateInputStorageClaim(ctx context.Context, publisher IAuthor, id string) (IStorageClaim, error)
 
-	// FindSegmentByID(id string) (ISegment, error)
-	GetQueuedSegmentsCount(fctx context.Context, publisher IAuthor) (int, error)
-	GetSegmentsByOrderID(fctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
-	// GetSegmentsStatesByOrderID(fctx context.Context, orderID string) (map[string]string, error)
-	GetSegmentByID(segmentID string) (ISegment, error)
+	GetQueuedSegmentsCount(ctx context.Context, publisher IAuthor) (int, error)
+	GetSegmentsByOrderID(ctx context.Context, publisher IAuthor, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
+	GetSegmentByID(ctx context.Context, publisher IAuthor, segmentID string) (ISegment, error)
 
-	NotifyRawUpload(publisher IAuthor, id string, p Progresser) error
-	NotifyResultDownload(publisher IAuthor, id string, p Progresser) error
+	NotifyRawUpload(ctx context.Context, publisher IAuthor, id string, p Progresser) error
+	NotifyResultDownload(ctx context.Context, publisher IAuthor, id string, p Progresser) error
 
-	PublishSegment(publisher IAuthor, id string) error
-	RepublishSegment(publisher IAuthor, id string) error
-	CancelSegment(publisher IAuthor, id string, reason string) error
-	AcceptSegment(publisher IAuthor, id string) error
+	PublishSegment(ctx context.Context, publisher IAuthor, id string) error
+	RepublishSegment(ctx context.Context, publisher IAuthor, id string) error
+	CancelSegment(ctx context.Context, publisher IAuthor, id string, reason string) error
+	AcceptSegment(ctx context.Context, publisher IAuthor, id string) error
 
+	// TODO: make local func
 	ObserveSegments(ctx context.Context, wg chwg.WaitGrouper)
-
-	// TODO: remove, we dont need it now
-	WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{}
-	WaitOnSegmentFailed(ctx context.Context, id string) <-chan error
 }
 
 // IWorkerDealer _
 type IWorkerDealer interface {
-	AllocatePerformerAuthority(name string) (IAuthor, error)
+	AllocatePerformerAuthority(ctx context.Context, name string) (IAuthor, error)
 
-	FindFreeSegment(performer IAuthor) (ISegment, error)
+	FindFreeSegment(ctx context.Context, performer IAuthor) (ISegment, error)
 
-	NotifyRawDownload(performer IAuthor, id string, p Progresser) error
-	NotifyResultUpload(performer IAuthor, id string, p Progresser) error
-	NotifyProcess(performer IAuthor, id string, p Progresser) error
+	NotifyRawDownload(ctx context.Context, performer IAuthor, id string, p Progresser) error
+	NotifyResultUpload(ctx context.Context, performer IAuthor, id string, p Progresser) error
+	NotifyProcess(ctx context.Context, performer IAuthor, id string, p Progresser) error
 
-	FinishSegment(performer IAuthor, id string) error
-	QuitSegment(performer IAuthor, id string) error
-	FailSegment(performer IAuthor, id string, err error) error
+	FinishSegment(ctx context.Context, performer IAuthor, id string) error
+	QuitSegment(ctx context.Context, performer IAuthor, id string) error
+	FailSegment(ctx context.Context, performer IAuthor, id string, err error) error
 
-	GetInputStorageClaim(performer IAuthor, segmentID string) (IStorageClaim, error)
-	AllocateOutputStorageClaim(performer IAuthor, id string) (IStorageClaim, error)
-
-	// TODO: remove, we dont need it now
-	WaitOnSegmentCancelled(ctx context.Context, id string) <-chan struct{}
+	GetInputStorageClaim(ctx context.Context, performer IAuthor, segmentID string) (IStorageClaim, error)
+	AllocateOutputStorageClaim(ctx context.Context, performer IAuthor, id string) (IStorageClaim, error)
 }
 
 // IRegistry _
 type IRegistry interface {
-	FindOrderByID(id string) (IOrder, error)
-	PersistOrder(order IOrder) error
-	// PickOrderFromQueue(context.Context) (IOrder, error)
-	FindSegmentByID(id string) (ISegment, error)
+	FindOrderByID(ctx context.Context, id string) (IOrder, error)
+	PersistOrder(ctx context.Context, order IOrder) error
+	FindSegmentByID(ctx context.Context, id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	PersistSegment(ISegment) error
-	SearchOrder(fctx context.Context, check func(IOrder) bool) (IOrder, error)
-	SearchAllOrders(fctx context.Context, check func(IOrder) bool) ([]IOrder, error)
-	// FindNotLockedSegment(ctx context.Context) (ISegment, error)
-	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
-	// UnlockSegmentByID(segmentID string) error
-	SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
-	SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
+	PersistSegment(ctx context.Context, segment ISegment) error
+	SearchOrder(ctx context.Context, check func(IOrder) bool) (IOrder, error)
+	SearchAllOrders(ctx context.Context, check func(IOrder) bool) ([]IOrder, error)
+	SearchSegment(ctx context.Context, check func(ISegment) bool) (ISegment, error)
+	SearchAllSegments(ctx context.Context, check func(ISegment) bool) ([]ISegment, error)
 	Persist() error
 	Closed() <-chan struct{}
 }
 
 // IContracterRegistry _
 type IContracterRegistry interface {
-	// Persist(ISegment) error
-	// FindByID(string) (ISegment, error)
-	// Destroy(string) (errors)
+	FindOrderByID(ctx context.Context, id string) (IOrder, error)
+	PersistOrder(ctx context.Context, order IOrder) error
 
-	FindOrderByID(id string) (IOrder, error)
-	PersistOrder(order IOrder) error
-	// PickOrderFromQueue(context.Context) (IOrder, error)
-
-	FindSegmentByID(id string) (ISegment, error)
+	FindSegmentByID(ctx context.Context, id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	// FindNotLockedSegment(ctx context.Context) (ISegment, error)
-	PersistSegment(ISegment) error
-	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
-	// UnlockSegmentByID(segmentID string) error
-	// SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
-	// SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
-	SearchOrder(fctx context.Context, check func(IOrder) bool) (IOrder, error)
-	SearchAllOrders(fctx context.Context, check func(IOrder) bool) ([]IOrder, error)
+	PersistSegment(ctx context.Context, segment ISegment) error
+	SearchOrder(ctx context.Context, check func(IOrder) bool) (IOrder, error)
+	SearchAllOrders(ctx context.Context, check func(IOrder) bool) ([]IOrder, error)
 	Persist() error
 	Closed() <-chan struct{}
 }
 
 // IDealerRegistry _
 type IDealerRegistry interface {
-	// Persist(ISegment) error
-	// FindByID(string) (ISegment, error)
-	// Destroy(string) (errors)
-
-	// FindOrderByID(id string) (IOrder, error)
-	// PersistOrder(order IOrder) error
-	// PickOrderFromQueue(context.Context) (IOrder, error)
-
-	FindSegmentByID(id string) (ISegment, error)
+	FindSegmentByID(ctx context.Context, id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	// FindNotLockedSegment(ctx context.Context) (ISegment, error)
-	PersistSegment(ISegment) error
-	// LockSegmentByID(segmentID string, lockedBy IAuthor) error
-	// UnlockSegmentByID(segmentID string) error
-	SearchSegment(fctx context.Context, check func(ISegment) bool) (ISegment, error)
-	SearchAllSegments(fctx context.Context, check func(ISegment) bool) ([]ISegment, error)
+	PersistSegment(ctx context.Context, segment ISegment) error
+	SearchSegment(ctx context.Context, check func(ISegment) bool) (ISegment, error)
+	SearchAllSegments(ctx context.Context, check func(ISegment) bool) ([]ISegment, error)
 	Persist() error
 	Closed() <-chan struct{}
 }
 
 // IStorageController _
 type IStorageController interface {
-	AllocateStorageClaim(name string) (IStorageClaim, error)
-	PurgeStorageClaim(claim IStorageClaim) error
+	AllocateStorageClaim(ctx context.Context, name string) (IStorageClaim, error)
+	PurgeStorageClaim(ctx context.Context, claim IStorageClaim) error
 	BuildStorageClaim(name string) (IStorageClaim, error)
 }
 

@@ -11,14 +11,14 @@ import (
 )
 
 // FindFreeSegment _
-func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, error) {
+func (d *Dealer) FindFreeSegment(ctx context.Context, performer models.IAuthor) (models.ISegment, error) {
 	if !d.freeSegmentLock.TryLockTimeout(LockSegmentTimeout) {
 		return nil, models.ErrLockTimeout
 	}
 
 	defer d.freeSegmentLock.Unlock()
 
-	segment, err := d.registry.SearchSegment(context.TODO(), func(segment models.ISegment) bool {
+	segment, err := d.registry.SearchSegment(ctx, func(segment models.ISegment) bool {
 		return segment.GetCanPerform()
 	})
 
@@ -32,7 +32,7 @@ func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, err
 		return nil, errors.Wrap(err, "Locking segment")
 	}
 
-	err = d.registry.PersistSegment(segment)
+	err = d.registry.PersistSegment(ctx, segment)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Persisting segment")
@@ -42,14 +42,14 @@ func (d *Dealer) FindFreeSegment(performer models.IAuthor) (models.ISegment, err
 }
 
 // GetInputStorageClaim _
-func (d *Dealer) GetInputStorageClaim(performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
+func (d *Dealer) GetInputStorageClaim(ctx context.Context, performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
 	// TODO: match performer
-	return d.getInputStorageClaim(segmentID)
+	return d.getInputStorageClaim(ctx, segmentID)
 }
 
 // AllocateOutputStorageClaim _
-func (d *Dealer) AllocateOutputStorageClaim(performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
-	segment, err := d.registry.FindSegmentByID(segmentID)
+func (d *Dealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (d *Dealer) AllocateOutputStorageClaim(performer models.IAuthor, segmentID 
 	}
 
 	oClaimID := fmt.Sprintf("output_%s_%s_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
-	oClaim, err := d.storageController.AllocateStorageClaim(oClaimID)
+	oClaim, err := d.storageController.AllocateStorageClaim(ctx, oClaimID)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Allocating output storage claim")
@@ -70,7 +70,7 @@ func (d *Dealer) AllocateOutputStorageClaim(performer models.IAuthor, segmentID 
 
 	convertSegment.OutputStorageClaimIdentity = oClaimID
 
-	err = d.registry.PersistSegment(convertSegment)
+	err = d.registry.PersistSegment(ctx, convertSegment)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Persisting output claim identity")
@@ -80,8 +80,8 @@ func (d *Dealer) AllocateOutputStorageClaim(performer models.IAuthor, segmentID 
 }
 
 // FinishSegment _
-func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error {
-	segment, err := d.registry.FindSegmentByID(segmentID)
+func (d *Dealer) FinishSegment(ctx context.Context, performer models.IAuthor, segmentID string) error {
+	segment, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error
 		return errors.Wrap(err, "Finishing segment")
 	}
 
-	err = d.registry.PersistSegment(convertSegment)
+	err = d.registry.PersistSegment(ctx, convertSegment)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting segment")
@@ -114,22 +114,22 @@ func (d *Dealer) FinishSegment(performer models.IAuthor, segmentID string) error
 }
 
 // NotifyProcess _
-func (d *Dealer) NotifyProcess(performer models.IAuthor, segmentID string, p models.Progresser) error {
-	return d.segmentProgress(performer, segmentID, p)
+func (d *Dealer) NotifyProcess(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+	return d.segmentProgress(ctx, performer, segmentID, p)
 }
 
 // NotifyRawDownload _
-func (d *Dealer) NotifyRawDownload(performer models.IAuthor, segmentID string, p models.Progresser) error {
-	return d.segmentProgress(performer, segmentID, p)
+func (d *Dealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+	return d.segmentProgress(ctx, performer, segmentID, p)
 }
 
 // NotifyResultUpload _
-func (d *Dealer) NotifyResultUpload(performer models.IAuthor, segmentID string, p models.Progresser) error {
-	return d.segmentProgress(performer, segmentID, p)
+func (d *Dealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+	return d.segmentProgress(ctx, performer, segmentID, p)
 }
 
-func (d *Dealer) segmentProgress(performer models.IAuthor, segmentID string, p models.Progresser) error {
-	seg, err := d.registry.FindSegmentByID(segmentID)
+func (d *Dealer) segmentProgress(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+	seg, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func (d *Dealer) segmentProgress(performer models.IAuthor, segmentID string, p m
 		return errors.Wrap(err, "Locking segment")
 	}
 
-	err = d.registry.PersistSegment(seg)
+	err = d.registry.PersistSegment(ctx, seg)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting segment")
@@ -153,30 +153,30 @@ func (d *Dealer) segmentProgress(performer models.IAuthor, segmentID string, p m
 }
 
 // AllocatePerformerAuthority _
-func (d *Dealer) AllocatePerformerAuthority(name string) (models.IAuthor, error) {
+func (d *Dealer) AllocatePerformerAuthority(ctx context.Context, name string) (models.IAuthor, error) {
 	authorName := fmt.Sprintf("v1/performers/%s", name)
 
 	return &models.Author{Name: authorName}, nil
 }
 
-// WaitOnSegmentFinished _
-func (d *Dealer) WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{} {
-	panic("not implemented")
-}
+// // WaitOnSegmentFinished _
+// func (d *Dealer) WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{} {
+// 	panic("not implemented")
+// }
 
-// WaitOnSegmentFailed _
-func (d *Dealer) WaitOnSegmentFailed(ctx context.Context, id string) <-chan error {
-	panic("not implemented")
-}
+// // WaitOnSegmentFailed _
+// func (d *Dealer) WaitOnSegmentFailed(ctx context.Context, id string) <-chan error {
+// 	panic("not implemented")
+// }
 
-// WaitOnSegmentCancelled _
-func (d *Dealer) WaitOnSegmentCancelled(ctx context.Context, id string) <-chan struct{} {
-	panic("not implemented")
-}
+// // WaitOnSegmentCancelled _
+// func (d *Dealer) WaitOnSegmentCancelled(ctx context.Context, id string) <-chan struct{} {
+// 	panic("not implemented")
+// }
 
 // FailSegment _
-func (d *Dealer) FailSegment(performer models.IAuthor, id string, reportedErr error) error {
-	segment, err := d.registry.FindSegmentByID(id)
+func (d *Dealer) FailSegment(ctx context.Context, performer models.IAuthor, id string, reportedErr error) error {
+	segment, err := d.registry.FindSegmentByID(ctx, id)
 
 	if err != nil {
 		return errors.Wrapf(err, "Searching segment by id `%s`", id)
@@ -192,7 +192,7 @@ func (d *Dealer) FailSegment(performer models.IAuthor, id string, reportedErr er
 		return errors.Wrap(err, "Failing segment")
 	}
 
-	err = d.registry.PersistSegment(segment)
+	err = d.registry.PersistSegment(ctx, segment)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting segment")
@@ -202,8 +202,8 @@ func (d *Dealer) FailSegment(performer models.IAuthor, id string, reportedErr er
 }
 
 // QuitSegment _
-func (d *Dealer) QuitSegment(performer models.IAuthor, id string) error {
-	seg, err := d.registry.FindSegmentByID(id)
+func (d *Dealer) QuitSegment(ctx context.Context, performer models.IAuthor, id string) error {
+	seg, err := d.registry.FindSegmentByID(ctx, id)
 
 	if err != nil {
 		return err
@@ -227,7 +227,7 @@ func (d *Dealer) QuitSegment(performer models.IAuthor, id string) error {
 		return errors.Wrap(err, "Locking segment")
 	}
 
-	err = d.registry.PersistSegment(seg)
+	err = d.registry.PersistSegment(ctx, seg)
 
 	if err != nil {
 		return errors.Wrap(err, "Persisting segment")

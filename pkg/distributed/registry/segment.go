@@ -49,7 +49,7 @@ const FreeSegmentTimeout = time.Duration(20 * time.Second)
 const SearchTimeout = time.Duration(10 * time.Second)
 
 // FindSegmentByID _
-func (r *Instance) FindSegmentByID(id string) (models.ISegment, error) {
+func (r *Instance) FindSegmentByID(ctx context.Context, id string) (models.ISegment, error) {
 	result, err := r.store.Get(fmt.Sprintf("v1/segments/%s", id))
 
 	if err != nil {
@@ -113,8 +113,8 @@ func (r *Instance) searchSegments(fctx context.Context, multiple bool, check fun
 }
 
 // SearchSegment _
-func (r *Instance) SearchSegment(fctx context.Context, check func(models.ISegment) bool) (models.ISegment, error) {
-	segments, err := r.searchSegments(fctx, false, check)
+func (r *Instance) SearchSegment(ctx context.Context, check func(models.ISegment) bool) (models.ISegment, error) {
+	segments, err := r.searchSegments(ctx, false, check)
 
 	if err != nil {
 		return nil, err
@@ -128,8 +128,8 @@ func (r *Instance) SearchSegment(fctx context.Context, check func(models.ISegmen
 }
 
 // SearchAllSegments _
-func (r *Instance) SearchAllSegments(fctx context.Context, check func(models.ISegment) bool) ([]models.ISegment, error) {
-	segments, err := r.searchSegments(fctx, true, check)
+func (r *Instance) SearchAllSegments(ctx context.Context, check func(models.ISegment) bool) ([]models.ISegment, error) {
+	segments, err := r.searchSegments(ctx, true, check)
 
 	if err != nil {
 		return nil, err
@@ -139,28 +139,28 @@ func (r *Instance) SearchAllSegments(fctx context.Context, check func(models.ISe
 }
 
 // FindNotLockedSegment _
-func (r *Instance) FindNotLockedSegment(fctx context.Context) (models.ISegment, error) {
+func (r *Instance) FindNotLockedSegment(ctx context.Context) (models.ISegment, error) {
 	if !r.freeSegmentLock.TryLockTimeout(FreeSegmentTimeout) {
 		return nil, models.ErrTimeoutReached
 	}
 
 	defer r.freeSegmentLock.Unlock()
 
-	return r.SearchSegment(fctx, func(segment models.ISegment) bool {
+	return r.SearchSegment(ctx, func(segment models.ISegment) bool {
 		return !segment.GetIsLocked() && segment.GetState() == models.SegmentStatePublished
 	})
 }
 
 // FindSegmentsByOrderID _
-func (r *Instance) FindSegmentsByOrderID(fctx context.Context, orderID string) ([]models.ISegment, error) {
-	return r.SearchAllSegments(fctx, func(segment models.ISegment) bool {
+func (r *Instance) FindSegmentsByOrderID(ctx context.Context, orderID string) ([]models.ISegment, error) {
+	return r.SearchAllSegments(ctx, func(segment models.ISegment) bool {
 		return segment.GetOrderID() == orderID
 	})
 }
 
 // PersistSegment _
-func (r *Instance) PersistSegment(modSegment models.ISegment) error {
-	segmentBefore, _ := r.FindSegmentByID(modSegment.GetID())
+func (r *Instance) PersistSegment(ctx context.Context, modSegment models.ISegment) error {
+	segmentBefore, _ := r.FindSegmentByID(ctx, modSegment.GetID())
 
 	dlog.WithSegment(r.logger, modSegment).
 		WithField("after", dlog.JSON(modSegment)).
@@ -188,16 +188,6 @@ func (r *Instance) PersistSegment(modSegment models.ISegment) error {
 	}
 
 	return nil
-}
-
-// LockSegmentByID _
-func (r *Instance) LockSegmentByID(segmentID string, lockedBy models.IAuthor) error {
-	panic("deprecated")
-}
-
-// UnlockSegmentByID _
-func (r *Instance) UnlockSegmentByID(segmentID string) error {
-	panic("deprecated")
 }
 
 func unmarshalSegmentModel(data []byte) (models.ISegment, error) {
