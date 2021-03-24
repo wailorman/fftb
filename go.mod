@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/boltdb/bolt v1.3.1
 	github.com/br0xen/boltbrowser v0.0.0-20200408202924-14bd1cdd41fd // indirect
+	github.com/gin-gonic/gin v1.6.3 // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/go-cmp v0.5.1
@@ -31,5 +32,5 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/yaml.v2 v2.2.7
+	gopkg.in/yaml.v2 v2.2.8
 )
