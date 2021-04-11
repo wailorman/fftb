@@ -88,7 +88,7 @@ func (ct *ConvertSegment) GetIsLocked() bool {
 		return false
 	}
 
-	return time.Now().After(*ct.LockedUntil)
+	return !time.Now().After(*ct.LockedUntil)
 }
 
 // GetLockedBy _

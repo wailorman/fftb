@@ -28,6 +28,9 @@ var ErrUnknownStorageClaimType = errors.New("Unknown storage claim type")
 // ErrMissingStorageClaim _
 var ErrMissingStorageClaim = errors.New("Missing storage claim")
 
+// ErrMissingRequest _
+var ErrMissingRequest = errors.New("Missing request")
+
 // ErrNotFound _
 var ErrNotFound = errors.New("Not found")
 
@@ -273,6 +276,7 @@ type IContracterDealer interface {
 type IWorkerDealer interface {
 	AllocatePerformerAuthority(ctx context.Context, name string) (IAuthor, error)
 
+	// TODO: add search criteria
 	FindFreeSegment(ctx context.Context, performer IAuthor) (ISegment, error)
 
 	NotifyRawDownload(ctx context.Context, performer IAuthor, id string, p Progresser) error
@@ -372,4 +376,9 @@ type PublishSubscriber interface {
 type IAuthor interface {
 	GetName() string
 	IsEqual(IAuthor) bool
+}
+
+// TypeStub _
+type TypeStub struct {
+	Type string `json:"type"`
 }

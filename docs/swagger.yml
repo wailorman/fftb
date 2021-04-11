@@ -1,0 +1,197 @@
+openapi: '3.0.2'
+info:
+  title: API Title
+  version: '1.0'
+servers:
+  - url: https://api.server.test/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  
+  responses:
+    NotFoundResponse:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  
+    UnprocessableEntityResponse:
+      description: Response caused by some validation errors
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          
+  
+    SegmentResponse:
+      description: Segment object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Segment'
+            
+    AuthorityAllocationResponse:
+      description: Success authority allocattion
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Authority'
+  
+  parameters:
+    segmentIdParam:
+      name: id
+      in: path
+      description: Segment ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+      
+  schemas:
+    ProblemDetails:
+      description: RFC 7807 Problem Details for HTTP APIs
+      type: object
+      required:
+        - title
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+  
+    Segment: 
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          
+    Authority:
+      type: object
+      properties:
+        key:
+          type: string
+          description: Key which should be used as bearer token for further requests
+          
+    AuthorityInput:
+      type: object
+      properties:
+        name:
+          type: string
+          
+    ConvertParams:     
+      type: object
+      properties:
+        video_codec:
+          type: string
+          enum:
+            - h264
+            - hevc
+        hw_accel:
+          type: string
+          enum: 
+            - nvenc
+            - videotoolbox
+        video_bit_rate:
+          type: string
+          example: '14M'
+        video_quality:
+          type: integer
+          minimum: 1
+          maximum: 50
+        preset:
+          type: string
+          enum:
+            - slow
+            - medium
+            - fast
+        scale:
+          type: string
+          enum:
+            - '1/2'
+            - '1/4'
+        keyframe_interval:
+          type: integer
+          minimum: 0
+    
+    ConvertDealerRequest:
+      type: object
+      required:
+        - type
+        - id
+        - order_id
+      properties:
+        type:
+          type: string
+          enum: 
+            - convert/v1
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        params:
+          $ref: '#/components/schemas/ConvertParams'
+        muxer:
+          type: string
+          example: 'mp4'
+        position:
+          type: integer
+          minimum: 0
+        
+paths:
+  # /authorities:
+  #   post:
+  #     operationId: allocateAuthority
+  #     responses:
+  #       '200':
+  #         $ref: '#/components/responses/AuthorityAllocationResponse'
+
+  # /segments/free:
+  #   post:
+  #     security:
+  #       - bearerAuth: []
+  #     operationId: findFreeSegment
+  #     responses:
+  #       '200':
+  #         $ref: '#/components/responses/SegmentResponse'
+        
+  /segments:
+    post:
+      operationId: allocateSegment
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertDealerRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SegmentResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntityResponse'
+          
+  # /segments/{id}:
+  #   get:
+  #     security:
+  #       - bearerAuth: []
+  #     operationId: getSegmentByID
+  #     parameters:
+  #       - $ref: '#/components/parameters/segmentIdParam'
+  #     responses:
+  #       '200':
+  #         $ref: '#/components/responses/SegmentResponse'

@@ -65,16 +65,22 @@ func DistributedCliConfig() *cli.Command {
 						return errors.Wrap(err, "Initializing app")
 					}
 
-					err = app.StartWorker()
+					// err = app.StartWorker()
 
-					if err != nil {
-						return errors.Wrap(err, "Starting worker")
-					}
+					// if err != nil {
+					// 	return errors.Wrap(err, "Starting worker")
+					// }
 
 					err = app.StartContracter()
 
 					if err != nil {
 						return errors.Wrap(err, "Starting contracter")
+					}
+
+					err = app.StartAPI()
+
+					if err != nil {
+						return errors.Wrap(err, "Starting API")
 					}
 
 					<-app.Wait()

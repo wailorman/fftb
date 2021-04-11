@@ -42,7 +42,6 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 			OrderIdentity: convOrder.Identity,
 			Params:        convOrder.Params,
 			Muxer:         muxer,
-			Author:        contracter.publisher,
 			Position:      slice.Position,
 		}
 

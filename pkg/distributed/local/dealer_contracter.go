@@ -12,14 +12,14 @@ import (
 
 // AllocateSegment _
 func (d *Dealer) AllocateSegment(ctx context.Context, publisher models.IAuthor, req models.IDealerRequest) (models.ISegment, error) {
-	if validationErr := req.Validate(); validationErr != nil {
-		return nil, validationErr
-	}
-
 	convertReq, ok := req.(*models.ConvertDealerRequest)
 
 	if !ok {
 		return nil, models.ErrUnknownRequestType
+	}
+
+	if validationErr := req.Validate(); validationErr != nil {
+		return nil, errors.Wrap(validationErr, "Validation error")
 	}
 
 	d.logger.WithField(dlog.KeyOrderID, convertReq.OrderIdentity).

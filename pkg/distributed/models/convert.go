@@ -37,15 +37,13 @@ func (cr ConvertContracterRequest) Validate() error {
 
 // ConvertDealerRequest _
 type ConvertDealerRequest struct {
-	Type          string
-	Identity      string
-	OrderIdentity string
+	Type          string `json:"type"`
+	Identity      string `json:"id"`
+	OrderIdentity string `json:"order_id"`
 
-	Params   convert.Params
-	Muxer    string
-	Position int
-
-	Author IAuthor
+	Params   convert.Params `json:"params"`
+	Muxer    string         `json:"muxer"`
+	Position int            `json:"position"`
 }
 
 // GetID _
@@ -58,17 +56,11 @@ func (cdr *ConvertDealerRequest) GetType() string {
 	return ConvertV1Type
 }
 
-// GetAuthor _
-func (cdr *ConvertDealerRequest) GetAuthor() IAuthor {
-	return cdr.Author
-}
-
 // Validate _
 func (cdr ConvertDealerRequest) Validate() error {
 	return validation.ValidateStruct(&cdr,
 		validation.Field(&cdr.Type, validation.Required, validation.In(ConvertV1Type)),
 		validation.Field(&cdr.Identity, validation.Required),
 		validation.Field(&cdr.OrderIdentity, validation.Required),
-		validation.Field(&cdr.Muxer, validation.Required),
-		validation.Field(&cdr.Author, validation.Required))
+		validation.Field(&cdr.Muxer, validation.Required))
 }
