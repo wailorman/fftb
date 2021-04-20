@@ -22,7 +22,7 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 	convOrder, ok := modOrder.(*models.ConvertOrder)
 
 	if !ok {
-		return models.ErrUnknownOrderType
+		return models.ErrUnknownType
 	}
 
 	slices, err := contracter.SliceConvertOrder(fctx, convOrder)

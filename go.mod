@@ -4,9 +4,9 @@ go 1.16
 
 require (
 	github.com/boltdb/bolt v1.3.1
+	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
-	github.com/golang/mock v1.1.1
-	github.com/golang/protobuf v1.4.2 // indirect
+	github.com/golang/mock v1.5.0
 	github.com/google/go-cmp v0.5.1
 	github.com/google/uuid v1.1.2
 	github.com/kr/pretty v0.1.0 // indirect
@@ -30,7 +30,6 @@ require (
 	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )

@@ -172,7 +172,7 @@ func (co *ConvertOrder) setLastError(err error) {
 	co.LastError = err.Error()
 }
 
-// Validate _
+// Validate validates convert order object and returns ValidationError or nil
 func (co ConvertOrder) Validate() error {
 	validators := make([]*validation.FieldRules, 0)
 
@@ -198,5 +198,5 @@ func (co ConvertOrder) Validate() error {
 		validation.Field(&co.OutFile, validation.Required),
 		validation.Field(&co.Publisher, validation.Required))
 
-	return validation.ValidateStruct(&co, validators...)
+	return WrapOzzoValidationError(validation.ValidateStruct(&co, validators...))
 }

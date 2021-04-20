@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -36,18 +37,30 @@ func newAPIError(err error) (code int, body *remote.ProblemDetails) {
 		code = 404
 	}
 
-	if errors.Is(err, models.ErrUnknownSegmentType) {
+	if errors.Is(err, models.ErrUnknownType) {
 		code = 422
 	}
 
 	detail := err.Error()
 	errType := "github.com/wailorman/fftb"
 
-	return code, &remote.ProblemDetails{
+	problemDetails := &remote.ProblemDetails{
 		Type:   &errType,
 		Title:  cause.Error(),
 		Detail: &detail,
 	}
+
+	var validationErr models.ValidationError
+	if errors.As(err, &validationErr) {
+		problemDetails.Title = models.ErrInvalid.Error()
+		problemDetails.Fields = &remote.ProblemDetails_Fields{}
+
+		for key, val := range validationErr.Errors() {
+			problemDetails.Fields.Set(key, val)
+		}
+	}
+
+	return code, problemDetails
 }
 
 func buildConvertSegment(convSeg *models.ConvertSegment) *remote.Segment {
@@ -91,7 +104,7 @@ func NewDealerHandler(ctx context.Context, dealer models.IDealer) *DealerHandler
 // 	convSeg, ok := seg.(*models.ConvertSegment)
 
 // 	if !ok {
-// 		c.JSON(newAPIError(models.ErrUnknownSegmentType))
+// 		c.JSON(newAPIError(models.ErrUnknownType))
 // 		return
 // 	}
 
@@ -111,7 +124,7 @@ func NewDealerHandler(ctx context.Context, dealer models.IDealer) *DealerHandler
 // 	convSeg, ok := seg.(*models.ConvertSegment)
 
 // 	if !ok {
-// 		c.JSON(newAPIError(models.ErrUnknownSegmentType))
+// 		c.JSON(newAPIError(models.ErrUnknownType))
 // 		return
 // 	}
 
@@ -130,6 +143,8 @@ func (dh *DealerHandler) AllocateSegment(c echo.Context) error {
 
 	seg, err := dh.dealer.AllocateSegment(dh.ctx, localAuthor, params)
 
+	fmt.Printf("seg: %#v\n", seg)
+
 	if err != nil {
 		c.JSON(newAPIError(err))
 		return nil
@@ -138,11 +153,13 @@ func (dh *DealerHandler) AllocateSegment(c echo.Context) error {
 	convSeg, ok := seg.(*models.ConvertSegment)
 
 	if !ok {
-		c.JSON(newAPIError(errors.Wrapf(models.ErrUnknownSegmentType, "Received `%s`", seg.GetType())))
+		c.JSON(newAPIError(errors.Wrapf(models.ErrUnknownType, "Received `%s`", seg.GetType())))
 		return nil
 	}
 
-	c.JSON(200, buildConvertSegment(convSeg))
+	response := buildConvertSegment(convSeg)
+
+	c.JSON(200, response)
 	return nil
 }
 

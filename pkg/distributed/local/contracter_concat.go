@@ -47,7 +47,7 @@ func (c *ContracterInstance) ConcatOrder(fctx context.Context, order models.IOrd
 	convOrder, ok := order.(*models.ConvertOrder)
 
 	if !ok {
-		return errors.Wrapf(models.ErrUnknownOrderType, "Received `%s`", order.GetType())
+		return errors.Wrapf(models.ErrUnknownType, "Received `%s`", order.GetType())
 	}
 
 	g := new(errgroup.Group)

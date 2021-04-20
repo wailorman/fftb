@@ -29,10 +29,12 @@ func (cr *ConvertContracterRequest) GetAuthor() IAuthor {
 
 // Validate _
 func (cr ConvertContracterRequest) Validate() error {
-	return validation.ValidateStruct(&cr,
+	verr := validation.ValidateStruct(&cr,
 		validation.Field(&cr.InFile, validation.Required),
 		validation.Field(&cr.OutFile, validation.Required),
 		validation.Field(&cr.Author, validation.Required))
+
+	return WrapOzzoValidationError(verr)
 }
 
 // ConvertDealerRequest _
@@ -58,9 +60,11 @@ func (cdr *ConvertDealerRequest) GetType() string {
 
 // Validate _
 func (cdr ConvertDealerRequest) Validate() error {
-	return validation.ValidateStruct(&cdr,
+	verr := validation.ValidateStruct(&cdr,
 		validation.Field(&cdr.Type, validation.Required, validation.In(ConvertV1Type)),
 		validation.Field(&cdr.Identity, validation.Required),
 		validation.Field(&cdr.OrderIdentity, validation.Required),
 		validation.Field(&cdr.Muxer, validation.Required))
+
+	return WrapOzzoValidationError(verr)
 }

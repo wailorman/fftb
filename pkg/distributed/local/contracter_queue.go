@@ -18,7 +18,7 @@ func (c *ContracterInstance) AddOrderToQueue(ctx context.Context, req models.ICo
 	convertRequest, ok := req.(*models.ConvertContracterRequest)
 
 	if !ok {
-		return nil, errors.Wrap(models.ErrUnknownRequestType, fmt.Sprintf("Received request with type `%s`", req.GetType()))
+		return nil, errors.Wrap(models.ErrUnknownType, fmt.Sprintf("Received request with type `%s`", req.GetType()))
 	}
 
 	if c.publisher == nil {

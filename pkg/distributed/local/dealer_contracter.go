@@ -15,7 +15,7 @@ func (d *Dealer) AllocateSegment(ctx context.Context, publisher models.IAuthor, 
 	convertReq, ok := req.(*models.ConvertDealerRequest)
 
 	if !ok {
-		return nil, models.ErrUnknownRequestType
+		return nil, models.ErrUnknownType
 	}
 
 	if validationErr := req.Validate(); validationErr != nil {
@@ -65,7 +65,7 @@ func (d *Dealer) AllocateInputStorageClaim(ctx context.Context, publisher models
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
-		return nil, models.ErrUnknownSegmentType
+		return nil, models.ErrUnknownType
 	}
 
 	iClaimID := fmt.Sprintf("input_%s_%s_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
@@ -101,7 +101,7 @@ func (d *Dealer) CancelSegment(ctx context.Context, publisher models.IAuthor, se
 	// convertSegment, ok := segment.(*models.ConvertSegment)
 
 	// if !ok {
-	// 	return models.ErrUnknownSegmentType
+	// 	return models.ErrUnknownType
 	// }
 
 	dlog.WithSegment(d.logger, segment).
@@ -136,7 +136,7 @@ func (d *Dealer) AcceptSegment(ctx context.Context, publisher models.IAuthor, se
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
-		return models.ErrUnknownSegmentType
+		return models.ErrUnknownType
 	}
 
 	logger.Info("Accepting segment")

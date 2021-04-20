@@ -2,67 +2,12 @@ package models
 
 import (
 	"context"
-	"errors"
 	"io"
 	"time"
 
 	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
 )
-
-// ErrUnknownRequestType _
-var ErrUnknownRequestType = errors.New("Unknown request type")
-
-// ErrUnknownOrderType _
-var ErrUnknownOrderType = errors.New("Unknown order type")
-
-// ErrUnknownSegmentType _
-var ErrUnknownSegmentType = errors.New("Unknown segment type")
-
-// ErrNotImplemented _
-var ErrNotImplemented = errors.New("Not implemented")
-
-// ErrUnknownStorageClaimType _
-var ErrUnknownStorageClaimType = errors.New("Unknown storage claim type")
-
-// ErrMissingStorageClaim _
-var ErrMissingStorageClaim = errors.New("Missing storage claim")
-
-// ErrMissingRequest _
-var ErrMissingRequest = errors.New("Missing request")
-
-// ErrNotFound _
-var ErrNotFound = errors.New("Not found")
-
-// ErrTimeoutReached _
-var ErrTimeoutReached = errors.New("Timeout reached")
-
-// ErrLockTimeout _
-var ErrLockTimeout = errors.New("Free segment lock timeout") // TODO: Subst. with ErrLockTimeoutReached
-
-// ErrLockTimeoutReached _
-var ErrLockTimeoutReached = errors.New("Lock timeout reached")
-
-// ErrMissingLockAuthor _
-var ErrMissingLockAuthor = errors.New("Missing lock author")
-
-// ErrSegmentIsLocked _
-var ErrSegmentIsLocked = errors.New("Segment is locked")
-
-// ErrMissingSegment _
-var ErrMissingSegment = errors.New("Missing Segment")
-
-// ErrMissingOrder _
-var ErrMissingOrder = errors.New("Missing Order")
-
-// ErrMissingPublisher _
-var ErrMissingPublisher = errors.New("Missing publisher")
-
-// ErrMissingPerformer _
-var ErrMissingPerformer = errors.New("Missing performer")
-
-// ErrPerformerMismatch _
-var ErrPerformerMismatch = errors.New("Performer mismatch")
 
 // // ErrCancelled _
 // var ErrCancelled = errors.New("Cancelled")
@@ -139,6 +84,7 @@ type IDealerRequest interface {
 	GetID() string
 	GetType() string
 	// GetAuthor() IAuthor
+	// TODO: validate segment & order id format
 	Validate() error
 }
 

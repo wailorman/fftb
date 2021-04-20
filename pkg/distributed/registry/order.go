@@ -229,7 +229,7 @@ func (dbOrder *Order) toModel() (models.IOrder, error) {
 
 		modOrder = convOrder
 	default:
-		return nil, models.ErrUnknownOrderType
+		return nil, models.ErrUnknownType
 	}
 
 	err := deserializeOrderPayload(dbOrder, modOrder)
@@ -266,7 +266,7 @@ func serializeOrderPayload(modOrder models.IOrder, dbOrder *Order) error {
 	convOrder, ok := modOrder.(*models.ConvertOrder)
 
 	if !ok {
-		return models.ErrUnknownOrderType
+		return models.ErrUnknownType
 	}
 
 	payload := &ConvertOrderPayload{
@@ -288,13 +288,13 @@ func serializeOrderPayload(modOrder models.IOrder, dbOrder *Order) error {
 
 func deserializeOrderPayload(dbOrder *Order, modOrder models.IOrder) error {
 	if dbOrder.Kind != models.ConvertV1Type {
-		return models.ErrUnknownOrderType
+		return models.ErrUnknownType
 	}
 
 	convOrder, ok := modOrder.(*models.ConvertOrder)
 
 	if !ok {
-		return models.ErrUnknownOrderType
+		return models.ErrUnknownType
 	}
 
 	convPayload := &ConvertOrderPayload{}

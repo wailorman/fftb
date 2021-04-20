@@ -294,5 +294,5 @@ func (ct ConvertSegment) Validate() error {
 		validation.Field(&ct.Muxer, validation.Required),
 		validation.Field(&ct.Publisher, validation.Required))
 
-	return validation.ValidateStruct(&ct, validators...)
+	return WrapOzzoValidationError(validation.ValidateStruct(&ct, validators...))
 }

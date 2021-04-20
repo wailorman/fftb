@@ -81,7 +81,7 @@ func (d *Dealer) getInputStorageClaim(ctx context.Context, segmentID string) (mo
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
-		return nil, models.ErrUnknownSegmentType
+		return nil, models.ErrUnknownType
 	}
 
 	if convertSegment.InputStorageClaimIdentity == "" {
@@ -107,7 +107,7 @@ func (d *Dealer) getOutputStorageClaim(ctx context.Context, segmentID string) (m
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
-		return nil, models.ErrUnknownSegmentType
+		return nil, models.ErrUnknownType
 	}
 
 	if convertSegment.OutputStorageClaimIdentity == "" {

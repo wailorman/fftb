@@ -1,0 +1,62 @@
+package models
+
+import (
+	"github.com/pkg/errors"
+)
+
+// ErrUnknownType _
+var ErrUnknownType = errors.New("Unknown type")
+
+// ErrNotImplemented _
+var ErrNotImplemented = errors.New("Not implemented")
+
+// ErrUnknownStorageClaimType _
+var ErrUnknownStorageClaimType = errors.New("Unknown storage claim type")
+
+// ErrMissingStorageClaim _
+var ErrMissingStorageClaim = errors.New("Missing storage claim")
+
+// ErrMissingRequest _
+var ErrMissingRequest = errors.New("Missing request")
+
+// ErrUnknown _
+var ErrUnknown = errors.New("Unknown error")
+
+// ErrInvalid _
+var ErrInvalid = errors.New("Validation error")
+
+// ErrNotFound _
+var ErrNotFound = errors.New("Not found")
+
+// ErrTimeoutReached _
+var ErrTimeoutReached = errors.New("Timeout reached")
+
+// ErrLockTimeout _
+var ErrLockTimeout = errors.New("Free segment lock timeout") // TODO: Subst. with ErrLockTimeoutReached
+
+// ErrLockTimeoutReached _
+var ErrLockTimeoutReached = errors.New("Lock timeout reached")
+
+// ErrMissingLockAuthor _
+var ErrMissingLockAuthor = errors.New("Missing lock author")
+
+// ErrSegmentIsLocked _
+var ErrSegmentIsLocked = errors.New("Segment is locked")
+
+// ErrMissingSegment _
+var ErrMissingSegment = errors.New("Missing Segment")
+
+// ErrMissingOrder _
+var ErrMissingOrder = errors.New("Missing Order")
+
+// ErrMissingPublisher _
+var ErrMissingPublisher = errors.New("Missing publisher")
+
+// ErrMissingPerformer _
+var ErrMissingPerformer = errors.New("Missing performer")
+
+// ErrPerformerMismatch _
+var ErrPerformerMismatch = errors.New("Performer mismatch")
+
+// ErrWrongResponse _
+var ErrWrongResponse = errors.New("Failed to parse response")

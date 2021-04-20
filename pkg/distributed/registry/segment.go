@@ -222,7 +222,7 @@ func (dbSegment *Segment) marshal() ([]byte, error) {
 
 func (dbSegment *Segment) toModel() (models.ISegment, error) {
 	if dbSegment.Kind != models.ConvertV1Type {
-		return nil, models.ErrUnknownSegmentType
+		return nil, models.ErrUnknownType
 	}
 
 	modSeg := &models.ConvertSegment{}
@@ -260,7 +260,7 @@ func (dbSegment *Segment) fromModel(modSegment models.ISegment) error {
 	var err error
 
 	if modSegment.GetType() != models.ConvertV1Type {
-		return models.ErrUnknownSegmentType
+		return models.ErrUnknownType
 	}
 
 	err = serializeSegmentPayload(modSegment, dbSegment)
@@ -296,7 +296,7 @@ func serializeSegmentPayload(modSeg models.ISegment, dbSeg *Segment) error {
 	convSeg, ok := modSeg.(*models.ConvertSegment)
 
 	if !ok {
-		return models.ErrUnknownSegmentType
+		return models.ErrUnknownType
 	}
 
 	payload := &ConvertSegmentPayload{
@@ -317,13 +317,13 @@ func serializeSegmentPayload(modSeg models.ISegment, dbSeg *Segment) error {
 
 func deserializeSegmentPayload(dbSeg *Segment, modSeg models.ISegment) error {
 	if dbSeg.Kind != models.ConvertV1Type {
-		return models.ErrUnknownSegmentType
+		return models.ErrUnknownType
 	}
 
 	convSeg, ok := modSeg.(*models.ConvertSegment)
 
 	if !ok {
-		return models.ErrUnknownSegmentType
+		return models.ErrUnknownType
 	}
 
 	convPayload := &ConvertSegmentPayload{}

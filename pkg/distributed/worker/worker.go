@@ -128,7 +128,7 @@ func proceedSegment(
 	convertSegment, ok := freeSegment.(*models.ConvertSegment)
 
 	if !ok {
-		return fail(errors.Wrapf(models.ErrUnknownSegmentType, "Received type `%s`", freeSegment.GetType()))
+		return fail(errors.Wrapf(models.ErrUnknownType, "Received type `%s`", freeSegment.GetType()))
 	}
 
 	sio, err := prepareSegmentIO(ctx, performer, dealer, storageClient, convertSegment, tmpPath)

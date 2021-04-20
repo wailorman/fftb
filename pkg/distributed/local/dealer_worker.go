@@ -58,7 +58,7 @@ func (d *Dealer) AllocateOutputStorageClaim(ctx context.Context, performer model
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
-		return nil, models.ErrUnknownSegmentType
+		return nil, models.ErrUnknownType
 	}
 
 	oClaimID := fmt.Sprintf("output_%s_%s_%s", segment.GetOrderID(), segment.GetID(), uuid.New().String())
@@ -90,7 +90,7 @@ func (d *Dealer) FinishSegment(ctx context.Context, performer models.IAuthor, se
 	convertSegment, ok := segment.(*models.ConvertSegment)
 
 	if !ok {
-		return models.ErrUnknownSegmentType
+		return models.ErrUnknownType
 	}
 
 	dlog.WithSegment(d.logger, segment).
