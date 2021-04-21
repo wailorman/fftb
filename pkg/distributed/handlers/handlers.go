@@ -2,119 +2,123 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-
-	// "github.com/wailorman/fftb/pkg/distributed/remote"
-	"github.com/wailorman/fftb/pkg/distributed/remote"
+	"github.com/wailorman/fftb/pkg/distributed/schema"
 )
-
-// TODO: remove
-var localAuthor models.IAuthor = &models.Author{Name: "local"}
 
 // DealerHandler _
 type DealerHandler struct {
-	ctx    context.Context
-	dealer models.IDealer
+	ctx             context.Context
+	dealer          models.IDealer
+	authoritySecret []byte
+	sessionSecret   []byte
 }
 
-// APIError _
-type APIError struct {
-	Type   string `json:"type"`
-	Title  string `json:"title"`
-	Detail string `json:"detail"`
-}
-
-func newAPIError(err error) (code int, body *remote.ProblemDetails) {
-	cause := errors.Cause(err)
-
-	code = 422
-
-	if errors.Is(err, models.ErrNotFound) {
-		code = 404
-	}
-
-	if errors.Is(err, models.ErrUnknownType) {
-		code = 422
-	}
-
-	detail := err.Error()
-	errType := "github.com/wailorman/fftb"
-
-	problemDetails := &remote.ProblemDetails{
-		Type:   &errType,
-		Title:  cause.Error(),
-		Detail: &detail,
-	}
-
-	var validationErr models.ValidationError
-	if errors.As(err, &validationErr) {
-		problemDetails.Title = models.ErrInvalid.Error()
-		problemDetails.Fields = &remote.ProblemDetails_Fields{}
-
-		for key, val := range validationErr.Errors() {
-			problemDetails.Fields.Set(key, val)
-		}
-	}
-
-	return code, problemDetails
-}
-
-func buildConvertSegment(convSeg *models.ConvertSegment) *remote.Segment {
-	return &remote.Segment{
-		Id: convSeg.Identity,
-		// OrderID:  convSeg.OrderIdentity,
-		// Type:     convSeg.Type,
-		// State:    convSeg.State,
-		// Params:   convSeg.Params,
-		// Muxer:    convSeg.Muxer,
-		// Position: convSeg.Position,
+func buildConvertSegment(convSeg *models.ConvertSegment) *schema.ConvertSegment {
+	return &schema.ConvertSegment{
+		Id:       convSeg.Identity,
+		OrderId:  convSeg.OrderIdentity,
+		Type:     convSeg.Type,
+		Muxer:    convSeg.Muxer,
+		Position: convSeg.Position,
+		Params: schema.ConvertParams{
+			HwAccel:          convSeg.Params.HWAccel,
+			KeyframeInterval: convSeg.Params.KeyframeInterval,
+			Preset:           convSeg.Params.Preset,
+			Scale:            convSeg.Params.Scale,
+			VideoBitRate:     convSeg.Params.VideoBitRate,
+			VideoCodec:       convSeg.Params.VideoCodec,
+			VideoQuality:     convSeg.Params.VideoQuality,
+		},
 	}
 }
 
 // NewDealerHandler _
-func NewDealerHandler(ctx context.Context, dealer models.IDealer) *DealerHandler {
+func NewDealerHandler(
+	ctx context.Context,
+	dealer models.IDealer,
+	authoritySecret []byte,
+	sessionSecret []byte) *DealerHandler {
+
 	return &DealerHandler{
-		ctx:    ctx,
-		dealer: dealer,
+		ctx:             ctx,
+		dealer:          dealer,
+		authoritySecret: authoritySecret,
+		sessionSecret:   sessionSecret,
 	}
 }
 
-// // AllocateAuthority _
-// // // POST /authorities
-// func (dh *DealerHandler) AllocateAuthority(c *gin.Context) {
-// 	c.JSON(200, &models.RemoteAuthority{
-// 		Authority: "local",
-// 	})
-// }
+// AllocateAuthority _
+// POST /authorities
+func (dh *DealerHandler) AllocateAuthority(c echo.Context) error {
+	params := &schema.AuthorityInput{}
+	if err := c.Bind(&params); err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// // FindFreeSegment _
-// // // POST /segments/free | Segment
-// func (dh *DealerHandler) FindFreeSegment(c *gin.Context) {
-// 	seg, err := dh.dealer.FindFreeSegment(dh.ctx, localAuthor)
+	key, err := CreateAuthorityToken(dh.authoritySecret, params.Name)
 
-// 	if err != nil {
-// 		c.JSON(newAPIError(err))
-// 		return
-// 	}
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// 	convSeg, ok := seg.(*models.ConvertSegment)
+	return c.JSON(200, &schema.Authority{Key: key})
+}
 
-// 	if !ok {
-// 		c.JSON(newAPIError(models.ErrUnknownType))
-// 		return
-// 	}
+// CreateSession _
+// POST /sessions
+func (dh *DealerHandler) CreateSession(c echo.Context) error {
+	params := &schema.SessionInput{}
+	if err := c.Bind(&params); err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// 	c.JSON(200, buildConvertSegment(convSeg))
-// }
+	key, err := CreateSessionToken(dh.authoritySecret, dh.sessionSecret, params.AuthorityKey)
+
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
+
+	return c.JSON(200, &schema.Session{Key: key})
+}
+
+// FindFreeSegment _
+// // POST /segments/free | Segment
+func (dh *DealerHandler) FindFreeSegment(c echo.Context) error {
+	author := extractAuthor(c)
+
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
+
+	seg, err := dh.dealer.FindFreeSegment(c.Request().Context(), author)
+
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
+
+	convSeg, ok := seg.(*models.ConvertSegment)
+
+	if !ok {
+		return c.JSON(newAPIError(errors.Wrapf(models.ErrUnknown, "Received unknown segment type `%s`", seg.GetType())))
+	}
+
+	return c.JSON(200, buildConvertSegment(convSeg))
+}
 
 // GetSegmentByID _
 // // GET /segments/{id} | Segment
-func (dh *DealerHandler) GetSegmentByID(c echo.Context, id remote.SegmentIdParam) error {
-	seg, err := dh.dealer.GetSegmentByID(dh.ctx, localAuthor, string(id))
+func (dh *DealerHandler) GetSegmentByID(c echo.Context, id schema.SegmentIdParam) error {
+	author := extractAuthor(c)
+
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
+
+	seg, err := dh.dealer.GetSegmentByID(c.Request().Context(), author, string(id))
 
 	if err != nil {
 		return c.JSON(newAPIError(err))
@@ -132,15 +136,19 @@ func (dh *DealerHandler) GetSegmentByID(c echo.Context, id remote.SegmentIdParam
 // AllocateSegment _
 // // POST /segments
 func (dh *DealerHandler) AllocateSegment(c echo.Context) error {
+	author := extractAuthor(c)
+
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
+
 	params := &models.ConvertDealerRequest{}
 
 	if err := c.Bind(&params); err != nil {
 		return c.JSON(newAPIError(err))
 	}
 
-	seg, err := dh.dealer.AllocateSegment(dh.ctx, localAuthor, params)
-
-	fmt.Printf("seg: %#v\n", seg)
+	seg, err := dh.dealer.AllocateSegment(c.Request().Context(), author, params)
 
 	if err != nil {
 		return c.JSON(newAPIError(err))

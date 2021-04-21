@@ -1,8 +1,8 @@
 # https://github.com/deepmap/oapi-codegen#using-oapi-codegen
 
 output:
-  pkg/distributed/remote/client.gen.go
-package: remote
+  pkg/distributed/schema/client.gen.go
+package: schema
 generate:
   - types
   - client

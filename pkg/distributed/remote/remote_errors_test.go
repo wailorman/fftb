@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/wailorman/fftb/pkg/distributed/models"
+	"github.com/wailorman/fftb/pkg/distributed/schema"
 )
 
 func makeHTTPResponse(status int) *http.Response {
@@ -23,11 +24,11 @@ func Test__parseError__Validation(t *testing.T) {
 		nil,
 		makeHTTPResponse(422),
 		nil,
-		&ProblemDetails{
+		&schema.ProblemDetails{
 			Title:  models.ErrInvalid.Error(),
 			Type:   &pdType,
 			Detail: &pdDetails,
-			Fields: &ProblemDetails_Fields{
+			Fields: &schema.ProblemDetails_Fields{
 				AdditionalProperties: map[string]string{
 					"id": "blank",
 				},
@@ -58,7 +59,7 @@ func Test__parseError__UnknownType(t *testing.T) {
 		nil,
 		makeHTTPResponse(422),
 		nil,
-		&ProblemDetails{
+		&schema.ProblemDetails{
 			Title: models.ErrUnknownType.Error(),
 			Type:  &pdType,
 		},

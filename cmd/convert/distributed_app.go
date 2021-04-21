@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -20,7 +19,6 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
-	"github.com/wailorman/fftb/pkg/distributed/remote"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs/ubolt"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
 	"github.com/wailorman/fftb/pkg/files"
@@ -136,11 +134,11 @@ func (a *DistributedConvertApp) StartContracter() error {
 
 // StartAPI _
 func (a *DistributedConvertApp) StartAPI() error {
-	h := handlers.NewDealerHandler(a.ctx, a.dealer)
-
-	e := echo.New()
-
-	remote.RegisterHandlers(e, h)
+	e := handlers.NewDealerAPIRouter(
+		a.ctx,
+		a.dealer,
+		[]byte("authority_secret"),
+		[]byte("session_secret"))
 
 	return e.Start(":8080")
 }

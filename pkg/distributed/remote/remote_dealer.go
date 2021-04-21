@@ -2,15 +2,27 @@ package remote
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
+	"github.com/wailorman/fftb/pkg/distributed/schema"
+	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // APIWrapper _
 type APIWrapper interface {
-	AllocateSegmentWithResponse(ctx context.Context, body AllocateSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AllocateSegmentResponse, error)
-	GetSegmentByIDWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error)
+	AllocateSegmentWithResponse(ctx context.Context, body schema.AllocateSegmentJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.AllocateSegmentResponse, error)
+	GetSegmentByIDWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.GetSegmentByIDResponse, error)
+	AllocateAuthorityWithResponse(ctx context.Context, body schema.AllocateAuthorityJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.AllocateAuthorityResponse, error)
+	CreateSessionWithResponse(ctx context.Context, body schema.CreateSessionJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.CreateSessionResponse, error)
+	FindFreeSegmentWithResponse(ctx context.Context, reqEditors ...schema.RequestEditorFn) (*schema.FindFreeSegmentResponse, error)
+}
+
+// SessionCreator _
+type SessionCreator interface {
+	CreateSessionWithResponse(ctx context.Context, body schema.CreateSessionJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.CreateSessionResponse, error)
 }
 
 // Dealer _
@@ -30,48 +42,110 @@ func NewDealer(apiWrapper APIWrapper) *Dealer {
 // 	panic("not implemented")
 // }
 
-func buildAllocateSegmentRequest(req models.IDealerRequest) (AllocateSegmentJSONRequestBody, error) {
+func buildAllocateSegmentRequest(req models.IDealerRequest) (schema.AllocateSegmentJSONRequestBody, error) {
 	if req == nil {
-		return AllocateSegmentJSONRequestBody{},
+		return schema.AllocateSegmentJSONRequestBody{},
 			models.ErrMissingRequest
 	}
 
 	convReq, ok := req.(*models.ConvertDealerRequest)
 
 	if !ok {
-		return AllocateSegmentJSONRequestBody{},
+		return schema.AllocateSegmentJSONRequestBody{},
 			errors.Wrapf(models.ErrUnknownType, "Unknown request type: `%s`", req.GetType())
 	}
 
-	body := AllocateSegmentJSONRequestBody{
+	body := schema.AllocateSegmentJSONRequestBody{
 		Type:     models.ConvertV1Type,
 		Id:       convReq.Identity,
 		OrderId:  convReq.OrderIdentity,
-		Muxer:    &convReq.Muxer,
-		Position: &convReq.Position,
+		Muxer:    convReq.Muxer,
+		Position: convReq.Position,
 
-		Params: &ConvertParams{
-			HwAccel:          &convReq.Params.HWAccel,
-			KeyframeInterval: &convReq.Params.KeyframeInterval,
-			Preset:           &convReq.Params.Preset,
-			Scale:            &convReq.Params.Scale,
-			VideoBitRate:     &convReq.Params.VideoBitRate,
-			VideoCodec:       &convReq.Params.VideoCodec,
-			VideoQuality:     &convReq.Params.VideoQuality,
+		Params: schema.ConvertParams{
+			HwAccel:          convReq.Params.HWAccel,
+			KeyframeInterval: convReq.Params.KeyframeInterval,
+			Preset:           convReq.Params.Preset,
+			Scale:            convReq.Params.Scale,
+			VideoBitRate:     convReq.Params.VideoBitRate,
+			VideoCodec:       convReq.Params.VideoCodec,
+			VideoQuality:     convReq.Params.VideoQuality,
 		},
 	}
 
 	return body, nil
 }
 
-func toModelSegment(seg *Segment) (models.ISegment, error) {
+func toModelSegment(seg *schema.ConvertSegment) (models.ISegment, error) {
 	if seg == nil {
 		return nil, errors.Wrap(models.ErrUnknown, "Missing success response")
 	}
 
 	return &models.ConvertSegment{
-		Identity: seg.Id,
+		Identity:      seg.Id,
+		OrderIdentity: seg.OrderId,
+		Type:          seg.Type,
+		Muxer:         seg.Muxer,
+		Position:      seg.Position,
+		Params: convert.Params{
+			HWAccel:          seg.Params.HwAccel,
+			KeyframeInterval: seg.Params.KeyframeInterval,
+			Preset:           seg.Params.Preset,
+			Scale:            seg.Params.Scale,
+			VideoBitRate:     seg.Params.VideoBitRate,
+			VideoCodec:       seg.Params.VideoCodec,
+			VideoQuality:     seg.Params.VideoQuality,
+		},
 	}, nil
+}
+
+func withAuthor(author models.IAuthor) schema.RequestEditorFn {
+	return func(ctx context.Context, req *http.Request) error {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", author.GetSessionKey()))
+		return nil
+	}
+}
+
+func withUnauthorizedRetry(ctx context.Context, ca SessionCreator, author models.IAuthor, retryable func() error) error {
+	firstErr := retryable()
+
+	if firstErr == nil {
+		return nil
+	}
+
+	if errors.Is(firstErr, models.ErrInvalidSessionKey) || errors.Is(firstErr, models.ErrMissingAccessToken) {
+		newSessionKey, err := createSession(ctx, ca, author.GetAuthorityKey())
+
+		if err != nil {
+			return errors.Wrap(err, "Trying to create new session")
+		}
+
+		author.SetSessionKey(newSessionKey)
+
+		return retryable()
+	}
+
+	return firstErr
+}
+
+func createSession(ctx context.Context, ca SessionCreator, authorityKey string) (string, error) {
+	body := schema.CreateSessionJSONRequestBody{
+		AuthorityKey: authorityKey,
+	}
+
+	response, reqErr := ca.CreateSessionWithResponse(ctx, body)
+
+	err := parseError(reqErr, response.HTTPResponse, response.JSON422)
+
+	if err != nil {
+		return "", err
+	}
+
+	if response.JSON200 == nil {
+		return "", errors.Wrap(models.ErrUnknown, "Missing success response")
+	}
+
+	return response.JSON200.Key, nil
 }
 
 // AllocateSegment _
@@ -86,9 +160,14 @@ func (rd *Dealer) AllocateSegment(
 		return nil, errors.Wrap(err, "Building allocate segment request")
 	}
 
-	response, reqErr := rd.apiWrapper.AllocateSegmentWithResponse(ctx, body)
+	var response *schema.AllocateSegmentResponse
+	var reqErr error
 
-	err = parseError(reqErr, response.HTTPResponse, response.JSON422)
+	err = withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.AllocateSegmentWithResponse(ctx, body, withAuthor(publisher))
+		pErr := parseError(reqErr, response.HTTPResponse, response.JSON422, response.JSON401)
+		return pErr
+	})
 
 	if err != nil {
 		return nil, err
@@ -119,9 +198,14 @@ func (rd *Dealer) AllocateSegment(
 
 // GetSegmentByID _
 func (rd *Dealer) GetSegmentByID(ctx context.Context, publisher models.IAuthor, segmentID string) (models.ISegment, error) {
-	response, reqErr := rd.apiWrapper.GetSegmentByIDWithResponse(ctx, SegmentIdParam(segmentID))
+	var response *schema.GetSegmentByIDResponse
+	var reqErr error
 
-	err := parseError(reqErr, response.HTTPResponse, response.JSON404)
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.GetSegmentByIDWithResponse(ctx, schema.SegmentIdParam(segmentID), withAuthor(publisher))
+		pErr := parseError(reqErr, response.HTTPResponse, response.JSON404, response.JSON401)
+		return pErr
+	})
 
 	if err != nil {
 		return nil, err
@@ -170,10 +254,23 @@ func (rd *Dealer) GetSegmentByID(ctx context.Context, publisher models.IAuthor, 
 // 	panic("not implemented")
 // }
 
-// // FindFreeSegment _
-// func (rd *Dealer) FindFreeSegment(ctx context.Context, performer models.IAuthor) (models.ISegment, error) {
-// 	panic("not implemented")
-// }
+// FindFreeSegment _
+func (rd *Dealer) FindFreeSegment(ctx context.Context, performer models.IAuthor) (models.ISegment, error) {
+	var response *schema.FindFreeSegmentResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
+		response, reqErr = rd.apiWrapper.FindFreeSegmentWithResponse(ctx, withAuthor(performer))
+		pErr := parseError(reqErr, response.HTTPResponse, response.JSON404, response.JSON401)
+		return pErr
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return toModelSegment(response.JSON200)
+}
 
 // // NotifyRawDownload _
 // func (rd *Dealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {

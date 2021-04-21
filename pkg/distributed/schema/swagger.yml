@@ -12,34 +12,48 @@ components:
       bearerFormat: JWT
   
   responses:
-    NotFoundResponse:
+    ResponseNotFound:
       description: Not found
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
   
-    UnprocessableEntityResponse:
+    ResponseUnprocessableEntity:
       description: Response caused by some validation errors
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
-          
+   
   
-    SegmentResponse:
-      description: Segment object
+    ResponseUnauthorized:
+      description: Response caused by invalid (or missing) access token
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Segment'
+            $ref: '#/components/schemas/ProblemDetails'
+   
+    ResponseSegment:
+      description: ConvertSegment object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConvertSegment'
             
-    AuthorityAllocationResponse:
+    ResponseAllocateAuthority:
       description: Success authority allocattion
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Authority'
+            
+    ResponseCreateSession:
+      description: Success session creation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Session'
   
   parameters:
     segmentIdParam:
@@ -69,30 +83,79 @@ components:
           additionalProperties:
             type: string
   
-    Segment: 
+    ConvertSegment: 
       type: object
       required:
+        - type
         - id
+        - order_id
+        - params
+        - muxer
+        - position
       properties:
+        type:
+          type: string
+          enum: 
+            - convert/v1
         id:
           type: string
           format: uuid
+        order_id:
+          type: string
+          format: uuid
+        params:
+          required: true
+          $ref: '#/components/schemas/ConvertParams'
+        muxer:
+          type: string
+          example: 'mp4'
+        position:
+          type: integer
+          minimum: 0
           
     Authority:
       type: object
+      required:
+        - key
       properties:
         key:
           type: string
-          description: Key which should be used as bearer token for further requests
+          
+    Session:
+      type: object
+      required:
+        - key
+      properties:
+        key:
+          type: string
           
     AuthorityInput:
       type: object
+      required:
+        - name
       properties:
         name:
+          type: string
+          minimum: 1
+          
+    SessionInput:
+      type: object
+      required:
+        - authority_key
+      properties:
+        authority_key:
           type: string
           
     ConvertParams:     
       type: object
+      required:
+        - video_codec
+        - hw_accel
+        - video_bit_rate
+        - video_quality
+        - preset
+        - scale
+        - keyframe_interval
       properties:
         video_codec:
           type: string
@@ -132,6 +195,9 @@ components:
         - type
         - id
         - order_id
+        - params
+        - muxer
+        - position
       properties:
         type:
           type: string
@@ -144,6 +210,7 @@ components:
           type: string
           format: uuid
         params:
+          required: true
           $ref: '#/components/schemas/ConvertParams'
         muxer:
           type: string
@@ -153,21 +220,48 @@ components:
           minimum: 0
         
 paths:
-  # /authorities:
-  #   post:
-  #     operationId: allocateAuthority
-  #     responses:
-  #       '200':
-  #         $ref: '#/components/responses/AuthorityAllocationResponse'
-
-  # /segments/free:
-  #   post:
-  #     security:
-  #       - bearerAuth: []
-  #     operationId: findFreeSegment
-  #     responses:
-  #       '200':
-  #         $ref: '#/components/responses/SegmentResponse'
+  /authorities:
+    post:
+      operationId: allocateAuthority
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorityInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseAllocateAuthority'
+        '422':
+          $ref: '#/components/responses/ResponseUnprocessableEntity'
+ 
+  /sessions:
+    post:
+      operationId: createSession
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionInput'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseCreateSession'
+        '422':
+          $ref: '#/components/responses/ResponseUnprocessableEntity'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+ 
+  /segments/free:
+    post:
+      security:
+        - bearerAuth: []
+      operationId: findFreeSegment
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseSegment'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
         
   /segments:
     post:
@@ -181,9 +275,11 @@ paths:
               $ref: '#/components/schemas/ConvertDealerRequest'
       responses:
         '200':
-          $ref: '#/components/responses/SegmentResponse'
+          $ref: '#/components/responses/ResponseSegment'
         '422':
-          $ref: '#/components/responses/UnprocessableEntityResponse'
+          $ref: '#/components/responses/ResponseUnprocessableEntity'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
           
   /segments/{id}:
     get:
@@ -194,6 +290,8 @@ paths:
         - $ref: '#/components/parameters/segmentIdParam'
       responses:
         '200':
-          $ref: '#/components/responses/SegmentResponse'
+          $ref: '#/components/responses/ResponseSegment'
         '404':
-          $ref: '#/components/responses/NotFoundResponse'
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'

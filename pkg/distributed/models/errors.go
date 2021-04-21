@@ -57,3 +57,18 @@ var ErrMissingPerformer = errors.New("Missing performer")
 
 // ErrPerformerMismatch _
 var ErrPerformerMismatch = errors.New("Performer mismatch")
+
+// ErrUnauthorized _
+var ErrUnauthorized = errors.New("Unauthorized")
+
+// ErrMissingAuthor _
+var ErrMissingAuthor = errors.New("Missing author") // TODO: replace above with this error
+
+// ErrInvalidAuthorityKey _
+var ErrInvalidAuthorityKey = errors.New("Invalid authority key")
+
+// ErrInvalidSessionKey _
+var ErrInvalidSessionKey = errors.New("Invalid session key")
+
+// ErrMissingAccessToken _
+var ErrMissingAccessToken = errors.New("Missing access token")

@@ -59,12 +59,34 @@ const CancellationReasonNotAccepted = "not_accepted"
 
 // Author _
 type Author struct {
-	Name string `json:"name"`
+	Name         string `json:"name"`
+	AuthorityKey string `json:"authority_key,omitempty"`
+	SessionKey   string `json:"session_key,omitempty"`
 }
 
 // GetName _
 func (a *Author) GetName() string {
 	return a.Name
+}
+
+// GetAuthorityKey _
+func (a *Author) GetAuthorityKey() string {
+	return a.AuthorityKey
+}
+
+// GetSessionKey _
+func (a *Author) GetSessionKey() string {
+	return a.SessionKey
+}
+
+// SetAuthorityKey _
+func (a *Author) SetAuthorityKey(key string) {
+	a.AuthorityKey = key
+}
+
+// SetSessionKey _
+func (a *Author) SetSessionKey(key string) {
+	a.SessionKey = key
 }
 
 // IsEqual _
@@ -321,6 +343,10 @@ type PublishSubscriber interface {
 // IAuthor _
 type IAuthor interface {
 	GetName() string
+	GetAuthorityKey() string
+	SetAuthorityKey(key string)
+	GetSessionKey() string
+	SetSessionKey(key string)
 	IsEqual(IAuthor) bool
 }
 

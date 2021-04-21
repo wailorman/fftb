@@ -6,9 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
+	"github.com/wailorman/fftb/pkg/distributed/schema"
 )
 
-func parseError(clientErr error, httpResponse *http.Response, details ...*ProblemDetails) error {
+func parseError(clientErr error, httpResponse *http.Response, details ...*schema.ProblemDetails) error {
 	if clientErr != nil {
 		return errors.Wrap(clientErr, "API request failed")
 	}
@@ -17,7 +18,7 @@ func parseError(clientErr error, httpResponse *http.Response, details ...*Proble
 		return models.ErrUnknown
 	}
 
-	var targetDetails *ProblemDetails
+	var targetDetails *schema.ProblemDetails
 
 	for _, detail := range details {
 		if detail != nil {
@@ -38,52 +39,21 @@ func parseError(clientErr error, httpResponse *http.Response, details ...*Proble
 		return nil
 	}
 
+	if httpResponse.StatusCode == http.StatusUnauthorized {
+		var cause error
+
+		switch targetDetails.Title {
+		default:
+			cause = getKnownError(targetDetails.Title)
+		}
+
+		return errors.Wrapf(cause, errCtx(httpResponse, targetDetails))
+	}
+
 	if httpResponse.StatusCode == http.StatusUnprocessableEntity {
 		var cause error
 
 		switch targetDetails.Title {
-		case models.ErrUnknownType.Error():
-			cause = models.ErrUnknownType
-
-		case models.ErrUnknownStorageClaimType.Error():
-			cause = models.ErrUnknownStorageClaimType
-
-		case models.ErrMissingStorageClaim.Error():
-			cause = models.ErrMissingStorageClaim
-
-		case models.ErrMissingRequest.Error():
-			cause = models.ErrMissingRequest
-
-		case models.ErrTimeoutReached.Error():
-			cause = models.ErrTimeoutReached
-
-		case models.ErrLockTimeout.Error():
-			cause = models.ErrLockTimeout
-
-		case models.ErrLockTimeoutReached.Error():
-			cause = models.ErrLockTimeoutReached
-
-		case models.ErrMissingLockAuthor.Error():
-			cause = models.ErrMissingLockAuthor
-
-		case models.ErrSegmentIsLocked.Error():
-			cause = models.ErrSegmentIsLocked
-
-		case models.ErrMissingSegment.Error():
-			cause = models.ErrMissingSegment
-
-		case models.ErrMissingOrder.Error():
-			cause = models.ErrMissingOrder
-
-		case models.ErrMissingPublisher.Error():
-			cause = models.ErrMissingPublisher
-
-		case models.ErrMissingPerformer.Error():
-			cause = models.ErrMissingPerformer
-
-		case models.ErrPerformerMismatch.Error():
-			cause = models.ErrPerformerMismatch
-
 		case models.ErrInvalid.Error():
 			if targetDetails.Fields != nil && *&targetDetails.Fields.AdditionalProperties != nil {
 				cause = models.NewValidationError(*&targetDetails.Fields.AdditionalProperties)
@@ -92,7 +62,7 @@ func parseError(clientErr error, httpResponse *http.Response, details ...*Proble
 			}
 
 		default:
-			cause = models.ErrUnknown
+			cause = getKnownError(targetDetails.Title)
 		}
 
 		return errors.Wrapf(cause, errCtx(httpResponse, targetDetails))
@@ -101,10 +71,11 @@ func parseError(clientErr error, httpResponse *http.Response, details ...*Proble
 	return errors.Wrapf(models.ErrUnknown, *targetDetails.Detail)
 }
 
-func errCtx(httpResponse *http.Response, details *ProblemDetails) string {
+func errCtx(httpResponse *http.Response, details *schema.ProblemDetails) string {
 	infoFormat := "HTTP %d - `%s` (`%s`, description: `%s`)"
 
-	var detail, eType string
+	detail := ""
+	eType := ""
 
 	if details.Detail != nil {
 		detail = string(*details.Detail)
@@ -120,4 +91,68 @@ func errCtx(httpResponse *http.Response, details *ProblemDetails) string {
 		eType}
 
 	return fmt.Sprintf(infoFormat, httpResponse.StatusCode, errCtxValues)
+}
+
+func getKnownError(errStr string) error {
+	switch errStr {
+	case models.ErrUnknownType.Error():
+		return models.ErrUnknownType
+
+	case models.ErrUnknownStorageClaimType.Error():
+		return models.ErrUnknownStorageClaimType
+
+	case models.ErrMissingStorageClaim.Error():
+		return models.ErrMissingStorageClaim
+
+	case models.ErrMissingRequest.Error():
+		return models.ErrMissingRequest
+
+	case models.ErrTimeoutReached.Error():
+		return models.ErrTimeoutReached
+
+	case models.ErrLockTimeout.Error():
+		return models.ErrLockTimeout
+
+	case models.ErrLockTimeoutReached.Error():
+		return models.ErrLockTimeoutReached
+
+	case models.ErrMissingLockAuthor.Error():
+		return models.ErrMissingLockAuthor
+
+	case models.ErrSegmentIsLocked.Error():
+		return models.ErrSegmentIsLocked
+
+	case models.ErrMissingSegment.Error():
+		return models.ErrMissingSegment
+
+	case models.ErrMissingOrder.Error():
+		return models.ErrMissingOrder
+
+	case models.ErrMissingPublisher.Error():
+		return models.ErrMissingPublisher
+
+	case models.ErrMissingPerformer.Error():
+		return models.ErrMissingPerformer
+
+	case models.ErrPerformerMismatch.Error():
+		return models.ErrPerformerMismatch
+
+	case models.ErrMissingAuthor.Error():
+		return models.ErrMissingAuthor
+
+	case models.ErrUnauthorized.Error():
+		return models.ErrUnauthorized
+
+	case models.ErrInvalidAuthorityKey.Error():
+		return models.ErrInvalidAuthorityKey
+
+	case models.ErrInvalidSessionKey.Error():
+		return models.ErrInvalidSessionKey
+
+	case models.ErrMissingAccessToken.Error():
+		return models.ErrMissingAccessToken
+
+	default:
+		return models.ErrUnknown
+	}
 }
