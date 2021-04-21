@@ -80,3 +80,27 @@ func Test__AllocateSegment(t *testing.T) {
 		}
 	}
 }
+
+func Test__GetSegmentByID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	localDealer := mock_models.NewMockIDealer(ctrl)
+
+	localDealer.
+		EXPECT().
+		GetSegmentByID(gomock.Any(), gomock.Any(), "123").
+		Return(&models.ConvertSegment{Identity: "123"}, nil)
+
+	apiClient, err := remotifyDealer(localDealer)
+
+	if assert.NoError(t, err) {
+		rd := remote.NewDealer(apiClient)
+
+		seg, err := rd.GetSegmentByID(context.Background(), nil, "123")
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, "123", seg.GetID())
+		}
+	}
+}

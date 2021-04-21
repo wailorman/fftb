@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 )
@@ -60,6 +61,12 @@ type ProblemDetails_Fields struct {
 type Segment struct {
 	Id string `json:"id"`
 }
+
+// SegmentIdParam defines model for segmentIdParam.
+type SegmentIdParam string
+
+// RFC 7807 Problem Details for HTTP APIs
+type NotFoundResponse ProblemDetails
 
 // SegmentResponse defines model for SegmentResponse.
 type SegmentResponse Segment
@@ -203,6 +210,9 @@ type ClientInterface interface {
 	AllocateSegmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	AllocateSegment(ctx context.Context, body AllocateSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSegmentByID request
+	GetSegmentByID(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) AllocateSegmentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -219,6 +229,18 @@ func (c *Client) AllocateSegmentWithBody(ctx context.Context, contentType string
 
 func (c *Client) AllocateSegment(ctx context.Context, body AllocateSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAllocateSegmentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSegmentByID(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSegmentByIDRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -265,6 +287,40 @@ func NewAllocateSegmentRequestWithBody(server string, contentType string, body i
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetSegmentByIDRequest generates requests for GetSegmentByID
+func NewGetSegmentByIDRequest(server string, id SegmentIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -316,6 +372,9 @@ type ClientWithResponsesInterface interface {
 	AllocateSegmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AllocateSegmentResponse, error)
 
 	AllocateSegmentWithResponse(ctx context.Context, body AllocateSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AllocateSegmentResponse, error)
+
+	// GetSegmentByID request
+	GetSegmentByIDWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error)
 }
 
 type AllocateSegmentResponse struct {
@@ -341,6 +400,29 @@ func (r AllocateSegmentResponse) StatusCode() int {
 	return 0
 }
 
+type GetSegmentByIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Segment
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSegmentByIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSegmentByIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // AllocateSegmentWithBodyWithResponse request with arbitrary body returning *AllocateSegmentResponse
 func (c *ClientWithResponses) AllocateSegmentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AllocateSegmentResponse, error) {
 	rsp, err := c.AllocateSegmentWithBody(ctx, contentType, body, reqEditors...)
@@ -356,6 +438,15 @@ func (c *ClientWithResponses) AllocateSegmentWithResponse(ctx context.Context, b
 		return nil, err
 	}
 	return ParseAllocateSegmentResponse(rsp)
+}
+
+// GetSegmentByIDWithResponse request returning *GetSegmentByIDResponse
+func (c *ClientWithResponses) GetSegmentByIDWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error) {
+	rsp, err := c.GetSegmentByID(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSegmentByIDResponse(rsp)
 }
 
 // ParseAllocateSegmentResponse parses an HTTP response from a AllocateSegmentWithResponse call
@@ -391,11 +482,47 @@ func ParseAllocateSegmentResponse(rsp *http.Response) (*AllocateSegmentResponse,
 	return response, nil
 }
 
+// ParseGetSegmentByIDResponse parses an HTTP response from a GetSegmentByIDWithResponse call
+func ParseGetSegmentByIDResponse(rsp *http.Response) (*GetSegmentByIDResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSegmentByIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Segment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (POST /segments)
 	AllocateSegment(ctx echo.Context) error
+
+	// (GET /segments/{id})
+	GetSegmentByID(ctx echo.Context, id SegmentIdParam) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -411,6 +538,24 @@ func (w *ServerInterfaceWrapper) AllocateSegment(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.AllocateSegment(ctx)
+	return err
+}
+
+// GetSegmentByID converts echo context to params.
+func (w *ServerInterfaceWrapper) GetSegmentByID(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetSegmentByID(ctx, id)
 	return err
 }
 
@@ -443,5 +588,6 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.POST(baseURL+"/segments", wrapper.AllocateSegment)
+	router.GET(baseURL+"/segments/:id", wrapper.GetSegmentByID)
 
 }

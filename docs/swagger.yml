@@ -185,13 +185,15 @@ paths:
         '422':
           $ref: '#/components/responses/UnprocessableEntityResponse'
           
-  # /segments/{id}:
-  #   get:
-  #     security:
-  #       - bearerAuth: []
-  #     operationId: getSegmentByID
-  #     parameters:
-  #       - $ref: '#/components/parameters/segmentIdParam'
-  #     responses:
-  #       '200':
-  #         $ref: '#/components/responses/SegmentResponse'
+  /segments/{id}:
+    get:
+      security:
+        - bearerAuth: []
+      operationId: getSegmentByID
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/SegmentResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundResponse'

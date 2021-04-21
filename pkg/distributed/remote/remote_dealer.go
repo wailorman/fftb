@@ -10,6 +10,7 @@ import (
 // APIWrapper _
 type APIWrapper interface {
 	AllocateSegmentWithResponse(ctx context.Context, body AllocateSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AllocateSegmentResponse, error)
+	GetSegmentByIDWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error)
 }
 
 // Dealer _
@@ -63,6 +64,16 @@ func buildAllocateSegmentRequest(req models.IDealerRequest) (AllocateSegmentJSON
 	return body, nil
 }
 
+func toModelSegment(seg *Segment) (models.ISegment, error) {
+	if seg == nil {
+		return nil, errors.Wrap(models.ErrUnknown, "Missing success response")
+	}
+
+	return &models.ConvertSegment{
+		Identity: seg.Id,
+	}, nil
+}
+
 // AllocateSegment _
 func (rd *Dealer) AllocateSegment(
 	ctx context.Context,
@@ -83,13 +94,7 @@ func (rd *Dealer) AllocateSegment(
 		return nil, err
 	}
 
-	if response.JSON200 == nil {
-		return nil, errors.Wrap(models.ErrWrongResponse, "Missing success response")
-	}
-
-	return &models.ConvertSegment{
-		Identity: response.JSON200.Id,
-	}, nil
+	return toModelSegment(response.JSON200)
 }
 
 // // GetOutputStorageClaim _
@@ -112,10 +117,18 @@ func (rd *Dealer) AllocateSegment(
 // 	panic("not implemented")
 // }
 
-// // GetSegmentByID _
-// func (rd *Dealer) GetSegmentByID(ctx context.Context, publisher models.IAuthor, segmentID string) (models.ISegment, error) {
-// 	panic("not implemented")
-// }
+// GetSegmentByID _
+func (rd *Dealer) GetSegmentByID(ctx context.Context, publisher models.IAuthor, segmentID string) (models.ISegment, error) {
+	response, reqErr := rd.apiWrapper.GetSegmentByIDWithResponse(ctx, SegmentIdParam(segmentID))
+
+	err := parseError(reqErr, response.HTTPResponse, response.JSON404)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return toModelSegment(response.JSON200)
+}
 
 // // NotifyRawUpload _
 // func (rd *Dealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, id string, p models.Progresser) error {

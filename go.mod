@@ -4,6 +4,8 @@ go 1.16
 
 require (
 	github.com/boltdb/bolt v1.3.1
+	github.com/deepmap/oapi-codegen v1.6.1 // indirect
+	github.com/go-chi/chi v4.0.2+incompatible // indirect
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang/mock v1.5.0

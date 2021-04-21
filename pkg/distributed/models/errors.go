@@ -57,6 +57,3 @@ var ErrMissingPerformer = errors.New("Missing performer")
 
 // ErrPerformerMismatch _
 var ErrPerformerMismatch = errors.New("Performer mismatch")
-
-// ErrWrongResponse _
-var ErrWrongResponse = errors.New("Failed to parse response")

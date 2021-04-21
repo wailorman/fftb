@@ -111,25 +111,23 @@ func NewDealerHandler(ctx context.Context, dealer models.IDealer) *DealerHandler
 // 	c.JSON(200, buildConvertSegment(convSeg))
 // }
 
-// // GetSegmentByID _
-// // // GET /segments/{id} | Segment
-// func (dh *DealerHandler) GetSegmentByID(c *gin.Context) {
-// 	seg, err := dh.dealer.GetSegmentByID(dh.ctx, localAuthor, c.Param("id"))
+// GetSegmentByID _
+// // GET /segments/{id} | Segment
+func (dh *DealerHandler) GetSegmentByID(c echo.Context, id remote.SegmentIdParam) error {
+	seg, err := dh.dealer.GetSegmentByID(dh.ctx, localAuthor, string(id))
 
-// 	if err != nil {
-// 		c.JSON(newAPIError(err))
-// 		return
-// 	}
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// 	convSeg, ok := seg.(*models.ConvertSegment)
+	convSeg, ok := seg.(*models.ConvertSegment)
 
-// 	if !ok {
-// 		c.JSON(newAPIError(models.ErrUnknownType))
-// 		return
-// 	}
+	if !ok {
+		return c.JSON(newAPIError(models.ErrUnknownType))
+	}
 
-// 	c.JSON(200, buildConvertSegment(convSeg))
-// }
+	return c.JSON(200, buildConvertSegment(convSeg))
+}
 
 // AllocateSegment _
 // // POST /segments
@@ -137,8 +135,7 @@ func (dh *DealerHandler) AllocateSegment(c echo.Context) error {
 	params := &models.ConvertDealerRequest{}
 
 	if err := c.Bind(&params); err != nil {
-		c.JSON(newAPIError(err))
-		return nil
+		return c.JSON(newAPIError(err))
 	}
 
 	seg, err := dh.dealer.AllocateSegment(dh.ctx, localAuthor, params)
@@ -146,21 +143,18 @@ func (dh *DealerHandler) AllocateSegment(c echo.Context) error {
 	fmt.Printf("seg: %#v\n", seg)
 
 	if err != nil {
-		c.JSON(newAPIError(err))
-		return nil
+		return c.JSON(newAPIError(err))
 	}
 
 	convSeg, ok := seg.(*models.ConvertSegment)
 
 	if !ok {
-		c.JSON(newAPIError(errors.Wrapf(models.ErrUnknownType, "Received `%s`", seg.GetType())))
-		return nil
+		return c.JSON(newAPIError(errors.Wrapf(models.ErrUnknownType, "Received `%s`", seg.GetType())))
 	}
 
 	response := buildConvertSegment(convSeg)
 
-	c.JSON(200, response)
-	return nil
+	return c.JSON(200, response)
 }
 
 // // PublishSegment _
