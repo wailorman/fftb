@@ -24,6 +24,7 @@ func Test__parseError__Validation(t *testing.T) {
 		nil,
 		makeHTTPResponse(422),
 		nil,
+		nil,
 		&schema.ProblemDetails{
 			Title:  models.ErrInvalid.Error(),
 			Type:   &pdType,
@@ -59,6 +60,7 @@ func Test__parseError__UnknownType(t *testing.T) {
 		nil,
 		makeHTTPResponse(422),
 		nil,
+		nil,
 		&schema.ProblemDetails{
 			Title: models.ErrUnknownType.Error(),
 			Type:  &pdType,
@@ -66,27 +68,31 @@ func Test__parseError__UnknownType(t *testing.T) {
 		nil,
 	)
 
-	assert.Equalf(
-		t,
-		true,
-		errors.Is(apiErr, models.ErrUnknownType),
-		"Expected Unknown Type error, received `%#v`", apiErr,
-	)
+	if assert.NotNil(t, apiErr) {
+		assert.Equalf(
+			t,
+			true,
+			errors.Is(apiErr, models.ErrUnknownType),
+			"Expected Unknown Type error, received `%#v`", apiErr,
+		)
+	}
 }
 
 func Test__parseError__NotFound(t *testing.T) {
 	apiErr := parseError(nil, makeHTTPResponse(404), nil, nil, nil)
 
-	assert.Equalf(
-		t,
-		true,
-		errors.Is(apiErr, models.ErrNotFound),
-		"Expected not found, received `%#v`", apiErr,
-	)
+	if assert.NotNil(t, apiErr) {
+		assert.Equalf(
+			t,
+			true,
+			errors.Is(apiErr, models.ErrNotFound),
+			"Expected not found, received `%#v`", apiErr,
+		)
+	}
 }
 
 func Test__parseError__Success(t *testing.T) {
-	apiErr := parseError(nil, makeHTTPResponse(200), nil, nil, nil)
+	apiErr := parseError(nil, makeHTTPResponse(200), nil, nil, nil, nil)
 
 	assert.Nilf(
 		t,
@@ -95,15 +101,36 @@ func Test__parseError__Success(t *testing.T) {
 	)
 }
 
+func Test__parseError__UnknownErr(t *testing.T) {
+	apiErr := parseError(nil, makeHTTPResponse(500), []byte("Service unavailable"), nil, nil, nil)
+
+	if assert.NotNil(t, apiErr) {
+		assert.Equalf(
+			t,
+			true,
+			errors.Is(apiErr, models.ErrUnknown),
+			"Expected not found, received `%#v`", apiErr,
+		)
+
+		assert.Contains(
+			t,
+			apiErr.Error(),
+			"Service unavailable",
+		)
+	}
+}
+
 func Test__parseError__requestErr(t *testing.T) {
 	ErrSome := errors.New("SOME_ERR")
 
-	apiErr := parseError(ErrSome, makeHTTPResponse(0), nil, nil, nil)
+	apiErr := parseError(ErrSome, makeHTTPResponse(0), nil, nil, nil, nil)
 
-	assert.Equalf(
-		t,
-		true,
-		errors.Is(apiErr, ErrSome),
-		"Expected some error, received `%#v`", apiErr,
-	)
+	if assert.NotNil(t, apiErr) {
+		assert.Equalf(
+			t,
+			true,
+			errors.Is(apiErr, ErrSome),
+			"Expected some error, received `%#v`", apiErr,
+		)
+	}
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -48,8 +47,6 @@ func extractToken(c echo.Context) (string, error) {
 
 func extractAuthor(c echo.Context) models.IAuthor {
 	author, ok := c.Get("author").(models.IAuthor)
-
-	fmt.Printf("author: %#v\n", author)
 
 	if !ok {
 		return nil

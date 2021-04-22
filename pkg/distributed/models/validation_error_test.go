@@ -46,16 +46,7 @@ func Test__WrapOzzoValidationError__regularError(t *testing.T) {
 }
 
 func Test__WrapOzzoValidationError__nil(t *testing.T) {
-	wrappedRegularError := WrapOzzoValidationError(nil)
+	wrappedNil := WrapOzzoValidationError(nil)
 
-	assert.Equal(t,
-		true,
-		errors.Is(wrappedRegularError,
-			ErrInvalid),
-		"errors.Is expectation for nil error")
-
-	var iErrInvalid ValidationError
-	isValidationErr := errors.As(wrappedRegularError, &iErrInvalid)
-
-	assert.Equal(t, false, isValidationErr, "Type expectation for nil error")
+	assert.Nil(t, wrappedNil)
 }

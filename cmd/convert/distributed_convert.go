@@ -24,6 +24,12 @@ func DistributedCliConfig() *cli.Command {
 						return errors.Wrap(err, "Initializing app")
 					}
 
+					err = app.InitLocal()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app (local)")
+					}
+
 					// if err != nil {
 					// 	return errors.Wrap(err, "Initializing app")
 					// }
@@ -41,6 +47,8 @@ func DistributedCliConfig() *cli.Command {
 					err = app.AddTask(c)
 
 					if err != nil {
+						fmt.Printf("err: %#v\n", err)
+						app.logger.WithError(err).Warn("Failed to add task")
 						return errors.Wrap(err, "Adding task to queue")
 					}
 
@@ -51,11 +59,6 @@ func DistributedCliConfig() *cli.Command {
 			},
 			{
 				Name: "work",
-				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name: "worker",
-					},
-				},
 				Action: func(c *cli.Context) error {
 					app := &DistributedConvertApp{}
 
@@ -63,6 +66,12 @@ func DistributedCliConfig() *cli.Command {
 
 					if err != nil {
 						return errors.Wrap(err, "Initializing app")
+					}
+
+					err = app.InitLocal()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app (local)")
 					}
 
 					// err = app.StartWorker()
@@ -89,6 +98,46 @@ func DistributedCliConfig() *cli.Command {
 				},
 			},
 			{
+				Name: "rwork",
+				Action: func(c *cli.Context) error {
+					app := &DistributedConvertApp{}
+
+					err := app.Init()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app")
+					}
+
+					err = app.StartRemoteWorker()
+
+					if err != nil {
+						return errors.Wrap(err, "Starting remote worker")
+					}
+
+					// err = app.StartWorker()
+
+					// if err != nil {
+					// 	return errors.Wrap(err, "Starting worker")
+					// }
+
+					// err = app.StartContracter()
+
+					// if err != nil {
+					// 	return errors.Wrap(err, "Starting contracter")
+					// }
+
+					// err = app.StartAPI()
+
+					// if err != nil {
+					// 	return errors.Wrap(err, "Starting API")
+					// }
+
+					<-app.Wait()
+
+					return nil
+				},
+			},
+			{
 				Name:    "list-orders",
 				Aliases: []string{"lo"},
 				Flags: []cli.Flag{
@@ -104,6 +153,12 @@ func DistributedCliConfig() *cli.Command {
 
 					if err != nil {
 						return errors.Wrap(err, "Initializing app")
+					}
+
+					err = app.InitLocal()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app (local)")
 					}
 
 					str, err := app.ListOrders(c)
@@ -130,6 +185,12 @@ func DistributedCliConfig() *cli.Command {
 
 					if err != nil {
 						return errors.Wrap(err, "Initializing app")
+					}
+
+					err = app.InitLocal()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app (local)")
 					}
 
 					str, err := app.ShowOrder(c.Args().Get(0))
@@ -163,6 +224,12 @@ func DistributedCliConfig() *cli.Command {
 						return errors.Wrap(err, "Initializing app")
 					}
 
+					err = app.InitLocal()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app (local)")
+					}
+
 					str, err := app.ListSegments(c, c.Args().Get(0))
 
 					fmt.Println(str)
@@ -187,6 +254,12 @@ func DistributedCliConfig() *cli.Command {
 
 					if err != nil {
 						return errors.Wrap(err, "Initializing app")
+					}
+
+					err = app.InitLocal()
+
+					if err != nil {
+						return errors.Wrap(err, "Initializing app (local)")
 					}
 
 					err = app.CancelOrder(c.Args().Get(0))

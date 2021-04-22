@@ -183,9 +183,9 @@ func proceedSegment(
 					modProgress := makeProgresserFromConvert(pmsg)
 
 					// TODO: stop on dealer errors
-					if err = dealer.NotifyProcess(ctx, performer, freeSegment.GetID(), modProgress); err != nil {
-						logger.WithError(err).Warn("Problem with notifying process")
-					}
+					// if err = dealer.NotifyProcess(ctx, performer, freeSegment.GetID(), modProgress); err != nil {
+					// 	logger.WithError(err).Warn("Problem with notifying process")
+					// }
 
 					dlog.SegmentProgress(logger, freeSegment, modProgress)
 				})

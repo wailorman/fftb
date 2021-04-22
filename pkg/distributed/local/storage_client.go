@@ -190,3 +190,24 @@ func (client *StorageClient) DownloadFileFromStorageClaim(ctx context.Context, f
 
 	return nil
 }
+
+// BuildStorageClaim _
+// func (client *StorageClient) BuildStorageClaim(identity string) (models.IStorageClaim, error) {
+// 	claimFile := sc.storagePath.BuildFile(identity)
+
+// 	if claimFile.IsExist() == false {
+// 		return nil, ErrStorageClaimMissingFile
+// 	}
+
+// 	size, err := claimFile.Size()
+
+// 	if err != nil {
+// 		return nil, errors.Wrap(err, "Getting claim file size")
+// 	}
+
+// 	return &StorageClaim{
+// 		identity: identity,
+// 		file:     claimFile,
+// 		size:     size,
+// 	}, nil
+// }

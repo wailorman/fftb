@@ -80,3 +80,12 @@ type IContracterDealer interface {
 
 }
 ```
+
+dealer.AllocatePerformerAuthority(ctx, uuid.New().String())
+dealer.FindFreeSegment(w.ctx, w.performer)
+dealer.QuitSegment(ctx, performer, freeSegment.GetID()); err != nil {
+dealer.NotifyProcess(ctx, performer, freeSegment.GetID(), modProgress); err != nil {
+dealer.FinishSegment(ctx, performer, freeSegment.GetID()); err != nil {
+dealer.FailSegment(ctx, performer, segment.GetID(), err)
+dealer.GetInputStorageClaim(ctx, performer, convSegment.GetID())
+dealer.AllocateOutputStorageClaim(ctx, performer, convSegment.GetID())

@@ -9,7 +9,7 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/schema"
 )
 
-func parseError(clientErr error, httpResponse *http.Response, details ...*schema.ProblemDetails) error {
+func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, details ...*schema.ProblemDetails) error {
 	if clientErr != nil {
 		return errors.Wrap(clientErr, "API request failed")
 	}
@@ -36,6 +36,10 @@ func parseError(clientErr error, httpResponse *http.Response, details ...*schema
 	}
 
 	if targetDetails == nil {
+		if httpResponse.StatusCode >= 400 {
+			return errors.Wrapf(models.ErrUnknown, "Received body: `%s`", rawBody)
+		}
+
 		return nil
 	}
 

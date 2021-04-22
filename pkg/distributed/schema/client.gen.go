@@ -64,6 +64,11 @@ type ConvertSegment struct {
 	Type     string        `json:"type"`
 }
 
+// FailureInput defines model for FailureInput.
+type FailureInput struct {
+	Failure string `json:"failure"`
+}
+
 // RFC 7807 Problem Details for HTTP APIs
 type ProblemDetails struct {
 	Detail *string                `json:"detail,omitempty"`
@@ -77,6 +82,11 @@ type ProblemDetails_Fields struct {
 	AdditionalProperties map[string]string `json:"-"`
 }
 
+// ProgressInput defines model for ProgressInput.
+type ProgressInput struct {
+	Progress float32 `json:"progress"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	Key string `json:"key"`
@@ -85,6 +95,11 @@ type Session struct {
 // SessionInput defines model for SessionInput.
 type SessionInput struct {
 	AuthorityKey string `json:"authority_key"`
+}
+
+// StorageClaim defines model for StorageClaim.
+type StorageClaim struct {
+	StorageClaim string `json:"storage_claim"`
 }
 
 // SegmentIdParam defines model for segmentIdParam.
@@ -97,10 +112,16 @@ type ResponseAllocateAuthority Authority
 type ResponseCreateSession Session
 
 // RFC 7807 Problem Details for HTTP APIs
+type ResponseForbidden ProblemDetails
+
+// RFC 7807 Problem Details for HTTP APIs
 type ResponseNotFound ProblemDetails
 
 // ResponseSegment defines model for ResponseSegment.
 type ResponseSegment ConvertSegment
+
+// ResponseStorageClaim defines model for ResponseStorageClaim.
+type ResponseStorageClaim StorageClaim
 
 // RFC 7807 Problem Details for HTTP APIs
 type ResponseUnauthorized ProblemDetails
@@ -114,6 +135,12 @@ type AllocateAuthorityJSONBody AuthorityInput
 // AllocateSegmentJSONBody defines parameters for AllocateSegment.
 type AllocateSegmentJSONBody ConvertDealerRequest
 
+// FailSegmentJSONBody defines parameters for FailSegment.
+type FailSegmentJSONBody FailureInput
+
+// NotifyProcessJSONBody defines parameters for NotifyProcess.
+type NotifyProcessJSONBody ProgressInput
+
 // CreateSessionJSONBody defines parameters for CreateSession.
 type CreateSessionJSONBody SessionInput
 
@@ -122,6 +149,12 @@ type AllocateAuthorityJSONRequestBody AllocateAuthorityJSONBody
 
 // AllocateSegmentJSONRequestBody defines body for AllocateSegment for application/json ContentType.
 type AllocateSegmentJSONRequestBody AllocateSegmentJSONBody
+
+// FailSegmentJSONRequestBody defines body for FailSegment for application/json ContentType.
+type FailSegmentJSONRequestBody FailSegmentJSONBody
+
+// NotifyProcessJSONRequestBody defines body for NotifyProcess for application/json ContentType.
+type NotifyProcessJSONRequestBody NotifyProcessJSONBody
 
 // CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
 type CreateSessionJSONRequestBody CreateSessionJSONBody
@@ -268,6 +301,34 @@ type ClientInterface interface {
 	// GetSegmentByID request
 	GetSegmentByID(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// FailSegment request  with any body
+	FailSegmentWithBody(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	FailSegment(ctx context.Context, id SegmentIdParam, body FailSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// FinishSegment request
+	FinishSegment(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QuitSegment request
+	QuitSegment(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetInputStorageClaim request
+	GetInputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AllocateInputStorageClaim request
+	AllocateInputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// NotifyProcess request  with any body
+	NotifyProcessWithBody(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	NotifyProcess(ctx context.Context, id SegmentIdParam, body NotifyProcessJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOutputStorageClaim request
+	GetOutputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AllocateOutputStorageClaim request
+	AllocateOutputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// CreateSession request  with any body
 	CreateSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -336,6 +397,126 @@ func (c *Client) FindFreeSegment(ctx context.Context, reqEditors ...RequestEdito
 
 func (c *Client) GetSegmentByID(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSegmentByIDRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) FailSegmentWithBody(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFailSegmentRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) FailSegment(ctx context.Context, id SegmentIdParam, body FailSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFailSegmentRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) FinishSegment(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewFinishSegmentRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) QuitSegment(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQuitSegmentRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetInputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetInputStorageClaimRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AllocateInputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAllocateInputStorageClaimRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) NotifyProcessWithBody(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewNotifyProcessRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) NotifyProcess(ctx context.Context, id SegmentIdParam, body NotifyProcessJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewNotifyProcessRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOutputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOutputStorageClaimRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AllocateOutputStorageClaim(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAllocateOutputStorageClaimRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -511,6 +692,304 @@ func NewGetSegmentByIDRequest(server string, id SegmentIdParam) (*http.Request, 
 	return req, nil
 }
 
+// NewFailSegmentRequest calls the generic FailSegment builder with application/json body
+func NewFailSegmentRequest(server string, id SegmentIdParam, body FailSegmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewFailSegmentRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewFailSegmentRequestWithBody generates requests for FailSegment with any type of body
+func NewFailSegmentRequestWithBody(server string, id SegmentIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/actions/fail", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewFinishSegmentRequest generates requests for FinishSegment
+func NewFinishSegmentRequest(server string, id SegmentIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/actions/finish", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewQuitSegmentRequest generates requests for QuitSegment
+func NewQuitSegmentRequest(server string, id SegmentIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/actions/quit", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetInputStorageClaimRequest generates requests for GetInputStorageClaim
+func NewGetInputStorageClaimRequest(server string, id SegmentIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/input_storage_claim", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAllocateInputStorageClaimRequest generates requests for AllocateInputStorageClaim
+func NewAllocateInputStorageClaimRequest(server string, id SegmentIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/input_storage_claim", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewNotifyProcessRequest calls the generic NotifyProcess builder with application/json body
+func NewNotifyProcessRequest(server string, id SegmentIdParam, body NotifyProcessJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewNotifyProcessRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewNotifyProcessRequestWithBody generates requests for NotifyProcess with any type of body
+func NewNotifyProcessRequestWithBody(server string, id SegmentIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/notifications/process", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOutputStorageClaimRequest generates requests for GetOutputStorageClaim
+func NewGetOutputStorageClaimRequest(server string, id SegmentIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/output_storage_claim", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAllocateOutputStorageClaimRequest generates requests for AllocateOutputStorageClaim
+func NewAllocateOutputStorageClaimRequest(server string, id SegmentIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/output_storage_claim", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCreateSessionRequest calls the generic CreateSession builder with application/json body
 func NewCreateSessionRequest(server string, body CreateSessionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -609,6 +1088,34 @@ type ClientWithResponsesInterface interface {
 
 	// GetSegmentByID request
 	GetSegmentByIDWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error)
+
+	// FailSegment request  with any body
+	FailSegmentWithBodyWithResponse(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailSegmentResponse, error)
+
+	FailSegmentWithResponse(ctx context.Context, id SegmentIdParam, body FailSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*FailSegmentResponse, error)
+
+	// FinishSegment request
+	FinishSegmentWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*FinishSegmentResponse, error)
+
+	// QuitSegment request
+	QuitSegmentWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*QuitSegmentResponse, error)
+
+	// GetInputStorageClaim request
+	GetInputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetInputStorageClaimResponse, error)
+
+	// AllocateInputStorageClaim request
+	AllocateInputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*AllocateInputStorageClaimResponse, error)
+
+	// NotifyProcess request  with any body
+	NotifyProcessWithBodyWithResponse(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*NotifyProcessResponse, error)
+
+	NotifyProcessWithResponse(ctx context.Context, id SegmentIdParam, body NotifyProcessJSONRequestBody, reqEditors ...RequestEditorFn) (*NotifyProcessResponse, error)
+
+	// GetOutputStorageClaim request
+	GetOutputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetOutputStorageClaimResponse, error)
+
+	// AllocateOutputStorageClaim request
+	AllocateOutputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*AllocateOutputStorageClaimResponse, error)
 
 	// CreateSession request  with any body
 	CreateSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionResponse, error)
@@ -711,6 +1218,202 @@ func (r GetSegmentByIDResponse) StatusCode() int {
 	return 0
 }
 
+type FailSegmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r FailSegmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r FailSegmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type FinishSegmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r FinishSegmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r FinishSegmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type QuitSegmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r QuitSegmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QuitSegmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetInputStorageClaimResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *StorageClaim
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r GetInputStorageClaimResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetInputStorageClaimResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AllocateInputStorageClaimResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *StorageClaim
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r AllocateInputStorageClaimResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AllocateInputStorageClaimResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type NotifyProcessResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r NotifyProcessResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r NotifyProcessResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetOutputStorageClaimResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *StorageClaim
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOutputStorageClaimResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOutputStorageClaimResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type AllocateOutputStorageClaimResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *StorageClaim
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r AllocateOutputStorageClaimResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AllocateOutputStorageClaimResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type CreateSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -785,6 +1488,94 @@ func (c *ClientWithResponses) GetSegmentByIDWithResponse(ctx context.Context, id
 		return nil, err
 	}
 	return ParseGetSegmentByIDResponse(rsp)
+}
+
+// FailSegmentWithBodyWithResponse request with arbitrary body returning *FailSegmentResponse
+func (c *ClientWithResponses) FailSegmentWithBodyWithResponse(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailSegmentResponse, error) {
+	rsp, err := c.FailSegmentWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFailSegmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) FailSegmentWithResponse(ctx context.Context, id SegmentIdParam, body FailSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*FailSegmentResponse, error) {
+	rsp, err := c.FailSegment(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFailSegmentResponse(rsp)
+}
+
+// FinishSegmentWithResponse request returning *FinishSegmentResponse
+func (c *ClientWithResponses) FinishSegmentWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*FinishSegmentResponse, error) {
+	rsp, err := c.FinishSegment(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseFinishSegmentResponse(rsp)
+}
+
+// QuitSegmentWithResponse request returning *QuitSegmentResponse
+func (c *ClientWithResponses) QuitSegmentWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*QuitSegmentResponse, error) {
+	rsp, err := c.QuitSegment(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQuitSegmentResponse(rsp)
+}
+
+// GetInputStorageClaimWithResponse request returning *GetInputStorageClaimResponse
+func (c *ClientWithResponses) GetInputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetInputStorageClaimResponse, error) {
+	rsp, err := c.GetInputStorageClaim(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetInputStorageClaimResponse(rsp)
+}
+
+// AllocateInputStorageClaimWithResponse request returning *AllocateInputStorageClaimResponse
+func (c *ClientWithResponses) AllocateInputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*AllocateInputStorageClaimResponse, error) {
+	rsp, err := c.AllocateInputStorageClaim(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAllocateInputStorageClaimResponse(rsp)
+}
+
+// NotifyProcessWithBodyWithResponse request with arbitrary body returning *NotifyProcessResponse
+func (c *ClientWithResponses) NotifyProcessWithBodyWithResponse(ctx context.Context, id SegmentIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*NotifyProcessResponse, error) {
+	rsp, err := c.NotifyProcessWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseNotifyProcessResponse(rsp)
+}
+
+func (c *ClientWithResponses) NotifyProcessWithResponse(ctx context.Context, id SegmentIdParam, body NotifyProcessJSONRequestBody, reqEditors ...RequestEditorFn) (*NotifyProcessResponse, error) {
+	rsp, err := c.NotifyProcess(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseNotifyProcessResponse(rsp)
+}
+
+// GetOutputStorageClaimWithResponse request returning *GetOutputStorageClaimResponse
+func (c *ClientWithResponses) GetOutputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*GetOutputStorageClaimResponse, error) {
+	rsp, err := c.GetOutputStorageClaim(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOutputStorageClaimResponse(rsp)
+}
+
+// AllocateOutputStorageClaimWithResponse request returning *AllocateOutputStorageClaimResponse
+func (c *ClientWithResponses) AllocateOutputStorageClaimWithResponse(ctx context.Context, id SegmentIdParam, reqEditors ...RequestEditorFn) (*AllocateOutputStorageClaimResponse, error) {
+	rsp, err := c.AllocateOutputStorageClaim(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAllocateOutputStorageClaimResponse(rsp)
 }
 
 // CreateSessionWithBodyWithResponse request with arbitrary body returning *CreateSessionResponse
@@ -957,6 +1748,354 @@ func ParseGetSegmentByIDResponse(rsp *http.Response) (*GetSegmentByIDResponse, e
 	return response, nil
 }
 
+// ParseFailSegmentResponse parses an HTTP response from a FailSegmentWithResponse call
+func ParseFailSegmentResponse(rsp *http.Response) (*FailSegmentResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &FailSegmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseFinishSegmentResponse parses an HTTP response from a FinishSegmentWithResponse call
+func ParseFinishSegmentResponse(rsp *http.Response) (*FinishSegmentResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &FinishSegmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseQuitSegmentResponse parses an HTTP response from a QuitSegmentWithResponse call
+func ParseQuitSegmentResponse(rsp *http.Response) (*QuitSegmentResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QuitSegmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetInputStorageClaimResponse parses an HTTP response from a GetInputStorageClaimWithResponse call
+func ParseGetInputStorageClaimResponse(rsp *http.Response) (*GetInputStorageClaimResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetInputStorageClaimResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StorageClaim
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAllocateInputStorageClaimResponse parses an HTTP response from a AllocateInputStorageClaimWithResponse call
+func ParseAllocateInputStorageClaimResponse(rsp *http.Response) (*AllocateInputStorageClaimResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AllocateInputStorageClaimResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StorageClaim
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseNotifyProcessResponse parses an HTTP response from a NotifyProcessWithResponse call
+func ParseNotifyProcessResponse(rsp *http.Response) (*NotifyProcessResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &NotifyProcessResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOutputStorageClaimResponse parses an HTTP response from a GetOutputStorageClaimWithResponse call
+func ParseGetOutputStorageClaimResponse(rsp *http.Response) (*GetOutputStorageClaimResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOutputStorageClaimResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StorageClaim
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAllocateOutputStorageClaimResponse parses an HTTP response from a AllocateOutputStorageClaimWithResponse call
+func ParseAllocateOutputStorageClaimResponse(rsp *http.Response) (*AllocateOutputStorageClaimResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AllocateOutputStorageClaimResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest StorageClaim
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseCreateSessionResponse parses an HTTP response from a CreateSessionWithResponse call
 func ParseCreateSessionResponse(rsp *http.Response) (*CreateSessionResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -1011,6 +2150,30 @@ type ServerInterface interface {
 
 	// (GET /segments/{id})
 	GetSegmentByID(ctx echo.Context, id SegmentIdParam) error
+
+	// (POST /segments/{id}/actions/fail)
+	FailSegment(ctx echo.Context, id SegmentIdParam) error
+
+	// (POST /segments/{id}/actions/finish)
+	FinishSegment(ctx echo.Context, id SegmentIdParam) error
+
+	// (POST /segments/{id}/actions/quit)
+	QuitSegment(ctx echo.Context, id SegmentIdParam) error
+
+	// (GET /segments/{id}/input_storage_claim)
+	GetInputStorageClaim(ctx echo.Context, id SegmentIdParam) error
+
+	// (POST /segments/{id}/input_storage_claim)
+	AllocateInputStorageClaim(ctx echo.Context, id SegmentIdParam) error
+
+	// (POST /segments/{id}/notifications/process)
+	NotifyProcess(ctx echo.Context, id SegmentIdParam) error
+
+	// (GET /segments/{id}/output_storage_claim)
+	GetOutputStorageClaim(ctx echo.Context, id SegmentIdParam) error
+
+	// (POST /segments/{id}/output_storage_claim)
+	AllocateOutputStorageClaim(ctx echo.Context, id SegmentIdParam) error
 
 	// (POST /sessions)
 	CreateSession(ctx echo.Context) error
@@ -1070,6 +2233,150 @@ func (w *ServerInterfaceWrapper) GetSegmentByID(ctx echo.Context) error {
 	return err
 }
 
+// FailSegment converts echo context to params.
+func (w *ServerInterfaceWrapper) FailSegment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FailSegment(ctx, id)
+	return err
+}
+
+// FinishSegment converts echo context to params.
+func (w *ServerInterfaceWrapper) FinishSegment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.FinishSegment(ctx, id)
+	return err
+}
+
+// QuitSegment converts echo context to params.
+func (w *ServerInterfaceWrapper) QuitSegment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.QuitSegment(ctx, id)
+	return err
+}
+
+// GetInputStorageClaim converts echo context to params.
+func (w *ServerInterfaceWrapper) GetInputStorageClaim(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetInputStorageClaim(ctx, id)
+	return err
+}
+
+// AllocateInputStorageClaim converts echo context to params.
+func (w *ServerInterfaceWrapper) AllocateInputStorageClaim(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.AllocateInputStorageClaim(ctx, id)
+	return err
+}
+
+// NotifyProcess converts echo context to params.
+func (w *ServerInterfaceWrapper) NotifyProcess(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.NotifyProcess(ctx, id)
+	return err
+}
+
+// GetOutputStorageClaim converts echo context to params.
+func (w *ServerInterfaceWrapper) GetOutputStorageClaim(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetOutputStorageClaim(ctx, id)
+	return err
+}
+
+// AllocateOutputStorageClaim converts echo context to params.
+func (w *ServerInterfaceWrapper) AllocateOutputStorageClaim(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id SegmentIdParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "id", runtime.ParamLocationPath, ctx.Param("id"), &id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.AllocateOutputStorageClaim(ctx, id)
+	return err
+}
+
 // CreateSession converts echo context to params.
 func (w *ServerInterfaceWrapper) CreateSession(ctx echo.Context) error {
 	var err error
@@ -1111,6 +2418,14 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.POST(baseURL+"/segments", wrapper.AllocateSegment)
 	router.POST(baseURL+"/segments/free", wrapper.FindFreeSegment)
 	router.GET(baseURL+"/segments/:id", wrapper.GetSegmentByID)
+	router.POST(baseURL+"/segments/:id/actions/fail", wrapper.FailSegment)
+	router.POST(baseURL+"/segments/:id/actions/finish", wrapper.FinishSegment)
+	router.POST(baseURL+"/segments/:id/actions/quit", wrapper.QuitSegment)
+	router.GET(baseURL+"/segments/:id/input_storage_claim", wrapper.GetInputStorageClaim)
+	router.POST(baseURL+"/segments/:id/input_storage_claim", wrapper.AllocateInputStorageClaim)
+	router.POST(baseURL+"/segments/:id/notifications/process", wrapper.NotifyProcess)
+	router.GET(baseURL+"/segments/:id/output_storage_claim", wrapper.GetOutputStorageClaim)
+	router.POST(baseURL+"/segments/:id/output_storage_claim", wrapper.AllocateOutputStorageClaim)
 	router.POST(baseURL+"/sessions", wrapper.CreateSession)
 
 }

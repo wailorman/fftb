@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/schema"
@@ -57,6 +58,12 @@ func newAPIError(err error) (code int, body *schema.ProblemDetails) {
 		for key, val := range validationErr.Errors() {
 			problemDetails.Fields.Set(key, val)
 		}
+	}
+
+	var echoError *echo.HTTPError
+	if errors.As(err, &echoError) {
+		code = echoError.Code
+		problemDetails.Title = models.ErrUnknown.Error()
 	}
 
 	return code, problemDetails

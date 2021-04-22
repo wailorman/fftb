@@ -21,6 +21,10 @@ type ValidationError interface {
 
 // WrapOzzoValidationError _
 func WrapOzzoValidationError(err error) ValidationError {
+	if err == nil {
+		return nil
+	}
+
 	if validationErr, isValidationErr := errors.Cause(err).(validation.Errors); isValidationErr {
 		verr := &ValidationErrorObject{
 			errors: make(map[string]string),

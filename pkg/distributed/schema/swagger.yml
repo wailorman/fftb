@@ -12,8 +12,18 @@ components:
       bearerFormat: JWT
   
   responses:
+    ResponseNoContent:
+      description: No content
+            
     ResponseNotFound:
       description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  
+    ResponseForbidden:
+      description: Forbidden
       content:
         application/json:
           schema:
@@ -54,6 +64,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Session'
+            
+    ResponseStorageClaim:
+      description: StorageClaim object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StorageClaim'
   
   parameters:
     segmentIdParam:
@@ -146,6 +163,23 @@ components:
         authority_key:
           type: string
           
+    ProgressInput:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: number
+          format: float
+          
+    FailureInput:
+      type: object
+      required:
+        - failure
+      properties:
+        failure:
+          type: string
+          
     ConvertParams:     
       type: object
       required:
@@ -218,6 +252,14 @@ components:
         position:
           type: integer
           minimum: 0
+          
+    StorageClaim:
+      type: object
+      required:
+        - storage_claim
+      properties:
+        storage_claim: 
+          type: string
         
 paths:
   /authorities:
@@ -295,3 +337,145 @@ paths:
           $ref: '#/components/responses/ResponseNotFound'
         '401':
           $ref: '#/components/responses/ResponseUnauthorized'
+          
+  /segments/{id}/actions/quit:
+    post:
+      security:
+        - bearerAuth: []
+      operationId: quitSegment
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      responses:
+        '204':
+          $ref: '#/components/responses/ResponseNoContent'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+          
+  /segments/{id}/actions/finish:
+    post:
+      security:
+        - bearerAuth: []
+      operationId: finishSegment
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      responses:
+        '204':
+          $ref: '#/components/responses/ResponseNoContent'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+          
+  /segments/{id}/actions/fail:
+    post:
+      security:
+        - bearerAuth: []
+      operationId: failSegment
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FailureInput'
+      responses:
+        '204':
+          $ref: '#/components/responses/ResponseNoContent'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /segments/{id}/input_storage_claim:
+    get:
+      security:
+        - bearerAuth: []
+      operationId: getInputStorageClaim
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseStorageClaim'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+    post:
+      security:
+        - bearerAuth: []
+      operationId: allocateInputStorageClaim
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseStorageClaim'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /segments/{id}/output_storage_claim:
+    get:
+      security:
+        - bearerAuth: []
+      operationId: getOutputStorageClaim
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseStorageClaim'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+    post:
+      security:
+        - bearerAuth: []
+      operationId: allocateOutputStorageClaim
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseStorageClaim'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /segments/{id}/notifications/process:
+    post:
+      security:
+        - bearerAuth: []
+      operationId: notifyProcess
+      parameters:
+        - $ref: '#/components/parameters/segmentIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProgressInput'
+      responses:
+        '204':
+          $ref: '#/components/responses/ResponseNoContent'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'

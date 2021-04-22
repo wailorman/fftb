@@ -19,6 +19,8 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/local"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
+	"github.com/wailorman/fftb/pkg/distributed/remote"
+	"github.com/wailorman/fftb/pkg/distributed/schema"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs/ubolt"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
 	"github.com/wailorman/fftb/pkg/files"
@@ -75,11 +77,18 @@ func (a *DistributedConvertApp) Init() error {
 		return errors.Wrap(err, "Initializing storage")
 	}
 
-	a.storageClient, err = initStorageClient()
+	a.storageClient, err = initStorageController()
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing storage client")
 	}
+
+	return nil
+}
+
+// InitLocal _
+func (a *DistributedConvertApp) InitLocal() error {
+	var err error
 
 	a.registry, err = initRegistry(a.ctx)
 
@@ -107,7 +116,7 @@ func (a *DistributedConvertApp) Init() error {
 		a.dealer,
 		a.registry,
 		a.storageClient,
-		models.NewOrderMutation(logger), contracterTmpPath)
+		models.NewOrderMutation(a.logger), contracterTmpPath)
 
 	if err != nil {
 		return errors.Wrap(err, "Initializing contracter")
@@ -172,6 +181,7 @@ func (a *DistributedConvertApp) AddTask(c *cli.Context) error {
 	})
 
 	if err != nil {
+		fmt.Printf("err: %#v\n", err)
 		return errors.Wrap(err, "Publishing order")
 	}
 
@@ -185,6 +195,48 @@ func (a *DistributedConvertApp) StartWorker() error {
 	var err error
 
 	workerPath := files.NewPath(".fftb/worker")
+
+	err = workerPath.Create()
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing worker path")
+	}
+
+	a.workerInstance, err = worker.NewWorker(a.ctx, workerPath, a.dealer, a.storageClient)
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing worker instance")
+	}
+
+	// workerDone := a.workerInstance.Start()
+	a.workerInstance.Start()
+
+	return nil
+}
+
+// StartRemoteWorker _
+func (a *DistributedConvertApp) StartRemoteWorker() error {
+	var err error
+
+	apiWrapper, err := schema.NewClientWithResponses("http://localhost:8080")
+
+	if err != nil {
+		return errors.Wrap(err, "Building api wrapper")
+	}
+
+	storage, err := initStorage(a.ctx)
+
+	if err != nil {
+		return errors.Wrap(err, "Building storage")
+	}
+
+	a.dealer = remote.NewDealer(apiWrapper, storage, []byte("authority_secret"))
+
+	if err != nil {
+		return errors.Wrap(err, "Building remote dealer")
+	}
+
+	workerPath := files.NewPath(".fftb/remote_worker")
 
 	err = workerPath.Create()
 
@@ -363,7 +415,7 @@ func initRegistry(ctx context.Context) (models.IRegistry, error) {
 	return registry, nil
 }
 
-func initStorageClient() (models.IStorageClient, error) {
+func initStorageController() (models.IStorageClient, error) {
 	storageClientPath := files.NewPath(".fftb/storage_client")
 
 	err := storageClientPath.Create()

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -143,7 +144,6 @@ func (dh *DealerHandler) AllocateSegment(c echo.Context) error {
 	}
 
 	params := &models.ConvertDealerRequest{}
-
 	if err := c.Bind(&params); err != nil {
 		return c.JSON(newAPIError(err))
 	}
@@ -165,82 +165,115 @@ func (dh *DealerHandler) AllocateSegment(c echo.Context) error {
 	return c.JSON(200, response)
 }
 
-// // PublishSegment _
-// // // POST /segments/{id}/actions/publish
-// func (dh *DealerHandler) PublishSegment(c *gin.Context) {
-// }
+// FailSegment _
+// (POST /segments/{id}/actions/fail)
+func (dh *DealerHandler) FailSegment(c echo.Context, segmentID schema.SegmentIdParam) error {
+	author := extractAuthor(c)
 
-// // RepublishSegment _
-// // // POST /segments/{id}/actions/republish
-// func (dh *DealerHandler) RepublishSegment(c *gin.Context) {
-// }
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
 
-// // CancelSegment _
-// // // POST /segments/{id}/actions/cancel | { reason: failed }
-// func (dh *DealerHandler) CancelSegment(c *gin.Context) {
-// }
+	params := schema.FailureInput{}
+	if err := c.Bind(&params); err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// // AcceptSegment _
-// // // POST /segments/{id}/actions/accept
-// func (dh *DealerHandler) AcceptSegment(c *gin.Context) {
-// }
+	err := dh.dealer.FailSegment(c.Request().Context(), author, string(segmentID), errors.New(params.Failure))
 
-// // FinishSegment _
-// // // POST /segments/{id}/actions/finish
-// func (dh *DealerHandler) FinishSegment(c *gin.Context) {
-// }
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// // QuitSegment _
-// // // POST /segments/{id}/actions/quit
-// func (dh *DealerHandler) QuitSegment(c *gin.Context) {
-// }
+	return c.NoContent(http.StatusNoContent)
+}
 
-// // FailSegment _
-// // // POST /segments/{id}/actions/fail
-// func (dh *DealerHandler) FailSegment(c *gin.Context) {
-// }
+// FinishSegment _
+// (POST /segments/{id}/actions/finish)
+func (dh *DealerHandler) FinishSegment(c echo.Context, segmentID schema.SegmentIdParam) error {
+	author := extractAuthor(c)
 
-// // GetOutputStorageClaim _
-// // // GET /segments/{id}/output_storage_claim | { storage_claim: http... }
-// func (dh *DealerHandler) GetOutputStorageClaim(c *gin.Context) {
-// }
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
 
-// // GetInputStorageClaim _
-// // // GET /segments/{id}/input_storage_claim | { storage_claim: http... }
-// func (dh *DealerHandler) GetInputStorageClaim(c *gin.Context) {
-// }
+	err := dh.dealer.FinishSegment(c.Request().Context(), author, string(segmentID))
 
-// // AllocateInputStorageClaim _
-// // // POST /segments/{id}/output_storage_claim | { storage_claim: http... }
-// func (dh *DealerHandler) AllocateInputStorageClaim(c *gin.Context) {
-// }
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// // AllocateOutputStorageClaim _
-// // // POST /segments/{id}/input_storage_claim | { storage_claim: http... }
-// func (dh *DealerHandler) AllocateOutputStorageClaim(c *gin.Context) {
-// }
+	return c.NoContent(http.StatusNoContent)
+}
 
-// // NotifyRawUpload _
-// // // POST /segments/{id}/notifications/input_upload | { progress: 0.5 }
-// func (dh *DealerHandler) NotifyRawUpload(c *gin.Context) {
-// }
+// QuitSegment _
+// (POST /segments/{id}/actions/quit)
+func (dh *DealerHandler) QuitSegment(c echo.Context, segmentID schema.SegmentIdParam) error {
+	author := extractAuthor(c)
 
-// // NotifyResultDownload _
-// // // POST /segments/{id}/notifications/output_download | { progress: 0.5 }
-// func (dh *DealerHandler) NotifyResultDownload(c *gin.Context) {
-// }
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
 
-// // NotifyRawDownload _
-// // // POST /segments/{id}/notifications/input_download | { progress: 0.5 }
-// func (dh *DealerHandler) NotifyRawDownload(c *gin.Context) {
-// }
+	err := dh.dealer.QuitSegment(c.Request().Context(), author, string(segmentID))
 
-// // NotifyResultUpload _
-// // // POST /segments/{id}/notifications/ouput_upload | { progress: 0.5 }
-// func (dh *DealerHandler) NotifyResultUpload(c *gin.Context) {
-// }
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
 
-// // NotifyProcess _
-// // // POST /segments/{id}/notifications/process | { progress: 0.5 }
-// func (dh *DealerHandler) NotifyProcess(c *gin.Context) {
-// }
+	return c.NoContent(http.StatusNoContent)
+}
+
+// GetInputStorageClaim _
+// (GET /segments/{id}/input_storage_claim)
+func (dh *DealerHandler) GetInputStorageClaim(c echo.Context, segmentID schema.SegmentIdParam) error {
+	author := extractAuthor(c)
+
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
+
+	storageClaim, err := dh.dealer.GetInputStorageClaim(c.Request().Context(), author, string(segmentID))
+
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
+
+	return c.JSON(200, &schema.StorageClaim{StorageClaim: storageClaim.GetID()})
+}
+
+// AllocateInputStorageClaim _
+// (POST /segments/{id}/input_storage_claim)
+func (dh *DealerHandler) AllocateInputStorageClaim(c echo.Context, segmentID schema.SegmentIdParam) error {
+	panic("not implemented")
+}
+
+// NotifyProcess _
+// (POST /segments/{id}/notifications/process)
+func (dh *DealerHandler) NotifyProcess(c echo.Context, segmentID schema.SegmentIdParam) error {
+	panic("not implemented")
+}
+
+// GetOutputStorageClaim _
+// (GET /segments/{id}/output_storage_claim)
+func (dh *DealerHandler) GetOutputStorageClaim(c echo.Context, segmentID schema.SegmentIdParam) error {
+	panic("not implemented")
+}
+
+// AllocateOutputStorageClaim _
+// (POST /segments/{id}/output_storage_claim)
+func (dh *DealerHandler) AllocateOutputStorageClaim(c echo.Context, segmentID schema.SegmentIdParam) error {
+	author := extractAuthor(c)
+
+	if author == nil {
+		return c.JSON(newAPIError(models.ErrMissingAuthor))
+	}
+
+	storageClaim, err := dh.dealer.AllocateOutputStorageClaim(c.Request().Context(), author, string(segmentID))
+
+	if err != nil {
+		return c.JSON(newAPIError(err))
+	}
+
+	return c.JSON(200, &schema.StorageClaim{StorageClaim: storageClaim.GetID()})
+}
