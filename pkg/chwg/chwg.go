@@ -17,7 +17,7 @@ type ChannelledWaitGroup struct {
 
 // Add _
 func (cwg *ChannelledWaitGroup) Add(delta int) {
-	cwg.counter++
+	cwg.counter += delta
 	cwg.wg.Add(delta)
 }
 
@@ -36,7 +36,7 @@ func (cwg *ChannelledWaitGroup) AllDone() {
 
 // IsFinished _
 func (cwg *ChannelledWaitGroup) IsFinished() bool {
-	return cwg.counter == 0
+	return cwg.counter < 1
 }
 
 // Wait _
