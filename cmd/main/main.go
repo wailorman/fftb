@@ -21,7 +21,7 @@ func main() {
 func cliApp() {
 	app := &cli.App{
 		Name:    "fftb",
-		Version: "v0.8.1",
+		Version: "v0.8.2",
 
 		Compiled: time.Now(),
 		Authors: []*cli.Author{
