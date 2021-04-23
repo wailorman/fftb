@@ -78,11 +78,11 @@ func (w *Instance) Start() {
 			if err != nil {
 				if errors.Is(err, models.ErrNotFound) {
 					w.logger.Debug("Free segment not found")
-					time.Sleep(FreeTaskDelay)
 				} else {
 					w.logger.WithError(err).Warn("Searching free segment error")
 				}
 
+				time.Sleep(FreeTaskDelay)
 				continue
 			}
 
@@ -163,7 +163,7 @@ func proceedSegment(
 
 			// <-converter.Closed()
 
-			if err = dealer.QuitSegment(ctx, performer, freeSegment.GetID()); err != nil {
+			if err = dealer.QuitSegment(context.Background(), performer, freeSegment.GetID()); err != nil {
 				logger.WithError(err).Warn("Problem with quiting segment")
 			}
 
@@ -207,7 +207,7 @@ func proceedSegment(
 
 				logger.Info("Segment is done")
 
-				if err = dealer.FinishSegment(ctx, performer, freeSegment.GetID()); err != nil {
+				if err = dealer.FinishSegment(context.Background(), performer, freeSegment.GetID()); err != nil {
 					return fail(errors.Wrap(err, "Sending segment finish report"))
 				}
 
@@ -249,7 +249,7 @@ func failSegment(
 
 	wg.Add(1)
 
-	dErr := dealer.FailSegment(ctx, performer, segment.GetID(), err)
+	dErr := dealer.FailSegment(context.Background(), performer, segment.GetID(), err)
 
 	if dErr != nil {
 		logger.WithError(err).

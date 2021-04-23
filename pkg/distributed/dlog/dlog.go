@@ -56,6 +56,9 @@ const PrefixSegmConcatOperation = "fftb.segm.concat_operation"
 // PrefixSegmSliceOperation _
 const PrefixSegmSliceOperation = "fftb.segm.slice_operation"
 
+// PrefixAPI _
+const PrefixAPI = "fftb.api"
+
 // SegmentProgress _
 func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
 	entry := WithSegment(logger, seg).

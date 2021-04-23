@@ -15,19 +15,19 @@ import (
 
 // APIWrapper _
 type APIWrapper interface {
-	AllocateSegmentWithResponse(ctx context.Context, body schema.AllocateSegmentJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.AllocateSegmentResponse, error)
-	GetSegmentByIDWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.GetSegmentByIDResponse, error)
 	AllocateAuthorityWithResponse(ctx context.Context, body schema.AllocateAuthorityJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.AllocateAuthorityResponse, error)
 	CreateSessionWithResponse(ctx context.Context, body schema.CreateSessionJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.CreateSessionResponse, error)
+	AllocateSegmentWithResponse(ctx context.Context, body schema.AllocateSegmentJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.AllocateSegmentResponse, error)
 	FindFreeSegmentWithResponse(ctx context.Context, reqEditors ...schema.RequestEditorFn) (*schema.FindFreeSegmentResponse, error)
+	GetSegmentByIDWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.GetSegmentByIDResponse, error)
 	FailSegmentWithResponse(ctx context.Context, id schema.SegmentIdParam, body schema.FailSegmentJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.FailSegmentResponse, error)
 	FinishSegmentWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.FinishSegmentResponse, error)
 	QuitSegmentWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.QuitSegmentResponse, error)
 	GetInputStorageClaimWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.GetInputStorageClaimResponse, error)
 	AllocateInputStorageClaimWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.AllocateInputStorageClaimResponse, error)
-	NotifyProcessWithResponse(ctx context.Context, id schema.SegmentIdParam, body schema.NotifyProcessJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.NotifyProcessResponse, error)
 	GetOutputStorageClaimWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.GetOutputStorageClaimResponse, error)
 	AllocateOutputStorageClaimWithResponse(ctx context.Context, id schema.SegmentIdParam, reqEditors ...schema.RequestEditorFn) (*schema.AllocateOutputStorageClaimResponse, error)
+	NotifyProcessWithResponse(ctx context.Context, id schema.SegmentIdParam, body schema.NotifyProcessJSONRequestBody, reqEditors ...schema.RequestEditorFn) (*schema.NotifyProcessResponse, error)
 }
 
 // SessionCreator _
@@ -198,7 +198,7 @@ func (rd *Dealer) AllocateSegment(
 		response, reqErr = rd.apiWrapper.AllocateSegmentWithResponse(ctx, body, withAuthor(publisher))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON422, response.JSON401)
@@ -245,7 +245,7 @@ func (rd *Dealer) GetSegmentByID(
 		response, reqErr = rd.apiWrapper.GetSegmentByIDWithResponse(ctx, schema.SegmentIdParam(segmentID), withAuthor(publisher))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401)
@@ -306,7 +306,7 @@ func (rd *Dealer) FindFreeSegment(
 		response, reqErr = rd.apiWrapper.FindFreeSegmentWithResponse(ctx, withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401)
@@ -344,7 +344,7 @@ func (rd *Dealer) FinishSegment(ctx context.Context, performer models.IAuthor, i
 		response, reqErr = rd.apiWrapper.FinishSegmentWithResponse(ctx, schema.SegmentIdParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
@@ -367,7 +367,7 @@ func (rd *Dealer) QuitSegment(ctx context.Context, performer models.IAuthor, id 
 		response, reqErr = rd.apiWrapper.QuitSegmentWithResponse(ctx, schema.SegmentIdParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
@@ -394,7 +394,7 @@ func (rd *Dealer) FailSegment(ctx context.Context, performer models.IAuthor, id 
 		response, reqErr = rd.apiWrapper.FailSegmentWithResponse(ctx, schema.SegmentIdParam(id), body, withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
@@ -417,7 +417,7 @@ func (rd *Dealer) GetInputStorageClaim(ctx context.Context, performer models.IAu
 		response, reqErr = rd.apiWrapper.GetInputStorageClaimWithResponse(ctx, schema.SegmentIdParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
@@ -450,7 +450,7 @@ func (rd *Dealer) AllocateOutputStorageClaim(ctx context.Context, performer mode
 		response, reqErr = rd.apiWrapper.AllocateOutputStorageClaimWithResponse(ctx, schema.SegmentIdParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response")
+			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
 		}
 
 		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)

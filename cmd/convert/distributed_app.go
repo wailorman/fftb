@@ -145,6 +145,7 @@ func (a *DistributedConvertApp) StartContracter() error {
 func (a *DistributedConvertApp) StartAPI() error {
 	e := handlers.NewDealerAPIRouter(
 		a.ctx,
+		a.logger,
 		a.dealer,
 		[]byte("authority_secret"),
 		[]byte("session_secret"))

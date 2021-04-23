@@ -23,6 +23,11 @@ func NewStorageClient(localCopiesPath string) *StorageClient {
 	}
 }
 
+// BuildStorageClaimByURL _
+func (client *StorageClient) BuildStorageClaimByURL(url string) (models.IStorageClaim, error) {
+
+}
+
 // RemoveLocalCopy _
 func (client *StorageClient) RemoveLocalCopy(ctx context.Context, sc models.IStorageClaim) error {
 	// if isLocalStorageClaim(sc) {

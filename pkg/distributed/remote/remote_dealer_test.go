@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/wailorman/fftb/pkg/distributed/handlers"
 	"github.com/wailorman/fftb/pkg/distributed/local"
@@ -92,7 +93,7 @@ func (ew *echoClientWrap) Do(req *http.Request) (*http.Response, error) {
 }
 
 func remotifyDealer(localDealer models.IDealer) (*schema.ClientWithResponses, error) {
-	e := handlers.NewDealerAPIRouter(context.Background(), localDealer, authoritySecret, sessionSecret)
+	e := handlers.NewDealerAPIRouter(context.Background(), logrus.New(), localDealer, authoritySecret, sessionSecret)
 
 	te := newEchoClientWrap(e)
 

@@ -1,6 +1,7 @@
 package local
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/wailorman/fftb/pkg/files"
@@ -16,6 +17,11 @@ type StorageClaim struct {
 // GetID _
 func (s *StorageClaim) GetID() string {
 	return s.identity
+}
+
+// GetURL _
+func (s *StorageClaim) GetURL() string {
+	return fmt.Sprintf("file://%s", s.file.FullPath())
 }
 
 // GetName _

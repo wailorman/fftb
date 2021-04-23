@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
+	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/schema"
 )
@@ -11,6 +14,7 @@ import (
 // NewDealerAPIRouter _
 func NewDealerAPIRouter(
 	ctx context.Context,
+	logger logrus.FieldLogger,
 	dealer models.IDealer,
 	authoritySecret []byte,
 	sessionSecret []byte) *echo.Echo {
@@ -19,6 +23,7 @@ func NewDealerAPIRouter(
 
 	e := echo.New()
 
+	e.Use(dlog.EchoLogger(ctxlog.WithPrefix(logger, dlog.PrefixAPI)))
 	e.Use(JWTMiddleware(sessionSecret))
 	schema.RegisterHandlers(e, h)
 
