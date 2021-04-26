@@ -1,7 +1,9 @@
-package local
+package s3
 
 import (
 	"context"
+	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -23,22 +25,34 @@ func NewStorageClient(localCopiesPath string) *StorageClient {
 
 // BuildStorageClaimByURL _
 func (client *StorageClient) BuildStorageClaimByURL(url string) (models.IStorageClaim, error) {
-	if strings.Index(url, "file://") != 0 {
+	if strings.Index(url, "http") != 0 {
 		return nil, errors.Wrapf(models.ErrUnknownType, "Unknown storage claim type passed in url `%s`", url)
 	}
 
-	claimPath := strings.Replace(url, "file://", "", 1)
-	file := files.NewFile(claimPath)
-	size, err := file.Size()
+	sizeReq, err := http.NewRequest("HEAD", url, nil)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Getting file size")
+		return nil, errors.Wrap(err, "Building HEAD request for calculating size")
 	}
 
+	httpClient := http.Client{Timeout: Timeout}
+
+	sizeRes, err := httpClient.Do(sizeReq)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Performing HEAD request for calculating size")
+	}
+
+	sizeStr := sizeRes.Header.Get("Content-Length")
+	size, _ := strconv.Atoi(sizeStr)
+
+	urlParts := strings.Split(url, "/")
+	id := urlParts[len(urlParts)-1]
+
 	claim := &StorageClaim{
-		identity: file.Name(),
-		file:     file,
-		size:     size,
+		id:   id,
+		size: size,
+		url:  url,
 	}
 
 	return claim, nil
@@ -106,16 +120,8 @@ func buildLocalCopyFile(localCopiesPath string, sc models.IStorageClaim) files.F
 	return f
 }
 
-func isLocalStorageClaim(sc models.IStorageClaim) bool {
-	_, is := sc.(*StorageClaim)
-
-	return is
-}
-
 // MoveFileToStorageClaim _
 func (client *StorageClient) MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.Progresser) error {
-	// TODO: just move file for local storage
-
 	err := client.UploadFileToStorageClaim(ctx, file, sc, p)
 
 	if err != nil {
@@ -176,3 +182,24 @@ func (client *StorageClient) DownloadFileFromStorageClaim(ctx context.Context, f
 
 	return nil
 }
+
+// BuildStorageClaim _
+// func (client *StorageClient) BuildStorageClaim(identity string) (models.IStorageClaim, error) {
+// 	claimFile := sc.storagePath.BuildFile(identity)
+
+// 	if claimFile.IsExist() == false {
+// 		return nil, ErrNotFound
+// 	}
+
+// 	size, err := claimFile.Size()
+
+// 	if err != nil {
+// 		return nil, errors.Wrap(err, "Getting claim file size")
+// 	}
+
+// 	return &StorageClaim{
+// 		identity: identity,
+// 		file:     claimFile,
+// 		size:     size,
+// 	}, nil
+// }

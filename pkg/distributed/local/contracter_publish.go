@@ -3,7 +3,6 @@ package local
 import (
 	"context"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/google/uuid"
@@ -74,14 +73,14 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 			return errObj
 		}
 
-		claimWriter, err := claim.GetWriter()
+		// claimWriter, err := claim.GetWriter()
 
-		if err != nil {
-			errObj := errors.Wrap(err, "Getting storage claim writer")
-			// order.Failed(errObj)
-			// TODO: cancel dealer task
-			return errObj
-		}
+		// if err != nil {
+		// 	errObj := errors.Wrap(err, "Getting storage claim writer")
+		// 	// order.Failed(errObj)
+		// 	// TODO: cancel dealer task
+		// 	return errObj
+		// }
 
 		segmentReader, err := slice.File.ReadContent()
 
@@ -98,9 +97,11 @@ func (contracter *ContracterInstance) publishOrder(fctx context.Context, modOrde
 
 		// _, err = io.Copy(claimWriter, segmentProgressReader)
 
-		_, err = io.Copy(claimWriter, segmentReader)
-		claimWriter.Close()
-		segmentReader.Close()
+		// _, err = io.Copy(claimWriter, segmentReader)
+		// claimWriter.Close()
+		// segmentReader.Close()
+
+		err = claim.WriteFrom(segmentReader)
 
 		if err != nil {
 			return errors.Wrap(err, "Uploading segment to storage")

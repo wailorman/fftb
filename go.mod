@@ -3,6 +3,7 @@ module github.com/wailorman/fftb
 go 1.16
 
 require (
+	github.com/aws/aws-sdk-go v1.38.26
 	github.com/boltdb/bolt v1.3.1
 	github.com/deepmap/oapi-codegen v1.6.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

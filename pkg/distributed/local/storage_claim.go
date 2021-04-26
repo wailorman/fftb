@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/files"
 )
 
@@ -34,20 +35,65 @@ func (s *StorageClaim) GetSize() int {
 	return s.size
 }
 
-// GetWriter _
-func (s *StorageClaim) GetWriter() (io.WriteCloser, error) {
-	if s.file == nil {
-		return nil, ErrStorageClaimMissingFile
+// WriteFrom _
+func (s *StorageClaim) WriteFrom(reader io.Reader) error {
+	if closer, ok := reader.(io.Closer); ok {
+		defer closer.Close()
 	}
 
-	return s.file.WriteContent()
-}
-
-// GetReader _
-func (s *StorageClaim) GetReader() (io.ReadCloser, error) {
 	if s.file == nil {
-		return nil, ErrStorageClaimMissingFile
+		return ErrStorageClaimMissingFile
 	}
 
-	return s.file.ReadContent()
+	fileWriter, err := s.file.WriteContent()
+
+	if err != nil {
+		return errors.Wrap(err, "Building file writer")
+	}
+
+	_, err = io.Copy(fileWriter, reader)
+
+	fileWriter.Close()
+
+	if err != nil {
+		return errors.Wrap(err, "Copying from reader to file writer")
+	}
+
+	return nil
 }
+
+// ReadTo _
+func (s *StorageClaim) ReadTo(writer io.Writer) error {
+	if closer, ok := writer.(io.Closer); ok {
+		defer closer.Close()
+	}
+
+	if s.file == nil {
+		return ErrStorageClaimMissingFile
+	}
+
+	fileReader, err := s.file.ReadContent()
+
+	if err != nil {
+		return errors.Wrap(err, "Building file reader")
+	}
+
+	_, err = io.Copy(writer, fileReader)
+
+	fileReader.Close()
+
+	if err != nil {
+		return errors.Wrap(err, "Copying from file reader to writer")
+	}
+
+	return nil
+}
+
+// // GetReader _
+// func (s *StorageClaim) GetReader() (io.ReadCloser, error) {
+// 	if s.file == nil {
+// 		return nil, ErrStorageClaimMissingFile
+// 	}
+
+// 	return s.file.ReadContent()
+// }

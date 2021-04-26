@@ -312,8 +312,12 @@ type IStorageClaim interface {
 	GetName() string
 	GetURL() string
 	GetSize() int
-	GetWriter() (io.WriteCloser, error)
-	GetReader() (io.ReadCloser, error)
+	// GetWriter() (io.WriteCloser, error)
+	// GetReader() (io.ReadCloser, error)
+	// WriteFrom(io.ReadCloser) error
+	// ReadTo(io.WriteCloser) error
+	WriteFrom(io.Reader) error
+	ReadTo(io.Writer) error
 }
 
 // IStorageClient _
