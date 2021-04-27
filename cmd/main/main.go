@@ -14,6 +14,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var version = "v0.9.0-alpha.1"
+
 func main() {
 	cliApp()
 }
@@ -21,7 +23,7 @@ func main() {
 func cliApp() {
 	app := &cli.App{
 		Name:    "fftb",
-		Version: "v0.8.1",
+		Version: version,
 
 		Compiled: time.Now(),
 		Authors: []*cli.Author{
