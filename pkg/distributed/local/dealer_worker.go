@@ -108,8 +108,6 @@ func (d *Dealer) FinishSegment(ctx context.Context, performer models.IAuthor, se
 		return errors.Wrap(err, "Persisting segment")
 	}
 
-	d.tryPurgeInputStorageClaim(segmentID)
-
 	return nil
 }
 

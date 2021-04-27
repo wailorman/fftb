@@ -19,7 +19,6 @@ import (
 	mock_models "github.com/wailorman/fftb/pkg/distributed/models/mocks"
 	"github.com/wailorman/fftb/pkg/distributed/remote"
 	"github.com/wailorman/fftb/pkg/distributed/schema"
-	"github.com/wailorman/fftb/pkg/files"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
@@ -128,7 +127,7 @@ func Test__AllocateSegment(t *testing.T) {
 	defer ctrl.Finish()
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
-	localStorageControl := mock_models.NewMockIStorageController(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
 
 	// TODO: enrich with parameters
 	convertSegRequest := &models.ConvertDealerRequest{
@@ -145,7 +144,7 @@ func Test__AllocateSegment(t *testing.T) {
 	apiClient, err := remotifyDealer(localDealer)
 
 	if assert.NoError(t, err) {
-		rd := remote.NewDealer(apiClient, localStorageControl, authoritySecret)
+		rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
 
 		seg, err := rd.AllocateSegment(context.Background(), author, convertSegRequest)
 
@@ -162,7 +161,7 @@ func Test__GetSegmentByID(t *testing.T) {
 	defer ctrl.Finish()
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
-	localStorageControl := mock_models.NewMockIStorageController(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
 
 	localDealer.
 		EXPECT().
@@ -172,7 +171,7 @@ func Test__GetSegmentByID(t *testing.T) {
 	apiClient, err := remotifyDealer(localDealer)
 
 	if assert.NoError(t, err) {
-		rd := remote.NewDealer(apiClient, localStorageControl, authoritySecret)
+		rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
 
 		seg, err := rd.GetSegmentByID(context.Background(), author, "123")
 
@@ -189,7 +188,7 @@ func Test__FindFreeSegment(t *testing.T) {
 	defer ctrl.Finish()
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
-	localStorageControl := mock_models.NewMockIStorageController(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
 
 	localDealer.
 		EXPECT().
@@ -199,7 +198,7 @@ func Test__FindFreeSegment(t *testing.T) {
 	apiClient, err := remotifyDealer(localDealer)
 
 	if assert.NoError(t, err) {
-		rd := remote.NewDealer(apiClient, localStorageControl, authoritySecret)
+		rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
 
 		seg, err := rd.FindFreeSegment(context.Background(), author)
 
@@ -216,7 +215,7 @@ func Test__FailSegment(t *testing.T) {
 	defer ctrl.Finish()
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
-	localStorageControl := mock_models.NewMockIStorageController(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
 	reportedErr := errors.New("Testing error")
 	segmentID := "123"
 
@@ -228,7 +227,7 @@ func Test__FailSegment(t *testing.T) {
 	apiClient, err := remotifyDealer(localDealer)
 
 	if assert.NoError(t, err) {
-		rd := remote.NewDealer(apiClient, localStorageControl, authoritySecret)
+		rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
 
 		err := rd.FailSegment(context.Background(), author, segmentID, reportedErr)
 
@@ -243,7 +242,7 @@ func Test__FinishSegment(t *testing.T) {
 	defer ctrl.Finish()
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
-	localStorageControl := mock_models.NewMockIStorageController(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
 	segmentID := "123"
 
 	localDealer.
@@ -254,7 +253,7 @@ func Test__FinishSegment(t *testing.T) {
 	apiClient, err := remotifyDealer(localDealer)
 
 	if assert.NoError(t, err) {
-		rd := remote.NewDealer(apiClient, localStorageControl, authoritySecret)
+		rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
 
 		err := rd.FinishSegment(context.Background(), author, segmentID)
 
@@ -269,7 +268,7 @@ func Test__QuitSegment(t *testing.T) {
 	defer ctrl.Finish()
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
-	localStorageControl := mock_models.NewMockIStorageController(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
 	segmentID := "123"
 
 	localDealer.
@@ -280,7 +279,7 @@ func Test__QuitSegment(t *testing.T) {
 	apiClient, err := remotifyDealer(localDealer)
 
 	if assert.NoError(t, err) {
-		rd := remote.NewDealer(apiClient, localStorageControl, authoritySecret)
+		rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
 
 		err := rd.QuitSegment(context.Background(), author, segmentID)
 
@@ -296,8 +295,8 @@ func Test__GetInputStorageClaim(t *testing.T) {
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
 	segmentID := "123"
-	storageController := local.NewStorageControl(files.NewPath("."))
-	storageClaim, err := storageController.BuildStorageClaim("remote_dealer_test.go")
+	storageClient := local.NewStorageClient(".")
+	storageClaim, err := storageClient.BuildStorageClaimByURL("file://remote_dealer_test.go")
 
 	if err != nil {
 		t.Errorf("Failed to build storage claim: %s", err)
@@ -311,7 +310,7 @@ func Test__GetInputStorageClaim(t *testing.T) {
 	apiClient, err := remotifyDealer(localDealer)
 
 	if assert.NoError(t, err) {
-		rd := remote.NewDealer(apiClient, storageController, authoritySecret)
+		rd := remote.NewDealer(apiClient, storageClient, authoritySecret)
 
 		resStorageClaim, err := rd.GetInputStorageClaim(context.Background(), author, segmentID)
 
@@ -330,8 +329,8 @@ func Test__AllocateOutputStorageClaim(t *testing.T) {
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
 	segmentID := "123"
-	storageController := local.NewStorageControl(files.NewPath("."))
-	storageClaim, err := storageController.BuildStorageClaim("remote_dealer_test.go")
+	storageController := local.NewStorageClient(".")
+	storageClaim, err := storageController.BuildStorageClaimByURL("file://remote_dealer_test.go")
 
 	if err != nil {
 		t.Errorf("Failed to build storage claim: %s", err)

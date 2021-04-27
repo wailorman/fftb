@@ -101,9 +101,15 @@ func (f *File) BuildPath() Pather {
 // IsExist _
 func (f *File) IsExist() bool {
 	info, err := os.Stat(f.FullPath())
+
+	if err != nil {
+		return false
+	}
+
 	if os.IsNotExist(err) {
 		return false
 	}
+
 	return !info.IsDir()
 }
 

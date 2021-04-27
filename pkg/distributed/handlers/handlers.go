@@ -239,7 +239,7 @@ func (dh *DealerHandler) GetInputStorageClaim(c echo.Context, segmentID schema.S
 		return c.JSON(newAPIError(err))
 	}
 
-	return c.JSON(200, &schema.StorageClaim{StorageClaim: storageClaim.GetID()})
+	return c.JSON(200, &schema.StorageClaim{Url: storageClaim.GetURL()})
 }
 
 // AllocateInputStorageClaim _
@@ -275,5 +275,5 @@ func (dh *DealerHandler) AllocateOutputStorageClaim(c echo.Context, segmentID sc
 		return c.JSON(newAPIError(err))
 	}
 
-	return c.JSON(200, &schema.StorageClaim{StorageClaim: storageClaim.GetID()})
+	return c.JSON(200, &schema.StorageClaim{Url: storageClaim.GetURL()})
 }

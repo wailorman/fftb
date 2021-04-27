@@ -99,7 +99,7 @@ type SessionInput struct {
 
 // StorageClaim defines model for StorageClaim.
 type StorageClaim struct {
-	StorageClaim string `json:"storage_claim"`
+	Url string `json:"url"`
 }
 
 // SegmentIdParam defines model for segmentIdParam.

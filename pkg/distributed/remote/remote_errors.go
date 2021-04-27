@@ -156,6 +156,12 @@ func getKnownError(errStr string) error {
 	case models.ErrMissingAccessToken.Error():
 		return models.ErrMissingAccessToken
 
+	case models.ErrNotFound.Error():
+		return models.ErrNotFound
+
+	case models.ErrStorageClaimAlreadyAllocated.Error():
+		return models.ErrStorageClaimAlreadyAllocated
+
 	default:
 		return models.ErrUnknown
 	}

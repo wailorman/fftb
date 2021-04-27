@@ -1,9 +1,9 @@
 openapi: '3.0.2'
 info:
-  title: API Title
+  title: FFTB API
   version: '1.0'
 servers:
-  - url: https://api.server.test/v1
+  - url: http://localhost:8080
 components:
   securitySchemes:
     bearerAuth:
@@ -256,9 +256,9 @@ components:
     StorageClaim:
       type: object
       required:
-        - storage_claim
+        - url
       properties:
-        storage_claim: 
+        url: 
           type: string
         
 paths:

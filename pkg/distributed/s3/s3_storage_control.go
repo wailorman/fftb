@@ -2,7 +2,6 @@ package s3
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -62,8 +61,6 @@ func (sc *StorageControl) AllocateStorageClaim(ctx context.Context, identity str
 	if err != nil {
 		return nil, errors.Wrap(err, "Signing url")
 	}
-
-	fmt.Printf("urlStr: %#v\n", urlStr)
 
 	claim := &StorageClaim{
 		id:   identity,
@@ -130,8 +127,6 @@ func (sc *StorageControl) GetURLForStorageClaim(ctx context.Context, identity st
 
 // GetStorageClaimSize _
 func (sc *StorageControl) GetStorageClaimSize(ctx context.Context, identity string) (int, error) {
-	fmt.Printf("identity: %#v\n", identity)
-
 	result, err := sc.s3Client.HeadObjectWithContext(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(sc.bucket),
 		Key:    aws.String(identity),

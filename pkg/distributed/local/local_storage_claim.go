@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/files"
 )
 
@@ -42,7 +43,7 @@ func (s *StorageClaim) WriteFrom(reader io.Reader) error {
 	}
 
 	if s.file == nil {
-		return ErrStorageClaimMissingFile
+		return models.ErrNotFound
 	}
 
 	fileWriter, err := s.file.WriteContent()
@@ -69,7 +70,7 @@ func (s *StorageClaim) ReadTo(writer io.Writer) error {
 	}
 
 	if s.file == nil {
-		return ErrStorageClaimMissingFile
+		return models.ErrNotFound
 	}
 
 	fileReader, err := s.file.ReadContent()

@@ -10,18 +10,13 @@ import (
 	// "github.com/machinebox/progress"
 )
 
-// ErrStorageClaimMissingFile _
-var ErrStorageClaimMissingFile = errors.New("Storage claim missing file")
-
-// ErrStorageClaimAlreadyAllocated _
-var ErrStorageClaimAlreadyAllocated = errors.New("Storage claim already allocated")
-
 // StorageControl _
 type StorageControl struct {
 	storagePath files.Pather
 }
 
 // NewStorageControl _
+// TODO: Use string as argument
 func NewStorageControl(path files.Pather) *StorageControl {
 	return &StorageControl{
 		storagePath: path,
@@ -39,7 +34,7 @@ func (sc *StorageControl) AllocateStorageClaim(ctx context.Context, identity str
 	}
 
 	if file.IsExist() {
-		return nil, ErrStorageClaimAlreadyAllocated
+		return nil, models.ErrStorageClaimAlreadyAllocated
 	}
 
 	err = file.Create()
@@ -61,7 +56,7 @@ func (sc *StorageControl) BuildStorageClaim(identity string) (models.IStorageCla
 	claimFile := sc.storagePath.BuildFile(identity)
 
 	if claimFile.IsExist() == false {
-		return nil, ErrStorageClaimMissingFile
+		return nil, errors.Wrap(models.ErrNotFound, "Missing local file")
 	}
 
 	size, err := claimFile.Size()
@@ -86,7 +81,7 @@ func (sc *StorageControl) PurgeStorageClaim(ctx context.Context, claim models.IS
 	}
 
 	if localClaim.file == nil {
-		return ErrStorageClaimMissingFile
+		return errors.Wrap(models.ErrNotFound, "Missing local file")
 	}
 
 	err := localClaim.file.Remove()

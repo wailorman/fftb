@@ -2480,6 +2480,20 @@ func (mr *MockIStorageClaimMockRecorder) GetSize() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSize", reflect.TypeOf((*MockIStorageClaim)(nil).GetSize))
 }
 
+// GetURL mocks base method.
+func (m *MockIStorageClaim) GetURL() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetURL")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetURL indicates an expected call of GetURL.
+func (mr *MockIStorageClaimMockRecorder) GetURL() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockIStorageClaim)(nil).GetURL))
+}
+
 // GetWriter mocks base method.
 func (m *MockIStorageClaim) GetWriter() (io.WriteCloser, error) {
 	m.ctrl.T.Helper()
@@ -2516,6 +2530,21 @@ func NewMockIStorageClient(ctrl *gomock.Controller) *MockIStorageClient {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockIStorageClient) EXPECT() *MockIStorageClientMockRecorder {
 	return m.recorder
+}
+
+// BuildStorageClaimByURL mocks base method.
+func (m *MockIStorageClient) BuildStorageClaimByURL(url string) (models.IStorageClaim, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BuildStorageClaimByURL", url)
+	ret0, _ := ret[0].(models.IStorageClaim)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BuildStorageClaimByURL indicates an expected call of BuildStorageClaimByURL.
+func (mr *MockIStorageClientMockRecorder) BuildStorageClaimByURL(url interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildStorageClaimByURL", reflect.TypeOf((*MockIStorageClient)(nil).BuildStorageClaimByURL), url)
 }
 
 // MakeLocalCopy mocks base method.
@@ -2733,6 +2762,20 @@ func (m *MockIAuthor) EXPECT() *MockIAuthorMockRecorder {
 	return m.recorder
 }
 
+// GetAuthorityKey mocks base method.
+func (m *MockIAuthor) GetAuthorityKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAuthorityKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetAuthorityKey indicates an expected call of GetAuthorityKey.
+func (mr *MockIAuthorMockRecorder) GetAuthorityKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuthorityKey", reflect.TypeOf((*MockIAuthor)(nil).GetAuthorityKey))
+}
+
 // GetName mocks base method.
 func (m *MockIAuthor) GetName() string {
 	m.ctrl.T.Helper()
@@ -2747,6 +2790,20 @@ func (mr *MockIAuthorMockRecorder) GetName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetName", reflect.TypeOf((*MockIAuthor)(nil).GetName))
 }
 
+// GetSessionKey mocks base method.
+func (m *MockIAuthor) GetSessionKey() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSessionKey")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetSessionKey indicates an expected call of GetSessionKey.
+func (mr *MockIAuthorMockRecorder) GetSessionKey() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSessionKey", reflect.TypeOf((*MockIAuthor)(nil).GetSessionKey))
+}
+
 // IsEqual mocks base method.
 func (m *MockIAuthor) IsEqual(arg0 models.IAuthor) bool {
 	m.ctrl.T.Helper()
@@ -2759,4 +2816,28 @@ func (m *MockIAuthor) IsEqual(arg0 models.IAuthor) bool {
 func (mr *MockIAuthorMockRecorder) IsEqual(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsEqual", reflect.TypeOf((*MockIAuthor)(nil).IsEqual), arg0)
+}
+
+// SetAuthorityKey mocks base method.
+func (m *MockIAuthor) SetAuthorityKey(key string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetAuthorityKey", key)
+}
+
+// SetAuthorityKey indicates an expected call of SetAuthorityKey.
+func (mr *MockIAuthorMockRecorder) SetAuthorityKey(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAuthorityKey", reflect.TypeOf((*MockIAuthor)(nil).SetAuthorityKey), key)
+}
+
+// SetSessionKey mocks base method.
+func (m *MockIAuthor) SetSessionKey(key string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetSessionKey", key)
+}
+
+// SetSessionKey indicates an expected call of SetSessionKey.
+func (mr *MockIAuthorMockRecorder) SetSessionKey(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSessionKey", reflect.TypeOf((*MockIAuthor)(nil).SetSessionKey), key)
 }

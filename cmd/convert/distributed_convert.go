@@ -47,7 +47,6 @@ func DistributedCliConfig() *cli.Command {
 					err = app.AddTask(c)
 
 					if err != nil {
-						fmt.Printf("err: %#v\n", err)
 						app.logger.WithError(err).Warn("Failed to add task")
 						return errors.Wrap(err, "Adding task to queue")
 					}

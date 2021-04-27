@@ -38,12 +38,12 @@ type SessionCreator interface {
 // Dealer _
 type Dealer struct {
 	apiWrapper      APIWrapper
-	sc              models.IStorageController
+	sc              models.IStorageClient
 	authoritySecret []byte
 }
 
 // NewDealer _
-func NewDealer(apiWrapper APIWrapper, sc models.IStorageController, authoritySecret []byte) *Dealer {
+func NewDealer(apiWrapper APIWrapper, sc models.IStorageClient, authoritySecret []byte) *Dealer {
 	return &Dealer{
 		apiWrapper:      apiWrapper,
 		sc:              sc,
@@ -432,7 +432,7 @@ func (rd *Dealer) GetInputStorageClaim(ctx context.Context, performer models.IAu
 		return nil, errors.Wrap(models.ErrUnknown, "Missing success response")
 	}
 
-	storageClaim, err := rd.sc.BuildStorageClaim(response.JSON200.StorageClaim)
+	storageClaim, err := rd.sc.BuildStorageClaimByURL(response.JSON200.Url)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Building storage claim")
@@ -465,7 +465,7 @@ func (rd *Dealer) AllocateOutputStorageClaim(ctx context.Context, performer mode
 		return nil, errors.Wrap(models.ErrUnknown, "Missing success response")
 	}
 
-	storageClaim, err := rd.sc.BuildStorageClaim(response.JSON200.StorageClaim)
+	storageClaim, err := rd.sc.BuildStorageClaimByURL(response.JSON200.Url)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Building storage claim")

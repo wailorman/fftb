@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -24,12 +25,12 @@ func NewStorageClient(localCopiesPath string) *StorageClient {
 }
 
 // BuildStorageClaimByURL _
-func (client *StorageClient) BuildStorageClaimByURL(url string) (models.IStorageClaim, error) {
-	if strings.Index(url, "http") != 0 {
-		return nil, errors.Wrapf(models.ErrUnknownType, "Unknown storage claim type passed in url `%s`", url)
+func (client *StorageClient) BuildStorageClaimByURL(sURL string) (models.IStorageClaim, error) {
+	if strings.Index(sURL, "http") != 0 {
+		return nil, errors.Wrapf(models.ErrUnknownType, "Unknown storage claim type passed in url `%s`", sURL)
 	}
 
-	sizeReq, err := http.NewRequest("HEAD", url, nil)
+	sizeReq, err := http.NewRequest("HEAD", sURL, nil)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Building HEAD request for calculating size")
@@ -46,13 +47,19 @@ func (client *StorageClient) BuildStorageClaimByURL(url string) (models.IStorage
 	sizeStr := sizeRes.Header.Get("Content-Length")
 	size, _ := strconv.Atoi(sizeStr)
 
-	urlParts := strings.Split(url, "/")
-	id := urlParts[len(urlParts)-1]
+	u, err := url.Parse(sURL)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Parsing url")
+	}
+
+	// urlParts := strings.Split(url, "/")
+	id := u.Path
 
 	claim := &StorageClaim{
 		id:   id,
 		size: size,
-		url:  url,
+		url:  sURL,
 	}
 
 	return claim, nil

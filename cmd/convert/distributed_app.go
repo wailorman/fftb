@@ -20,6 +20,7 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
 	"github.com/wailorman/fftb/pkg/distributed/remote"
+	"github.com/wailorman/fftb/pkg/distributed/s3"
 	"github.com/wailorman/fftb/pkg/distributed/schema"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs/ubolt"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
@@ -182,7 +183,6 @@ func (a *DistributedConvertApp) AddTask(c *cli.Context) error {
 	})
 
 	if err != nil {
-		fmt.Printf("err: %#v\n", err)
 		return errors.Wrap(err, "Publishing order")
 	}
 
@@ -219,19 +219,13 @@ func (a *DistributedConvertApp) StartWorker() error {
 func (a *DistributedConvertApp) StartRemoteWorker() error {
 	var err error
 
-	apiWrapper, err := schema.NewClientWithResponses("http://localhost:8080")
+	apiWrapper, err := schema.NewClientWithResponses("http://mbp-sp.h30.wailorman.ru:8080")
 
 	if err != nil {
 		return errors.Wrap(err, "Building api wrapper")
 	}
 
-	storage, err := initStorage(a.ctx)
-
-	if err != nil {
-		return errors.Wrap(err, "Building storage")
-	}
-
-	a.dealer = remote.NewDealer(apiWrapper, storage, []byte("authority_secret"))
+	a.dealer = remote.NewDealer(apiWrapper, a.storageClient, []byte("authority_secret"))
 
 	if err != nil {
 		return errors.Wrap(err, "Building remote dealer")
@@ -395,7 +389,8 @@ func initStorage(ctx context.Context) (models.IStorageController, error) {
 		return nil, errors.Wrap(err, "Creating storage path")
 	}
 
-	storage := local.NewStorageControl(storagePath)
+	// storage := local.NewStorageControl(storagePath)
+	storage := s3.NewStorageControl()
 
 	return storage, nil
 }
@@ -425,7 +420,8 @@ func initStorageController() (models.IStorageClient, error) {
 		return nil, errors.Wrap(err, "Initializing storage client path")
 	}
 
-	storageClient := local.NewStorageClient(storageClientPath.FullPath())
+	// storageClient := local.NewStorageClient(storageClientPath.FullPath())
+	storageClient := s3.NewStorageClient(storageClientPath.FullPath())
 
 	return storageClient, nil
 }

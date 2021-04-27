@@ -302,15 +302,17 @@ type IDealerRegistry interface {
 // IStorageController _
 type IStorageController interface {
 	AllocateStorageClaim(ctx context.Context, name string) (IStorageClaim, error)
+	// TODO: receive string (identity) instead of claim
 	PurgeStorageClaim(ctx context.Context, claim IStorageClaim) error
+	// TODO: ctx
 	BuildStorageClaim(name string) (IStorageClaim, error)
 }
 
 // IStorageClaim _
 type IStorageClaim interface {
-	GetID() string
+	GetID() string // TODO: remove. Move to storage controller
 	GetName() string
-	GetURL() string
+	GetURL() string // TODO: remove. Move to storage controller
 	GetSize() int
 	// GetWriter() (io.WriteCloser, error)
 	// GetReader() (io.ReadCloser, error)
@@ -322,6 +324,7 @@ type IStorageClaim interface {
 
 // IStorageClient _
 type IStorageClient interface {
+	// TODO: ctx
 	BuildStorageClaimByURL(url string) (IStorageClaim, error)
 	RemoveLocalCopy(ctx context.Context, sc IStorageClaim) error
 	MakeLocalCopy(ctx context.Context, sc IStorageClaim, p chan Progresser) (files.Filer, error)

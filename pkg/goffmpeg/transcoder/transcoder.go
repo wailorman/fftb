@@ -518,7 +518,7 @@ func (t Transcoder) Output() chan models.Progress {
 				//live stream check
 				if dursec != 0 {
 					// Progress calculation
-					progress := (timesec * 100) / dursec
+					progress := timesec / dursec
 					Progress.Progress = progress
 				}
 				Progress.CurrentBitrate = currentBitrate

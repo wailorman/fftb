@@ -234,55 +234,6 @@ func (s *StorageClaim) ReadTo(writer io.Writer) error {
 	return nil
 }
 
-// // GetWriter _
-// func (s *StorageClaim) GetWriter() (io.WriteCloser, error) {
-// 	bodyBuf := &bytes.Buffer{}
-// 	// bodyBuf := bytes.NewBuffer([]byte{})
-// 	// bodyIO := NewSplittedIO(nil, bodyBuf, nil)
-// 	// req, err := http.NewRequestWithContext(context.TODO(), "POST", s.url, bodyIO)
-// 	req, err := http.NewRequestWithContext(context.TODO(), "PUT", s.url, bodyBuf)
-// 	req.Header.Set("Content-Type", DefaultContentType)
-
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "Building request")
-// 	}
-
-// 	httpClient := &http.Client{}
-// 	res, err := httpClient.Do(req)
-
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "")
-// 	}
-
-// 	fmt.Printf("res.StatusCode: %#v\n", res.StatusCode)
-// 	resBody, _ := io.ReadAll(res.Body)
-// 	fmt.Printf("res.Body: %#v\n", string(resBody))
-
-// 	// req.Body.Write(bodyBuf)
-
-// 	// return NewSplittedIO(bodyBuf, bodyBuf, NewCombinedCloser(res.Body, req.Body)), nil
-// 	return NewSplittedIO(bodyBuf, nil, req.Body), nil
-// 	// writer := multipart.NewWriter(bodyBuf)
-// 	// writer.
-// 	// return writer, nil
-// }
-
-// // GetReader _
-// func (s *StorageClaim) GetReader() (io.ReadCloser, error) {
-// 	fmt.Printf("s.url: %#v\n", s.url)
-// 	resp, err := http.Get(s.url)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	if resp.StatusCode >= 400 {
-// 		return nil, wrapHTTPError(resp)
-// 	}
-
-// 	return resp.Body, nil
-// }
-
 func wrapHTTPError(resp *http.Response) error {
 	kylobytes := 1024
 	if resp.ContentLength > 0 && resp.ContentLength < int64(2*kylobytes) {

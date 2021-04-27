@@ -146,7 +146,7 @@ func (contracter *ContracterInstance) SliceConvertOrder(fctx context.Context, co
 		InFile:         convOrder.InFile,
 		KeepTimestamps: false,
 		OutPath:        contracter.tempPath,
-		SegmentSec:     DefaultSegmentSize,
+		SegmentSec:     DefaultSegmentDuration,
 	})
 
 	if err != nil {

@@ -72,3 +72,6 @@ var ErrInvalidSessionKey = errors.New("Invalid session key")
 
 // ErrMissingAccessToken _
 var ErrMissingAccessToken = errors.New("Missing access token")
+
+// ErrStorageClaimAlreadyAllocated _
+var ErrStorageClaimAlreadyAllocated = errors.New("Storage claim already allocated")

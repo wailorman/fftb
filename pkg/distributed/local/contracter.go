@@ -16,8 +16,8 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 )
 
-// DefaultSegmentSize _
-const DefaultSegmentSize = 10
+// DefaultSegmentDuration in seconds
+const DefaultSegmentDuration = 30
 
 // LockOrderTimeout _
 const LockOrderTimeout = time.Duration(10 * time.Second)

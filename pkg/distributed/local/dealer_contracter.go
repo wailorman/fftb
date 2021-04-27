@@ -149,6 +149,7 @@ func (d *Dealer) AcceptSegment(ctx context.Context, publisher models.IAuthor, se
 		return errors.Wrapf(err, "Persisting segment `%s`", segmentID)
 	}
 
+	d.tryPurgeInputStorageClaim(segmentID)
 	d.tryPurgeOutputStorageClaim(segmentID)
 
 	return nil
