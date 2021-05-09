@@ -147,12 +147,12 @@ func (contracter *ContracterInstance) CancelOrderByID(ctx context.Context, order
 	}
 
 	err = contracter.orderMutator.CancelOrder(
-		NewDelaerMutatorProxy(
+		NewDealerMutatorProxy(
 			ctx,
 			logger,
 			contracter.dealer,
 			contracter.publisher,
-			WithDelaerMutatorProxyIgnoreErrors()),
+			WithDealerMutatorProxyIgnoreErrors()),
 		order,
 		segments,
 		reason,
@@ -189,12 +189,12 @@ func (contracter *ContracterInstance) FailOrderByID(ctx context.Context, orderID
 	}
 
 	err = contracter.orderMutator.FailOrder(
-		NewDelaerMutatorProxy(
+		NewDealerMutatorProxy(
 			ctx,
 			logger,
 			contracter.dealer,
 			contracter.publisher,
-			WithDelaerMutatorProxyIgnoreErrors()),
+			WithDealerMutatorProxyIgnoreErrors()),
 		order,
 		segments,
 		reportedErr,

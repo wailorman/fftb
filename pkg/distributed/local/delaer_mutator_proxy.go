@@ -13,8 +13,8 @@ type DealerSegmentCanceller interface {
 	CancelSegment(ctx context.Context, publisher models.IAuthor, id string, reason string) error
 }
 
-// DelaerMutatorProxy _
-type DelaerMutatorProxy struct {
+// DealerMutatorProxy _
+type DealerMutatorProxy struct {
 	ctx          context.Context
 	logger       logrus.FieldLogger
 	author       models.IAuthor
@@ -22,18 +22,18 @@ type DelaerMutatorProxy struct {
 	ignoreErrors bool
 }
 
-// DelaerMutatorProxyOption _
-type DelaerMutatorProxyOption func(*DelaerMutatorProxy)
+// DealerMutatorProxyOption _
+type DealerMutatorProxyOption func(*DealerMutatorProxy)
 
-// NewDelaerMutatorProxy _
-func NewDelaerMutatorProxy(
+// NewDealerMutatorProxy _
+func NewDealerMutatorProxy(
 	ctx context.Context,
 	logger logrus.FieldLogger,
 	dealer DealerSegmentCanceller,
 	author models.IAuthor,
-	options ...DelaerMutatorProxyOption) *DelaerMutatorProxy {
+	options ...DealerMutatorProxyOption) *DealerMutatorProxy {
 
-	mp := &DelaerMutatorProxy{
+	mp := &DealerMutatorProxy{
 		ctx:    ctx,
 		logger: logger,
 		author: author,
@@ -48,7 +48,7 @@ func NewDelaerMutatorProxy(
 }
 
 // CancelSegment _
-func (dp *DelaerMutatorProxy) CancelSegment(segment models.ISegment, reason string) error {
+func (dp *DealerMutatorProxy) CancelSegment(segment models.ISegment, reason string) error {
 	err := dp.dealer.CancelSegment(dp.ctx, dp.author, segment.GetID(), reason)
 
 	if err != nil {
@@ -63,9 +63,9 @@ func (dp *DelaerMutatorProxy) CancelSegment(segment models.ISegment, reason stri
 	return nil
 }
 
-// WithDelaerMutatorProxyIgnoreErrors _
-func WithDelaerMutatorProxyIgnoreErrors() DelaerMutatorProxyOption {
-	return func(mp *DelaerMutatorProxy) {
+// WithDealerMutatorProxyIgnoreErrors _
+func WithDealerMutatorProxyIgnoreErrors() DealerMutatorProxyOption {
+	return func(mp *DealerMutatorProxy) {
 		mp.ignoreErrors = true
 	}
 }

@@ -1,6 +1,6 @@
 openapi: '3.0.2'
 info:
-  title: FFTB API
+  title: FFTB Dealer API
   version: '1.0'
 servers:
   - url: http://localhost:8080
@@ -9,7 +9,9 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+    basicAuth:
+      type: http
+      scheme: basic
   
   responses:
     ResponseNoContent:
@@ -44,12 +46,37 @@ components:
           schema:
             $ref: '#/components/schemas/ProblemDetails'
    
+    ResponseOrder:
+      description: ConvertOrder object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConvertOrder'
+   
+    ResponseOrders:
+      description: ConvertOrder objects
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ConvertOrder'
+   
     ResponseSegment:
       description: ConvertSegment object
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ConvertSegment'
+            
+    ResponseSegments:
+      description: ConvertSegment objects
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ConvertSegment'
             
     ResponseAllocateAuthority:
       description: Success authority allocattion
@@ -73,10 +100,19 @@ components:
             $ref: '#/components/schemas/StorageClaim'
   
   parameters:
-    segmentIdParam:
-      name: id
+    segmentIDParam:
+      name: segmentID
       in: path
       description: Segment ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+      
+    orderIDParam:
+      name: orderID
+      in: path
+      description: Order ID
       required: true
       schema:
         type: string
@@ -100,6 +136,48 @@ components:
           additionalProperties:
             type: string
   
+    CancellationReason:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+            
+    ConvertOrder: 
+      type: object
+      required:
+        - type
+        - id
+        - input
+        - output
+        - state
+        - params
+      properties:
+        type:
+          type: string
+          enum: 
+            - convert/v1
+        id:
+          type: string
+          format: uuid
+        input:
+          type: string
+          example: https://s3.amazonaws.com/test/footage.mp4?X-Amz-Signature=9a7e820d74
+        output:
+          type: string
+          example: https://s3.amazonaws.com/test_out/footage.mp4?X-Amz-Signature=9a7e820d74
+        state:
+          type: string
+          enum:
+            - queued
+            - in_progress
+            - finished
+            - cancelled
+        params:
+          required: true
+          $ref: '#/components/schemas/ConvertParams'
+          
     ConvertSegment: 
       type: object
       required:
@@ -262,6 +340,9 @@ components:
           type: string
         
 paths:
+  # TODO: allocate authority with user & password
+  # TODO: split performer authority & publisher authority
+
   /authorities:
     post:
       operationId: allocateAuthority
@@ -275,6 +356,10 @@ paths:
           $ref: '#/components/responses/ResponseAllocateAuthority'
         '422':
           $ref: '#/components/responses/ResponseUnprocessableEntity'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
  
   /sessions:
     post:
@@ -291,6 +376,8 @@ paths:
           $ref: '#/components/responses/ResponseUnprocessableEntity'
         '401':
           $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
  
   /segments/free:
     post:
@@ -304,8 +391,22 @@ paths:
           $ref: '#/components/responses/ResponseNotFound'
         '401':
           $ref: '#/components/responses/ResponseUnauthorized'
-        
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
   /segments:
+    get:
+      security:
+        - basicAuth: []
+      operationId: searchSegments
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseSegments'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
     post:
       operationId: allocateSegment
       security:
@@ -322,14 +423,17 @@ paths:
           $ref: '#/components/responses/ResponseUnprocessableEntity'
         '401':
           $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
           
-  /segments/{id}:
+  /segments/{segmentID}:
     get:
       security:
         - bearerAuth: []
+        - basicAuth: []
       operationId: getSegmentByID
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       responses:
         '200':
           $ref: '#/components/responses/ResponseSegment'
@@ -337,14 +441,16 @@ paths:
           $ref: '#/components/responses/ResponseNotFound'
         '401':
           $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
           
-  /segments/{id}/actions/quit:
+  /segments/{segmentID}/actions/quit:
     post:
       security:
         - bearerAuth: []
       operationId: quitSegment
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       responses:
         '204':
           $ref: '#/components/responses/ResponseNoContent'
@@ -355,13 +461,13 @@ paths:
         '403':
           $ref: '#/components/responses/ResponseForbidden'
           
-  /segments/{id}/actions/finish:
+  /segments/{segmentID}/actions/finish:
     post:
       security:
         - bearerAuth: []
       operationId: finishSegment
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       responses:
         '204':
           $ref: '#/components/responses/ResponseNoContent'
@@ -372,13 +478,13 @@ paths:
         '403':
           $ref: '#/components/responses/ResponseForbidden'
           
-  /segments/{id}/actions/fail:
+  /segments/{segmentID}/actions/fail:
     post:
       security:
         - bearerAuth: []
       operationId: failSegment
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       requestBody:
         content:
           application/json:
@@ -394,13 +500,13 @@ paths:
         '403':
           $ref: '#/components/responses/ResponseForbidden'
 
-  /segments/{id}/input_storage_claim:
+  /segments/{segmentID}/input-storage-claim:
     get:
       security:
         - bearerAuth: []
       operationId: getInputStorageClaim
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       responses:
         '200':
           $ref: '#/components/responses/ResponseStorageClaim'
@@ -415,7 +521,7 @@ paths:
         - bearerAuth: []
       operationId: allocateInputStorageClaim
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       responses:
         '200':
           $ref: '#/components/responses/ResponseStorageClaim'
@@ -426,13 +532,13 @@ paths:
         '403':
           $ref: '#/components/responses/ResponseForbidden'
 
-  /segments/{id}/output_storage_claim:
+  /segments/{segmentID}/output-storage-claim:
     get:
       security:
         - bearerAuth: []
       operationId: getOutputStorageClaim
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       responses:
         '200':
           $ref: '#/components/responses/ResponseStorageClaim'
@@ -447,7 +553,7 @@ paths:
         - bearerAuth: []
       operationId: allocateOutputStorageClaim
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       responses:
         '200':
           $ref: '#/components/responses/ResponseStorageClaim'
@@ -458,13 +564,13 @@ paths:
         '403':
           $ref: '#/components/responses/ResponseForbidden'
 
-  /segments/{id}/notifications/process:
+  /segments/{segmentID}/notifications/process:
     post:
       security:
         - bearerAuth: []
       operationId: notifyProcess
       parameters:
-        - $ref: '#/components/parameters/segmentIdParam'
+        - $ref: '#/components/parameters/segmentIDParam'
       requestBody:
         content:
           application/json:

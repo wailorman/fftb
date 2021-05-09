@@ -6,10 +6,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	"github.com/wailorman/fftb/pkg/distributed/schema"
+	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 )
 
-func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, details ...*schema.ProblemDetails) error {
+func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, details ...*dealerSchema.ProblemDetails) error {
 	if clientErr != nil {
 		return errors.Wrap(clientErr, "API request failed")
 	}
@@ -18,7 +18,7 @@ func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, de
 		return models.ErrUnknown
 	}
 
-	var targetDetails *schema.ProblemDetails
+	var targetDetails *dealerSchema.ProblemDetails
 
 	for _, detail := range details {
 		if detail != nil {
@@ -75,7 +75,7 @@ func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, de
 	return errors.Wrapf(models.ErrUnknown, *targetDetails.Detail)
 }
 
-func errCtx(httpResponse *http.Response, details *schema.ProblemDetails) string {
+func errCtx(httpResponse *http.Response, details *dealerSchema.ProblemDetails) string {
 	infoFormat := "HTTP %d - `%s` (`%s`, description: `%s`)"
 
 	detail := ""

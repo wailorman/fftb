@@ -1,10 +1,11 @@
-generate-distributed-client:
-	oapi-codegen --config pkg/distributed/schema/generator_config.yml pkg/distributed/schema/swagger.yml
+distributed-client:
+	oapi-codegen --config pkg/distributed/remote/schema/dealer/generator_config.yml pkg/distributed/remote/schema/dealer/swagger.yml
+	oapi-codegen --config pkg/distributed/remote/schema/contracter/generator_config.yml pkg/distributed/remote/schema/contracter/swagger.yml
 
-generate-distributed-mocks:
-	mockgen -source=pkg/distributed/models/interfaces.go -destination=pkg/distributed/models/mocks/mocks.gen.go IDealer
+distributed-mocks:
+	mockgen -source=pkg/distributed/models/interfaces.go -destination=pkg/distributed/models/mocks/mocks.gen.go IDealer,IContracter
 
-distribute:
+deploy:
 	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o ~/Resilio\ Sync/wailorman_cmder/fftbdev.exe cmd/main/main.go
 	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o ~/Resilio\ Sync/kuzmech_cmder/fftbdev.exe cmd/main/main.go
 	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o ~/Resilio\ Sync/polardeer_cmder/fftbdev.exe cmd/main/main.go
