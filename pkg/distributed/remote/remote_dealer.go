@@ -5,38 +5,47 @@ import (
 	"fmt"
 	"net/http"
 
+	"log"
+
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/distributed/handlers"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
+	dSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // DealerAPIWrapper _
 type DealerAPIWrapper interface {
-	// GetAllOrdersWithResponse(ctx context.Context, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.GetAllOrdersResponse, error)
-	// GetOrderByIDWithResponse(ctx context.Context, id dealerSchema.OrderIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.GetOrderByIDResponse, error)
-	// GetSegmentsByOrderIDWithResponse(ctx context.Context, id dealerSchema.OrderIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.GetSegmentsByOrderIDResponse, error)
+	// GetAllOrdersWithResponse(ctx context.Context, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetAllOrdersResponse, error)
+	// GetOrderByIDWithResponse(ctx context.Context, id dSchema.OrderIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetOrderByIDResponse, error)
+	// GetSegmentsByOrderIDWithResponse(ctx context.Context, id dSchema.OrderIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetSegmentsByOrderIDResponse, error)
 
-	AllocateAuthorityWithResponse(ctx context.Context, body dealerSchema.AllocateAuthorityJSONRequestBody, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.AllocateAuthorityResponse, error)
-	CreateSessionWithResponse(ctx context.Context, body dealerSchema.CreateSessionJSONRequestBody, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.CreateSessionResponse, error)
-	AllocateSegmentWithResponse(ctx context.Context, body dealerSchema.AllocateSegmentJSONRequestBody, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.AllocateSegmentResponse, error)
-	FindFreeSegmentWithResponse(ctx context.Context, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.FindFreeSegmentResponse, error)
-	GetSegmentByIDWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.GetSegmentByIDResponse, error)
-	FailSegmentWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, body dealerSchema.FailSegmentJSONRequestBody, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.FailSegmentResponse, error)
-	FinishSegmentWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.FinishSegmentResponse, error)
-	QuitSegmentWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.QuitSegmentResponse, error)
-	GetInputStorageClaimWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.GetInputStorageClaimResponse, error)
-	AllocateInputStorageClaimWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.AllocateInputStorageClaimResponse, error)
-	GetOutputStorageClaimWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.GetOutputStorageClaimResponse, error)
-	AllocateOutputStorageClaimWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.AllocateOutputStorageClaimResponse, error)
-	NotifyProcessWithResponse(ctx context.Context, id dealerSchema.SegmentIDParam, body dealerSchema.NotifyProcessJSONRequestBody, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.NotifyProcessResponse, error)
+	AllocateAuthorityWithResponse(ctx context.Context, body dSchema.AllocateAuthorityJSONRequestBody, reqEditors ...dSchema.RequestEditorFn) (*dSchema.AllocateAuthorityResponse, error)
+	CreateSessionWithResponse(ctx context.Context, body dSchema.CreateSessionJSONRequestBody, reqEditors ...dSchema.RequestEditorFn) (*dSchema.CreateSessionResponse, error)
+	AllocateSegmentWithResponse(ctx context.Context, body dSchema.AllocateSegmentJSONRequestBody, reqEditors ...dSchema.RequestEditorFn) (*dSchema.AllocateSegmentResponse, error)
+	FindFreeSegmentWithResponse(ctx context.Context, reqEditors ...dSchema.RequestEditorFn) (*dSchema.FindFreeSegmentResponse, error)
+	GetSegmentByIDWithResponse(ctx context.Context, id dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetSegmentByIDResponse, error)
+	FailSegmentWithResponse(ctx context.Context, id dSchema.SegmentIDParam, body dSchema.FailSegmentJSONRequestBody, reqEditors ...dSchema.RequestEditorFn) (*dSchema.FailSegmentResponse, error)
+	FinishSegmentWithResponse(ctx context.Context, id dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.FinishSegmentResponse, error)
+	QuitSegmentWithResponse(ctx context.Context, id dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.QuitSegmentResponse, error)
+	GetInputStorageClaimWithResponse(ctx context.Context, id dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetInputStorageClaimResponse, error)
+	AllocateInputStorageClaimWithResponse(ctx context.Context, id dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.AllocateInputStorageClaimResponse, error)
+	GetOutputStorageClaimWithResponse(ctx context.Context, id dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetOutputStorageClaimResponse, error)
+	AllocateOutputStorageClaimWithResponse(ctx context.Context, id dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.AllocateOutputStorageClaimResponse, error)
+	NotifyProcessWithResponse(ctx context.Context, id dSchema.SegmentIDParam, body dSchema.NotifyProcessJSONRequestBody, reqEditors ...dSchema.RequestEditorFn) (*dSchema.NotifyProcessResponse, error)
+	SearchSegmentsWithResponse(ctx context.Context, reqEditors ...dSchema.RequestEditorFn) (*dSchema.SearchSegmentsResponse, error)
+	GetSegmentsByOrderIDWithResponse(ctx context.Context, orderID dSchema.OrderIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetSegmentsByOrderIDResponse, error)
+	AcceptSegmentWithResponse(ctx context.Context, segmentID dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.AcceptSegmentResponse, error)
+	CancelSegmentWithResponse(ctx context.Context, segmentID dSchema.SegmentIDParam, body dSchema.CancelSegmentJSONRequestBody, reqEditors ...dSchema.RequestEditorFn) (*dSchema.CancelSegmentResponse, error)
+	PublishSegmentWithResponse(ctx context.Context, segmentID dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.PublishSegmentResponse, error)
+	RepublishSegmentWithResponse(ctx context.Context, segmentID dSchema.SegmentIDParam, reqEditors ...dSchema.RequestEditorFn) (*dSchema.RepublishSegmentResponse, error)
+	GetQueuedSegmentsCountWithResponse(ctx context.Context, reqEditors ...dSchema.RequestEditorFn) (*dSchema.GetQueuedSegmentsCountResponse, error)
 }
 
 // SessionCreator _
 type SessionCreator interface {
-	CreateSessionWithResponse(ctx context.Context, body dealerSchema.CreateSessionJSONRequestBody, reqEditors ...dealerSchema.RequestEditorFn) (*dealerSchema.CreateSessionResponse, error)
+	CreateSessionWithResponse(ctx context.Context, body dSchema.CreateSessionJSONRequestBody, reqEditors ...dSchema.RequestEditorFn) (*dSchema.CreateSessionResponse, error)
 }
 
 // Dealer _
@@ -56,27 +65,27 @@ func NewDealer(apiWrapper DealerAPIWrapper, sc models.IStorageClient, authorityS
 	}
 }
 
-func buildAllocateSegmentRequest(req models.IDealerRequest) (dealerSchema.AllocateSegmentJSONRequestBody, error) {
+func buildAllocateSegmentRequest(req models.IDealerRequest) (dSchema.AllocateSegmentJSONRequestBody, error) {
 	if req == nil {
-		return dealerSchema.AllocateSegmentJSONRequestBody{},
+		return dSchema.AllocateSegmentJSONRequestBody{},
 			models.ErrMissingRequest
 	}
 
 	convReq, ok := req.(*models.ConvertDealerRequest)
 
 	if !ok {
-		return dealerSchema.AllocateSegmentJSONRequestBody{},
+		return dSchema.AllocateSegmentJSONRequestBody{},
 			errors.Wrapf(models.ErrUnknownType, "Unknown request type: `%s`", req.GetType())
 	}
 
-	body := dealerSchema.AllocateSegmentJSONRequestBody{
+	body := dSchema.AllocateSegmentJSONRequestBody{
 		Type:     models.ConvertV1Type,
 		Id:       convReq.Identity,
 		OrderId:  convReq.OrderIdentity,
 		Muxer:    convReq.Muxer,
 		Position: convReq.Position,
 
-		Params: dealerSchema.ConvertParams{
+		Params: dSchema.ConvertParams{
 			HwAccel:          convReq.Params.HWAccel,
 			KeyframeInterval: convReq.Params.KeyframeInterval,
 			Preset:           convReq.Params.Preset,
@@ -90,7 +99,7 @@ func buildAllocateSegmentRequest(req models.IDealerRequest) (dealerSchema.Alloca
 	return body, nil
 }
 
-func toModelSegment(seg *dealerSchema.ConvertSegment) (models.ISegment, error) {
+func toModelSegment(seg *dSchema.ConvertSegment) (models.ISegment, error) {
 	if seg == nil {
 		return nil, errors.Wrap(models.ErrUnknown, "Missing success response")
 	}
@@ -113,7 +122,7 @@ func toModelSegment(seg *dealerSchema.ConvertSegment) (models.ISegment, error) {
 	}, nil
 }
 
-func withAuthor(author models.IAuthor) dealerSchema.RequestEditorFn {
+func withAuthor(author models.IAuthor) dSchema.RequestEditorFn {
 	return func(ctx context.Context, req *http.Request) error {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", author.GetSessionKey()))
 		return nil
@@ -143,13 +152,13 @@ func withUnauthorizedRetry(ctx context.Context, ca SessionCreator, author models
 }
 
 func createSession(ctx context.Context, ca SessionCreator, authorityKey string) (string, error) {
-	body := dealerSchema.CreateSessionJSONRequestBody{
+	body := dSchema.CreateSessionJSONRequestBody{
 		AuthorityKey: authorityKey,
 	}
 
 	response, reqErr := ca.CreateSessionWithResponse(ctx, body)
 
-	err := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON422)
+	err := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON422)
 
 	if err != nil {
 		return "", err
@@ -185,10 +194,7 @@ func (rd *Dealer) AllocatePublisherAuthority(ctx context.Context, name string) (
 }
 
 // AllocateSegment _
-func (rd *Dealer) AllocateSegment(
-	ctx context.Context,
-	publisher models.IAuthor,
-	req models.IDealerRequest) (models.ISegment, error) {
+func (rd *Dealer) AllocateSegment(ctx context.Context, publisher models.IAuthor, req models.IDealerRequest) (models.ISegment, error) {
 
 	body, err := buildAllocateSegmentRequest(req)
 
@@ -196,17 +202,17 @@ func (rd *Dealer) AllocateSegment(
 		return nil, errors.Wrap(err, "Building allocate segment request")
 	}
 
-	var response *dealerSchema.AllocateSegmentResponse
+	var response *dSchema.AllocateSegmentResponse
 	var reqErr error
 
 	err = withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
 		response, reqErr = rd.apiWrapper.AllocateSegmentWithResponse(ctx, body, withAuthor(publisher))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON422, response.JSON401)
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON422, response.JSON401)
 		return pErr
 	})
 
@@ -219,41 +225,142 @@ func (rd *Dealer) AllocateSegment(
 
 // GetOutputStorageClaim _
 func (rd *Dealer) GetOutputStorageClaim(ctx context.Context, publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
-	panic("not implemented") // TODO:
+	var response *dSchema.GetOutputStorageClaimResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.GetOutputStorageClaimWithResponse(ctx, dSchema.SegmentIDParam(segmentID), withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
+		return pErr
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Calling API")
+	}
+
+	if response.JSON200 == nil {
+		return nil, errors.Wrap(models.ErrUnknown, "Missing success response")
+	}
+
+	storageClaim, err := rd.sc.BuildStorageClaimByURL(response.JSON200.Url)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Building storage claim")
+	}
+
+	return storageClaim, nil
 }
 
 // AllocateInputStorageClaim _
 func (rd *Dealer) AllocateInputStorageClaim(ctx context.Context, publisher models.IAuthor, id string) (models.IStorageClaim, error) {
-	panic("not implemented") // TODO:
+	var response *dSchema.AllocateInputStorageClaimResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.AllocateInputStorageClaimWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
+		return pErr
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Calling API")
+	}
+
+	if response.JSON200 == nil {
+		return nil, errors.Wrap(models.ErrUnknown, "Missing success response")
+	}
+
+	storageClaim, err := rd.sc.BuildStorageClaimByURL(response.JSON200.Url)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Building storage claim")
+	}
+
+	return storageClaim, nil
 }
 
 // GetQueuedSegmentsCount _
 func (rd *Dealer) GetQueuedSegmentsCount(ctx context.Context, publisher models.IAuthor) (int, error) {
-	panic("not implemented") // TODO:
+	var response *dSchema.GetQueuedSegmentsCountResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.GetQueuedSegmentsCountWithResponse(ctx, withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403)
+		return pErr
+	})
+
+	if err != nil {
+		return 0, errors.Wrap(err, "Calling API")
+	}
+
+	return response.JSON200.Count, nil
 }
 
 // GetSegmentsByOrderID _
 func (rd *Dealer) GetSegmentsByOrderID(ctx context.Context, publisher models.IAuthor, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
-	panic("not implemented") // TODO:
-}
-
-// GetSegmentByID _
-func (rd *Dealer) GetSegmentByID(
-	ctx context.Context,
-	publisher models.IAuthor,
-	segmentID string) (models.ISegment, error) {
-
-	var response *dealerSchema.GetSegmentByIDResponse
+	var response *dSchema.GetSegmentsByOrderIDResponse
 	var reqErr error
 
 	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
-		response, reqErr = rd.apiWrapper.GetSegmentByIDWithResponse(ctx, dealerSchema.SegmentIDParam(segmentID), withAuthor(publisher))
+		response, reqErr = rd.apiWrapper.GetSegmentsByOrderIDWithResponse(ctx, dSchema.OrderIDParam(orderID), withAuthor(publisher))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401)
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403)
+		return pErr
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	segments := make([]models.ISegment, 0)
+
+	for _, segment := range *response.JSON200 {
+		mSeg, err := toModelSegment(&segment)
+
+		if err != nil {
+			return nil, errors.Wrap(err, "Parsing segment")
+		}
+
+		segments = append(segments, mSeg)
+	}
+
+	return segments, nil
+}
+
+// GetSegmentByID _
+func (rd *Dealer) GetSegmentByID(ctx context.Context, publisher models.IAuthor, segmentID string) (models.ISegment, error) {
+
+	var response *dSchema.GetSegmentByIDResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.GetSegmentByIDWithResponse(ctx, dSchema.SegmentIDParam(segmentID), withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
 		return pErr
 	})
 
@@ -266,55 +373,131 @@ func (rd *Dealer) GetSegmentByID(
 
 // NotifyRawUpload _
 func (rd *Dealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, id string, p models.Progresser) error {
-	panic("not implemented") // TODO:
+	// TODO: not implemented
+	log.Printf("remote.NotifyRawUpload (not implemented): #%s %.2f\n", id, p.Percent())
+	return nil
 }
 
 // NotifyResultDownload _
 func (rd *Dealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, id string, p models.Progresser) error {
-	panic("not implemented") // TODO:
+	// TODO: not implemented
+	log.Printf("remote.NotifyResultDownload (not implemented): #%s %.2f\n", id, p.Percent())
+	return nil
 }
 
 // PublishSegment _
 func (rd *Dealer) PublishSegment(ctx context.Context, publisher models.IAuthor, id string) error {
-	panic("not implemented") // TODO:
+	var response *dSchema.PublishSegmentResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.PublishSegmentWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
+		return pErr
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // RepublishSegment _
 func (rd *Dealer) RepublishSegment(ctx context.Context, publisher models.IAuthor, id string) error {
-	panic("not implemented") // TODO:
+	var response *dSchema.RepublishSegmentResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.RepublishSegmentWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
+		return pErr
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CancelSegment _
 func (rd *Dealer) CancelSegment(ctx context.Context, publisher models.IAuthor, id string, reason string) error {
-	panic("not implemented") // TODO:
+	var response *dSchema.CancelSegmentResponse
+	var reqErr error
+
+	requestBody := dSchema.CancelSegmentJSONRequestBody{Reason: reason}
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.CancelSegmentWithResponse(ctx, dSchema.SegmentIDParam(id), requestBody, withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
+		return pErr
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // AcceptSegment _
 func (rd *Dealer) AcceptSegment(ctx context.Context, publisher models.IAuthor, id string) error {
-	panic("not implemented") // TODO:
+	var response *dSchema.AcceptSegmentResponse
+	var reqErr error
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, publisher, func() error {
+		response, reqErr = rd.apiWrapper.AcceptSegmentWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(publisher))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
+		return pErr
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ObserveSegments _
 func (rd *Dealer) ObserveSegments(ctx context.Context, wg chwg.WaitGrouper) {
-	panic("not implemented") // TODO:
+	// TODO: not implemented
+	log.Printf("remote.ObserveSegments (not implemented) SHOULD BE REMOVED\n")
 }
 
 // FindFreeSegment _
-func (rd *Dealer) FindFreeSegment(
-	ctx context.Context,
-	performer models.IAuthor) (models.ISegment, error) {
-
-	var response *dealerSchema.FindFreeSegmentResponse
+func (rd *Dealer) FindFreeSegment(ctx context.Context, performer models.IAuthor) (models.ISegment, error) {
+	var response *dSchema.FindFreeSegmentResponse
 	var reqErr error
 
 	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
 		response, reqErr = rd.apiWrapper.FindFreeSegmentWithResponse(ctx, withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401)
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
 		return pErr
 	})
 
@@ -327,32 +510,58 @@ func (rd *Dealer) FindFreeSegment(
 
 // NotifyRawDownload _
 func (rd *Dealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
-	panic("not implemented") // TODO:
+	// TODO: not implemented
+	log.Printf("remote.NotifyRawDownload (not implemented): #%s %.2f\n", id, p.Percent())
+	return nil
 }
 
 // NotifyResultUpload _
 func (rd *Dealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
-	panic("not implemented") // TODO:
+	// TODO: not implemented
+	log.Printf("remote.NotifyResultUpload (not implemented): #%s %.2f\n", id, p.Percent())
+	return nil
 }
 
 // NotifyProcess _
 func (rd *Dealer) NotifyProcess(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
-	panic("not implemented") // TODO:
+	var response *dSchema.NotifyProcessResponse
+	var reqErr error
+
+	requestBody := dSchema.NotifyProcessJSONRequestBody{
+		Progress: float32(p.Percent()),
+	}
+
+	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
+		response, reqErr = rd.apiWrapper.NotifyProcessWithResponse(ctx, dSchema.SegmentIDParam(id), requestBody, withAuthor(performer))
+
+		if response == nil {
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
+		}
+
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
+		return pErr
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // FinishSegment _
 func (rd *Dealer) FinishSegment(ctx context.Context, performer models.IAuthor, id string) error {
-	var response *dealerSchema.FinishSegmentResponse
+	var response *dSchema.FinishSegmentResponse
 	var reqErr error
 
 	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
-		response, reqErr = rd.apiWrapper.FinishSegmentWithResponse(ctx, dealerSchema.SegmentIDParam(id), withAuthor(performer))
+		response, reqErr = rd.apiWrapper.FinishSegmentWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
 		return pErr
 	})
 
@@ -365,17 +574,17 @@ func (rd *Dealer) FinishSegment(ctx context.Context, performer models.IAuthor, i
 
 // QuitSegment _
 func (rd *Dealer) QuitSegment(ctx context.Context, performer models.IAuthor, id string) error {
-	var response *dealerSchema.QuitSegmentResponse
+	var response *dSchema.QuitSegmentResponse
 	var reqErr error
 
 	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
-		response, reqErr = rd.apiWrapper.QuitSegmentWithResponse(ctx, dealerSchema.SegmentIDParam(id), withAuthor(performer))
+		response, reqErr = rd.apiWrapper.QuitSegmentWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
 		return pErr
 	})
 
@@ -388,21 +597,21 @@ func (rd *Dealer) QuitSegment(ctx context.Context, performer models.IAuthor, id 
 
 // FailSegment _
 func (rd *Dealer) FailSegment(ctx context.Context, performer models.IAuthor, id string, reportedErr error) error {
-	var response *dealerSchema.FailSegmentResponse
+	var response *dSchema.FailSegmentResponse
 	var reqErr error
 
-	body := dealerSchema.FailSegmentJSONRequestBody{
+	body := dSchema.FailSegmentJSONRequestBody{
 		Failure: reportedErr.Error(),
 	}
 
 	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
-		response, reqErr = rd.apiWrapper.FailSegmentWithResponse(ctx, dealerSchema.SegmentIDParam(id), body, withAuthor(performer))
+		response, reqErr = rd.apiWrapper.FailSegmentWithResponse(ctx, dSchema.SegmentIDParam(id), body, withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
+		pErr := parseError(noContentBody, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
 		return pErr
 	})
 
@@ -415,17 +624,17 @@ func (rd *Dealer) FailSegment(ctx context.Context, performer models.IAuthor, id 
 
 // GetInputStorageClaim _
 func (rd *Dealer) GetInputStorageClaim(ctx context.Context, performer models.IAuthor, id string) (models.IStorageClaim, error) {
-	var response *dealerSchema.GetInputStorageClaimResponse
+	var response *dSchema.GetInputStorageClaimResponse
 	var reqErr error
 
 	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
-		response, reqErr = rd.apiWrapper.GetInputStorageClaimWithResponse(ctx, dealerSchema.SegmentIDParam(id), withAuthor(performer))
+		response, reqErr = rd.apiWrapper.GetInputStorageClaimWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
 		return pErr
 	})
 
@@ -448,17 +657,17 @@ func (rd *Dealer) GetInputStorageClaim(ctx context.Context, performer models.IAu
 
 // AllocateOutputStorageClaim _
 func (rd *Dealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, id string) (models.IStorageClaim, error) {
-	var response *dealerSchema.AllocateOutputStorageClaimResponse
+	var response *dSchema.AllocateOutputStorageClaimResponse
 	var reqErr error
 
 	err := withUnauthorizedRetry(ctx, rd.apiWrapper, performer, func() error {
-		response, reqErr = rd.apiWrapper.AllocateOutputStorageClaimWithResponse(ctx, dealerSchema.SegmentIDParam(id), withAuthor(performer))
+		response, reqErr = rd.apiWrapper.AllocateOutputStorageClaimWithResponse(ctx, dSchema.SegmentIDParam(id), withAuthor(performer))
 
 		if response == nil {
-			return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`)", reqErr)
+			return buildEmptyResponseError(reqErr, response.HTTPResponse, response.Body)
 		}
 
-		pErr := parseError(reqErr, response.HTTPResponse, response.Body, response.JSON404, response.JSON401, response.JSON403)
+		pErr := parseError(response.JSON200, reqErr, response.HTTPResponse, response.Body, response.JSON401, response.JSON403, response.JSON404)
 		return pErr
 	})
 

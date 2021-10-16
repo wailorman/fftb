@@ -8,9 +8,21 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 )
 
+// Contracter _
+type Contracter interface {
+	GetAllOrders(ctx context.Context) ([]models.IOrder, error)
+	SearchAllOrders(ctx context.Context, search models.IOrderSearchCriteria) ([]models.IOrder, error)
+	GetAllSegments(ctx context.Context) ([]models.ISegment, error)
+	SearchAllSegments(ctx context.Context, search models.ISegmentSearchCriteria) ([]models.ISegment, error)
+	GetSegmentsByOrderID(ctx context.Context, orderID string) ([]models.ISegment, error)
+	SearchSegmentsByOrderID(ctx context.Context, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error)
+	GetSegmentByID(ctx context.Context, segmentID string) (models.ISegment, error)
+	CancelOrderByID(ctx context.Context, orderID string, reason string) error
+}
+
 // ContracterAdapter _
 type ContracterAdapter struct {
-	contracter models.IContracter
+	contracter Contracter
 }
 
 // NewContracterAdapter _

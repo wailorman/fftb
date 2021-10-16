@@ -13,16 +13,16 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	mock_models "github.com/wailorman/fftb/pkg/distributed/models/mocks"
 	"github.com/wailorman/fftb/pkg/distributed/remote"
-	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
+	dSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
-func remotifyDealerApi(t *testing.T, localDealer models.IDealer) *dealerSchema.ClientWithResponses {
+func remotifyDealerApi(t *testing.T, localDealer models.IDealer) *dSchema.ClientWithResponses {
 	e := handlers.NewDealerAPIRouter(context.Background(), logrus.New(), localDealer, authoritySecret, sessionSecret)
 
 	te := newEchoClientWrap(e)
 
-	cl, err := dealerSchema.NewClientWithResponses("http://localhost:8080", dealerSchema.WithHTTPClient(te))
+	cl, err := dSchema.NewClientWithResponses("http://localhost:8080", dSchema.WithHTTPClient(te))
 
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -31,7 +31,7 @@ func remotifyDealerApi(t *testing.T, localDealer models.IDealer) *dealerSchema.C
 	return cl
 }
 
-func Test__AllocateSegment(t *testing.T) {
+func Test__Dealer__AllocateSegment(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
@@ -63,14 +63,143 @@ func Test__AllocateSegment(t *testing.T) {
 	}
 }
 
-func Test__GetSegmentByID(t *testing.T) {
+func Test__Dealer__GetOutputStorageClaim(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	localDealer := mock_models.NewMockIDealer(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
+	segmentID := "123"
+	storageClaim := createStorageClaim(t)
 
+	localDealer.
+		EXPECT().
+		GetOutputStorageClaim(gomock.Any(), AuthorEq(author), segmentID).
+		Return(storageClaim, nil)
+
+	localStorageClient.
+		EXPECT().
+		BuildStorageClaimByURL(storageClaim.GetURL()).
+		Return(storageClaim, nil)
+
+	apiClient := remotifyDealerApi(t, localDealer)
+
+	rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
+
+	resultStorageClaim, err := rd.GetOutputStorageClaim(context.Background(), author, segmentID)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, storageClaim.GetID(), resultStorageClaim.GetID())
+	}
+}
+
+func Test__Dealer__AllocateInputStorageClaim(t *testing.T) {
+	author := createAuthor(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	localDealer := mock_models.NewMockIDealer(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
+	segmentID := "123"
+	storageClaim := createStorageClaim(t)
+
+	localDealer.
+		EXPECT().
+		AllocateInputStorageClaim(gomock.Any(), AuthorEq(author), segmentID).
+		Return(storageClaim, nil)
+
+	localStorageClient.
+		EXPECT().
+		BuildStorageClaimByURL(storageClaim.GetURL()).
+		Return(storageClaim, nil)
+
+	apiClient := remotifyDealerApi(t, localDealer)
+
+	rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
+
+	resultStorageClaim, err := rd.AllocateInputStorageClaim(context.Background(), author, segmentID)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, storageClaim.GetID(), resultStorageClaim.GetID())
+	}
+}
+
+func Test__Dealer__GetQueuedSegmentsCount(t *testing.T) {
+	author := createAuthor(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	localDealer := mock_models.NewMockIDealer(ctrl)
+	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
+	expectedCount := 8
+
+	localDealer.
+		EXPECT().
+		GetQueuedSegmentsCount(gomock.Any(), AuthorEq(author)).
+		Return(expectedCount, nil)
+
+	apiClient := remotifyDealerApi(t, localDealer)
+
+	rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
+
+	resultCount, err := rd.GetQueuedSegmentsCount(context.Background(), author)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, expectedCount, resultCount)
+	}
+}
+
+func Test__Dealer__GetSegmentsByOrderID(t *testing.T) {
+	author := createAuthor(t)
+
+	orderID := "9991"
+	expectedSegments := []models.ISegment{
+		&models.ConvertSegment{Type: models.ConvertV1Type, Identity: "0001", OrderIdentity: orderID},
+		&models.ConvertSegment{Type: models.ConvertV1Type, Identity: "0002", OrderIdentity: orderID},
+		&models.ConvertSegment{Type: models.ConvertV1Type, Identity: "0003", OrderIdentity: orderID},
+	}
+
+	t.Run("Calls local dealer method", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		localDealer := mock_models.NewMockIDealer(ctrl)
+		localStorageClient := mock_models.NewMockIStorageClient(ctrl)
+
+		localDealer.
+			EXPECT().
+			GetSegmentsByOrderID(gomock.Any(), AuthorEq(author), orderID, gomock.Any()).
+			Return(expectedSegments, nil)
+
+		apiClient := remotifyDealerApi(t, localDealer)
+
+		rd := remote.NewDealer(apiClient, localStorageClient, authoritySecret)
+
+		resultSegments, err := rd.GetSegmentsByOrderID(context.Background(), author, orderID, models.EmptySegmentFilters())
+
+		if assert.NoError(t, err) {
+			assert.Equal(t, len(expectedSegments), len(resultSegments))
+		}
+	})
+}
+
+// PublishSegment
+// RepublishSegment
+// CancelSegment
+// AcceptSegment
+// NotifyProcess
+
+func Test__Dealer__GetSegmentByID(t *testing.T) {
+	author := createAuthor(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	localDealer := mock_models.NewMockIDealer(ctrl)
 	localStorageClient := mock_models.NewMockIStorageClient(ctrl)
 
 	localDealer.
@@ -89,7 +218,7 @@ func Test__GetSegmentByID(t *testing.T) {
 	}
 }
 
-func Test__FindFreeSegment(t *testing.T) {
+func Test__Dealer__FindFreeSegment(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
@@ -115,7 +244,7 @@ func Test__FindFreeSegment(t *testing.T) {
 	}
 }
 
-func Test__FailSegment(t *testing.T) {
+func Test__Dealer__FailSegment(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
@@ -141,7 +270,7 @@ func Test__FailSegment(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test__FinishSegment(t *testing.T) {
+func Test__Dealer__FinishSegment(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
@@ -166,7 +295,7 @@ func Test__FinishSegment(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test__QuitSegment(t *testing.T) {
+func Test__Dealer__QuitSegment(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
@@ -191,7 +320,7 @@ func Test__QuitSegment(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func Test__GetInputStorageClaim(t *testing.T) {
+func Test__Dealer__GetInputStorageClaim(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
@@ -224,7 +353,7 @@ func Test__GetInputStorageClaim(t *testing.T) {
 	}
 }
 
-func Test__AllocateOutputStorageClaim(t *testing.T) {
+func Test__Dealer__AllocateOutputStorageClaim(t *testing.T) {
 	author := createAuthor(t)
 
 	ctrl := gomock.NewController(t)
@@ -256,3 +385,43 @@ func Test__AllocateOutputStorageClaim(t *testing.T) {
 		assert.NotEqual(t, "", resStorageClaim.GetID())
 	}
 }
+
+func Test__Dealer__AcceptSegment(t *testing.T) {
+	author := createAuthor(t)
+
+	segmentID := "123"
+	storageClient := local.NewStorageClient(".")
+
+	t.Run("Calls local dealer method", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		localDealer := mock_models.NewMockIDealer(ctrl)
+
+		localDealer.
+			EXPECT().
+			AcceptSegment(gomock.Any(), AuthorEq(author), segmentID).
+			Return(nil)
+
+		apiClient := remotifyDealerApi(t, localDealer)
+
+		rd := remote.NewDealer(apiClient, storageClient, authoritySecret)
+
+		err := rd.AcceptSegment(context.Background(), author, segmentID)
+
+		assert.NoError(t, err)
+	})
+}
+
+// For contracter:
+// TODO: NotifyRawUpload
+// TODO: NotifyResultDownload
+// TODO: PublishSegment
+// TODO: RepublishSegment
+// TODO: CancelSegment
+// TODO: AcceptSegment
+
+// For worker:
+// TODO: NotifyRawDownload
+// TODO: NotifyResultUpload
+// TODO: NotifyProcess

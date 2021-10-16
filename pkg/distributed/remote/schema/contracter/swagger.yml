@@ -186,7 +186,7 @@ components:
         position:
           type: integer
           minimum: 0
-        
+
     ConvertParams:
       type: object
       required:
@@ -243,7 +243,7 @@ paths:
           $ref: '#/components/responses/ResponseUnauthorized'
         '403':
           $ref: '#/components/responses/ResponseForbidden'
-          
+
   /segments/{segmentID}:
     get:
       security:

@@ -34,6 +34,11 @@ type AuthorityInput struct {
 	Name string `json:"name"`
 }
 
+// CancellationReason defines model for CancellationReason.
+type CancellationReason struct {
+	Reason string `json:"reason"`
+}
+
 // ConvertDealerRequest defines model for ConvertDealerRequest.
 type ConvertDealerRequest struct {
 	Id       string        `json:"id"`
@@ -63,6 +68,11 @@ type ConvertSegment struct {
 	Params   ConvertParams `json:"params"`
 	Position int           `json:"position"`
 	Type     string        `json:"type"`
+}
+
+// Count defines model for Count.
+type Count struct {
+	Count int `json:"count"`
 }
 
 // FailureInput defines model for FailureInput.
@@ -103,11 +113,17 @@ type StorageClaim struct {
 	Url string `json:"url"`
 }
 
+// OrderIDParam defines model for orderIDParam.
+type OrderIDParam string
+
 // SegmentIDParam defines model for segmentIDParam.
 type SegmentIDParam string
 
 // ResponseAllocateAuthority defines model for ResponseAllocateAuthority.
 type ResponseAllocateAuthority Authority
+
+// ResponseCount defines model for ResponseCount.
+type ResponseCount Count
 
 // ResponseCreateSession defines model for ResponseCreateSession.
 type ResponseCreateSession Session
@@ -139,6 +155,9 @@ type AllocateAuthorityJSONBody AuthorityInput
 // AllocateSegmentJSONBody defines parameters for AllocateSegment.
 type AllocateSegmentJSONBody ConvertDealerRequest
 
+// CancelSegmentJSONBody defines parameters for CancelSegment.
+type CancelSegmentJSONBody CancellationReason
+
 // FailSegmentJSONBody defines parameters for FailSegment.
 type FailSegmentJSONBody FailureInput
 
@@ -153,6 +172,9 @@ type AllocateAuthorityJSONRequestBody AllocateAuthorityJSONBody
 
 // AllocateSegmentJSONRequestBody defines body for AllocateSegment for application/json ContentType.
 type AllocateSegmentJSONRequestBody AllocateSegmentJSONBody
+
+// CancelSegmentJSONRequestBody defines body for CancelSegment for application/json ContentType.
+type CancelSegmentJSONRequestBody CancelSegmentJSONBody
 
 // FailSegmentJSONRequestBody defines body for FailSegment for application/json ContentType.
 type FailSegmentJSONRequestBody FailSegmentJSONBody
@@ -294,6 +316,9 @@ type ClientInterface interface {
 
 	AllocateAuthority(ctx context.Context, body AllocateAuthorityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetQueuedSegmentsCount request
+	GetQueuedSegmentsCount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SearchSegments request
 	SearchSegments(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -308,6 +333,14 @@ type ClientInterface interface {
 	// GetSegmentByID request
 	GetSegmentByID(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// AcceptSegment request
+	AcceptSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelSegment request  with any body
+	CancelSegmentWithBody(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CancelSegment(ctx context.Context, segmentID SegmentIDParam, body CancelSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// FailSegment request  with any body
 	FailSegmentWithBody(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -316,8 +349,14 @@ type ClientInterface interface {
 	// FinishSegment request
 	FinishSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PublishSegment request
+	PublishSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// QuitSegment request
 	QuitSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RepublishSegment request
+	RepublishSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetInputStorageClaim request
 	GetInputStorageClaim(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -340,6 +379,9 @@ type ClientInterface interface {
 	CreateSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CreateSession(ctx context.Context, body CreateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSegmentsByOrderID request
+	GetSegmentsByOrderID(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) AllocateAuthorityWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -356,6 +398,18 @@ func (c *Client) AllocateAuthorityWithBody(ctx context.Context, contentType stri
 
 func (c *Client) AllocateAuthority(ctx context.Context, body AllocateAuthorityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAllocateAuthorityRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetQueuedSegmentsCount(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetQueuedSegmentsCountRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -426,6 +480,42 @@ func (c *Client) GetSegmentByID(ctx context.Context, segmentID SegmentIDParam, r
 	return c.Client.Do(req)
 }
 
+func (c *Client) AcceptSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAcceptSegmentRequest(c.Server, segmentID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelSegmentWithBody(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSegmentRequestWithBody(c.Server, segmentID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelSegment(ctx context.Context, segmentID SegmentIDParam, body CancelSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSegmentRequest(c.Server, segmentID, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) FailSegmentWithBody(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewFailSegmentRequestWithBody(c.Server, segmentID, contentType, body)
 	if err != nil {
@@ -462,8 +552,32 @@ func (c *Client) FinishSegment(ctx context.Context, segmentID SegmentIDParam, re
 	return c.Client.Do(req)
 }
 
+func (c *Client) PublishSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPublishSegmentRequest(c.Server, segmentID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) QuitSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewQuitSegmentRequest(c.Server, segmentID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RepublishSegment(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRepublishSegmentRequest(c.Server, segmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -570,6 +684,18 @@ func (c *Client) CreateSession(ctx context.Context, body CreateSessionJSONReques
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetSegmentsByOrderID(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSegmentsByOrderIDRequest(c.Server, orderID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // NewAllocateAuthorityRequest calls the generic AllocateAuthority builder with application/json body
 func NewAllocateAuthorityRequest(server string, body AllocateAuthorityJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -606,6 +732,33 @@ func NewAllocateAuthorityRequestWithBody(server string, contentType string, body
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetQueuedSegmentsCountRequest generates requests for GetQueuedSegmentsCount
+func NewGetQueuedSegmentsCountRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/queued_segments_count")
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -738,6 +891,87 @@ func NewGetSegmentByIDRequest(server string, segmentID SegmentIDParam) (*http.Re
 	return req, nil
 }
 
+// NewAcceptSegmentRequest generates requests for AcceptSegment
+func NewAcceptSegmentRequest(server string, segmentID SegmentIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, segmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/actions/accept", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCancelSegmentRequest calls the generic CancelSegment builder with application/json body
+func NewCancelSegmentRequest(server string, segmentID SegmentIDParam, body CancelSegmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCancelSegmentRequestWithBody(server, segmentID, "application/json", bodyReader)
+}
+
+// NewCancelSegmentRequestWithBody generates requests for CancelSegment with any type of body
+func NewCancelSegmentRequestWithBody(server string, segmentID SegmentIDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, segmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/actions/cancel", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewFailSegmentRequest calls the generic FailSegment builder with application/json body
 func NewFailSegmentRequest(server string, segmentID SegmentIDParam, body FailSegmentJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -819,6 +1053,40 @@ func NewFinishSegmentRequest(server string, segmentID SegmentIDParam) (*http.Req
 	return req, nil
 }
 
+// NewPublishSegmentRequest generates requests for PublishSegment
+func NewPublishSegmentRequest(server string, segmentID SegmentIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, segmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/actions/publish", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewQuitSegmentRequest generates requests for QuitSegment
 func NewQuitSegmentRequest(server string, segmentID SegmentIDParam) (*http.Request, error) {
 	var err error
@@ -836,6 +1104,40 @@ func NewQuitSegmentRequest(server string, segmentID SegmentIDParam) (*http.Reque
 	}
 
 	operationPath := fmt.Sprintf("/segments/%s/actions/quit", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRepublishSegmentRequest generates requests for RepublishSegment
+func NewRepublishSegmentRequest(server string, segmentID SegmentIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, segmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/segments/%s/actions/republish", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = operationPath[1:]
 	}
@@ -1076,6 +1378,40 @@ func NewCreateSessionRequestWithBody(server string, contentType string, body io.
 	return req, nil
 }
 
+// NewGetSegmentsByOrderIDRequest generates requests for GetSegmentsByOrderID
+func NewGetSegmentsByOrderIDRequest(server string, orderID OrderIDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "orderID", runtime.ParamLocationPath, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/%s/segments", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = operationPath[1:]
+	}
+	operationURL := url.URL{
+		Path: operationPath,
+	}
+
+	queryURL := serverURL.ResolveReference(&operationURL)
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -1124,6 +1460,9 @@ type ClientWithResponsesInterface interface {
 
 	AllocateAuthorityWithResponse(ctx context.Context, body AllocateAuthorityJSONRequestBody, reqEditors ...RequestEditorFn) (*AllocateAuthorityResponse, error)
 
+	// GetQueuedSegmentsCount request
+	GetQueuedSegmentsCountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQueuedSegmentsCountResponse, error)
+
 	// SearchSegments request
 	SearchSegmentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SearchSegmentsResponse, error)
 
@@ -1138,6 +1477,14 @@ type ClientWithResponsesInterface interface {
 	// GetSegmentByID request
 	GetSegmentByIDWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error)
 
+	// AcceptSegment request
+	AcceptSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*AcceptSegmentResponse, error)
+
+	// CancelSegment request  with any body
+	CancelSegmentWithBodyWithResponse(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelSegmentResponse, error)
+
+	CancelSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, body CancelSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelSegmentResponse, error)
+
 	// FailSegment request  with any body
 	FailSegmentWithBodyWithResponse(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailSegmentResponse, error)
 
@@ -1146,8 +1493,14 @@ type ClientWithResponsesInterface interface {
 	// FinishSegment request
 	FinishSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*FinishSegmentResponse, error)
 
+	// PublishSegment request
+	PublishSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*PublishSegmentResponse, error)
+
 	// QuitSegment request
 	QuitSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*QuitSegmentResponse, error)
+
+	// RepublishSegment request
+	RepublishSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*RepublishSegmentResponse, error)
 
 	// GetInputStorageClaim request
 	GetInputStorageClaimWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*GetInputStorageClaimResponse, error)
@@ -1170,6 +1523,9 @@ type ClientWithResponsesInterface interface {
 	CreateSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionResponse, error)
 
 	CreateSessionWithResponse(ctx context.Context, body CreateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionResponse, error)
+
+	// GetSegmentsByOrderID request
+	GetSegmentsByOrderIDWithResponse(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*GetSegmentsByOrderIDResponse, error)
 }
 
 type AllocateAuthorityResponse struct {
@@ -1191,6 +1547,30 @@ func (r AllocateAuthorityResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r AllocateAuthorityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type GetQueuedSegmentsCountResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Count
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r GetQueuedSegmentsCountResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetQueuedSegmentsCountResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1296,6 +1676,54 @@ func (r GetSegmentByIDResponse) StatusCode() int {
 	return 0
 }
 
+type AcceptSegmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r AcceptSegmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AcceptSegmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CancelSegmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelSegmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelSegmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type FailSegmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1344,6 +1772,30 @@ func (r FinishSegmentResponse) StatusCode() int {
 	return 0
 }
 
+type PublishSegmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r PublishSegmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PublishSegmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type QuitSegmentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1362,6 +1814,30 @@ func (r QuitSegmentResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r QuitSegmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RepublishSegmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+	JSON404      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r RepublishSegmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RepublishSegmentResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1517,6 +1993,30 @@ func (r CreateSessionResponse) StatusCode() int {
 	return 0
 }
 
+type GetSegmentsByOrderIDResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]ConvertSegment
+	JSON401      *ProblemDetails
+	JSON403      *ProblemDetails
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSegmentsByOrderIDResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSegmentsByOrderIDResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // AllocateAuthorityWithBodyWithResponse request with arbitrary body returning *AllocateAuthorityResponse
 func (c *ClientWithResponses) AllocateAuthorityWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AllocateAuthorityResponse, error) {
 	rsp, err := c.AllocateAuthorityWithBody(ctx, contentType, body, reqEditors...)
@@ -1532,6 +2032,15 @@ func (c *ClientWithResponses) AllocateAuthorityWithResponse(ctx context.Context,
 		return nil, err
 	}
 	return ParseAllocateAuthorityResponse(rsp)
+}
+
+// GetQueuedSegmentsCountWithResponse request returning *GetQueuedSegmentsCountResponse
+func (c *ClientWithResponses) GetQueuedSegmentsCountWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetQueuedSegmentsCountResponse, error) {
+	rsp, err := c.GetQueuedSegmentsCount(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetQueuedSegmentsCountResponse(rsp)
 }
 
 // SearchSegmentsWithResponse request returning *SearchSegmentsResponse
@@ -1578,6 +2087,32 @@ func (c *ClientWithResponses) GetSegmentByIDWithResponse(ctx context.Context, se
 	return ParseGetSegmentByIDResponse(rsp)
 }
 
+// AcceptSegmentWithResponse request returning *AcceptSegmentResponse
+func (c *ClientWithResponses) AcceptSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*AcceptSegmentResponse, error) {
+	rsp, err := c.AcceptSegment(ctx, segmentID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAcceptSegmentResponse(rsp)
+}
+
+// CancelSegmentWithBodyWithResponse request with arbitrary body returning *CancelSegmentResponse
+func (c *ClientWithResponses) CancelSegmentWithBodyWithResponse(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelSegmentResponse, error) {
+	rsp, err := c.CancelSegmentWithBody(ctx, segmentID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelSegmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) CancelSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, body CancelSegmentJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelSegmentResponse, error) {
+	rsp, err := c.CancelSegment(ctx, segmentID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelSegmentResponse(rsp)
+}
+
 // FailSegmentWithBodyWithResponse request with arbitrary body returning *FailSegmentResponse
 func (c *ClientWithResponses) FailSegmentWithBodyWithResponse(ctx context.Context, segmentID SegmentIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FailSegmentResponse, error) {
 	rsp, err := c.FailSegmentWithBody(ctx, segmentID, contentType, body, reqEditors...)
@@ -1604,6 +2139,15 @@ func (c *ClientWithResponses) FinishSegmentWithResponse(ctx context.Context, seg
 	return ParseFinishSegmentResponse(rsp)
 }
 
+// PublishSegmentWithResponse request returning *PublishSegmentResponse
+func (c *ClientWithResponses) PublishSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*PublishSegmentResponse, error) {
+	rsp, err := c.PublishSegment(ctx, segmentID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePublishSegmentResponse(rsp)
+}
+
 // QuitSegmentWithResponse request returning *QuitSegmentResponse
 func (c *ClientWithResponses) QuitSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*QuitSegmentResponse, error) {
 	rsp, err := c.QuitSegment(ctx, segmentID, reqEditors...)
@@ -1611,6 +2155,15 @@ func (c *ClientWithResponses) QuitSegmentWithResponse(ctx context.Context, segme
 		return nil, err
 	}
 	return ParseQuitSegmentResponse(rsp)
+}
+
+// RepublishSegmentWithResponse request returning *RepublishSegmentResponse
+func (c *ClientWithResponses) RepublishSegmentWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*RepublishSegmentResponse, error) {
+	rsp, err := c.RepublishSegment(ctx, segmentID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRepublishSegmentResponse(rsp)
 }
 
 // GetInputStorageClaimWithResponse request returning *GetInputStorageClaimResponse
@@ -1683,6 +2236,15 @@ func (c *ClientWithResponses) CreateSessionWithResponse(ctx context.Context, bod
 	return ParseCreateSessionResponse(rsp)
 }
 
+// GetSegmentsByOrderIDWithResponse request returning *GetSegmentsByOrderIDResponse
+func (c *ClientWithResponses) GetSegmentsByOrderIDWithResponse(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*GetSegmentsByOrderIDResponse, error) {
+	rsp, err := c.GetSegmentsByOrderID(ctx, orderID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSegmentsByOrderIDResponse(rsp)
+}
+
 // ParseAllocateAuthorityResponse parses an HTTP response from a AllocateAuthorityWithResponse call
 func ParseAllocateAuthorityResponse(rsp *http.Response) (*AllocateAuthorityResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -1724,6 +2286,46 @@ func ParseAllocateAuthorityResponse(rsp *http.Response) (*AllocateAuthorityRespo
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetQueuedSegmentsCountResponse parses an HTTP response from a GetQueuedSegmentsCountWithResponse call
+func ParseGetQueuedSegmentsCountResponse(rsp *http.Response) (*GetQueuedSegmentsCountResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetQueuedSegmentsCountResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Count
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
@@ -1911,6 +2513,86 @@ func ParseGetSegmentByIDResponse(rsp *http.Response) (*GetSegmentByIDResponse, e
 	return response, nil
 }
 
+// ParseAcceptSegmentResponse parses an HTTP response from a AcceptSegmentWithResponse call
+func ParseAcceptSegmentResponse(rsp *http.Response) (*AcceptSegmentResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AcceptSegmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelSegmentResponse parses an HTTP response from a CancelSegmentWithResponse call
+func ParseCancelSegmentResponse(rsp *http.Response) (*CancelSegmentResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelSegmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseFailSegmentResponse parses an HTTP response from a FailSegmentWithResponse call
 func ParseFailSegmentResponse(rsp *http.Response) (*FailSegmentResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -1991,6 +2673,46 @@ func ParseFinishSegmentResponse(rsp *http.Response) (*FinishSegmentResponse, err
 	return response, nil
 }
 
+// ParsePublishSegmentResponse parses an HTTP response from a PublishSegmentWithResponse call
+func ParsePublishSegmentResponse(rsp *http.Response) (*PublishSegmentResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PublishSegmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseQuitSegmentResponse parses an HTTP response from a QuitSegmentWithResponse call
 func ParseQuitSegmentResponse(rsp *http.Response) (*QuitSegmentResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -2000,6 +2722,46 @@ func ParseQuitSegmentResponse(rsp *http.Response) (*QuitSegmentResponse, error) 
 	}
 
 	response := &QuitSegmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRepublishSegmentResponse parses an HTTP response from a RepublishSegmentWithResponse call
+func ParseRepublishSegmentResponse(rsp *http.Response) (*RepublishSegmentResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RepublishSegmentResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -2306,11 +3068,54 @@ func ParseCreateSessionResponse(rsp *http.Response) (*CreateSessionResponse, err
 	return response, nil
 }
 
+// ParseGetSegmentsByOrderIDResponse parses an HTTP response from a GetSegmentsByOrderIDWithResponse call
+func ParseGetSegmentsByOrderIDResponse(rsp *http.Response) (*GetSegmentsByOrderIDResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer rsp.Body.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSegmentsByOrderIDResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []ConvertSegment
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (POST /authorities)
 	AllocateAuthority(ctx echo.Context) error
+
+	// (GET /queued_segments_count)
+	GetQueuedSegmentsCount(ctx echo.Context) error
 
 	// (GET /segments)
 	SearchSegments(ctx echo.Context) error
@@ -2324,14 +3129,26 @@ type ServerInterface interface {
 	// (GET /segments/{segmentID})
 	GetSegmentByID(ctx echo.Context, segmentID SegmentIDParam) error
 
+	// (POST /segments/{segmentID}/actions/accept)
+	AcceptSegment(ctx echo.Context, segmentID SegmentIDParam) error
+
+	// (POST /segments/{segmentID}/actions/cancel)
+	CancelSegment(ctx echo.Context, segmentID SegmentIDParam) error
+
 	// (POST /segments/{segmentID}/actions/fail)
 	FailSegment(ctx echo.Context, segmentID SegmentIDParam) error
 
 	// (POST /segments/{segmentID}/actions/finish)
 	FinishSegment(ctx echo.Context, segmentID SegmentIDParam) error
 
+	// (POST /segments/{segmentID}/actions/publish)
+	PublishSegment(ctx echo.Context, segmentID SegmentIDParam) error
+
 	// (POST /segments/{segmentID}/actions/quit)
 	QuitSegment(ctx echo.Context, segmentID SegmentIDParam) error
+
+	// (POST /segments/{segmentID}/actions/republish)
+	RepublishSegment(ctx echo.Context, segmentID SegmentIDParam) error
 
 	// (GET /segments/{segmentID}/input-storage-claim)
 	GetInputStorageClaim(ctx echo.Context, segmentID SegmentIDParam) error
@@ -2350,6 +3167,9 @@ type ServerInterface interface {
 
 	// (POST /sessions)
 	CreateSession(ctx echo.Context) error
+
+	// (GET /{orderID}/segments)
+	GetSegmentsByOrderID(ctx echo.Context, orderID OrderIDParam) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -2363,6 +3183,17 @@ func (w *ServerInterfaceWrapper) AllocateAuthority(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.AllocateAuthority(ctx)
+	return err
+}
+
+// GetQueuedSegmentsCount converts echo context to params.
+func (w *ServerInterfaceWrapper) GetQueuedSegmentsCount(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(BasicAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetQueuedSegmentsCount(ctx)
 	return err
 }
 
@@ -2412,10 +3243,44 @@ func (w *ServerInterfaceWrapper) GetSegmentByID(ctx echo.Context) error {
 
 	ctx.Set(BearerAuthScopes, []string{""})
 
-	ctx.Set(BasicAuthScopes, []string{""})
-
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetSegmentByID(ctx, segmentID)
+	return err
+}
+
+// AcceptSegment converts echo context to params.
+func (w *ServerInterfaceWrapper) AcceptSegment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "segmentID" -------------
+	var segmentID SegmentIDParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, ctx.Param("segmentID"), &segmentID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter segmentID: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.AcceptSegment(ctx, segmentID)
+	return err
+}
+
+// CancelSegment converts echo context to params.
+func (w *ServerInterfaceWrapper) CancelSegment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "segmentID" -------------
+	var segmentID SegmentIDParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, ctx.Param("segmentID"), &segmentID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter segmentID: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CancelSegment(ctx, segmentID)
 	return err
 }
 
@@ -2455,6 +3320,24 @@ func (w *ServerInterfaceWrapper) FinishSegment(ctx echo.Context) error {
 	return err
 }
 
+// PublishSegment converts echo context to params.
+func (w *ServerInterfaceWrapper) PublishSegment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "segmentID" -------------
+	var segmentID SegmentIDParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, ctx.Param("segmentID"), &segmentID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter segmentID: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.PublishSegment(ctx, segmentID)
+	return err
+}
+
 // QuitSegment converts echo context to params.
 func (w *ServerInterfaceWrapper) QuitSegment(ctx echo.Context) error {
 	var err error
@@ -2470,6 +3353,24 @@ func (w *ServerInterfaceWrapper) QuitSegment(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.QuitSegment(ctx, segmentID)
+	return err
+}
+
+// RepublishSegment converts echo context to params.
+func (w *ServerInterfaceWrapper) RepublishSegment(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "segmentID" -------------
+	var segmentID SegmentIDParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, ctx.Param("segmentID"), &segmentID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter segmentID: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.RepublishSegment(ctx, segmentID)
 	return err
 }
 
@@ -2572,6 +3473,24 @@ func (w *ServerInterfaceWrapper) CreateSession(ctx echo.Context) error {
 	return err
 }
 
+// GetSegmentsByOrderID converts echo context to params.
+func (w *ServerInterfaceWrapper) GetSegmentsByOrderID(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "orderID" -------------
+	var orderID OrderIDParam
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "orderID", runtime.ParamLocationPath, ctx.Param("orderID"), &orderID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orderID: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetSegmentsByOrderID(ctx, orderID)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -2601,18 +3520,24 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.POST(baseURL+"/authorities", wrapper.AllocateAuthority)
+	router.GET(baseURL+"/queued_segments_count", wrapper.GetQueuedSegmentsCount)
 	router.GET(baseURL+"/segments", wrapper.SearchSegments)
 	router.POST(baseURL+"/segments", wrapper.AllocateSegment)
 	router.POST(baseURL+"/segments/free", wrapper.FindFreeSegment)
 	router.GET(baseURL+"/segments/:segmentID", wrapper.GetSegmentByID)
+	router.POST(baseURL+"/segments/:segmentID/actions/accept", wrapper.AcceptSegment)
+	router.POST(baseURL+"/segments/:segmentID/actions/cancel", wrapper.CancelSegment)
 	router.POST(baseURL+"/segments/:segmentID/actions/fail", wrapper.FailSegment)
 	router.POST(baseURL+"/segments/:segmentID/actions/finish", wrapper.FinishSegment)
+	router.POST(baseURL+"/segments/:segmentID/actions/publish", wrapper.PublishSegment)
 	router.POST(baseURL+"/segments/:segmentID/actions/quit", wrapper.QuitSegment)
+	router.POST(baseURL+"/segments/:segmentID/actions/republish", wrapper.RepublishSegment)
 	router.GET(baseURL+"/segments/:segmentID/input-storage-claim", wrapper.GetInputStorageClaim)
 	router.POST(baseURL+"/segments/:segmentID/input-storage-claim", wrapper.AllocateInputStorageClaim)
 	router.POST(baseURL+"/segments/:segmentID/notifications/process", wrapper.NotifyProcess)
 	router.GET(baseURL+"/segments/:segmentID/output-storage-claim", wrapper.GetOutputStorageClaim)
 	router.POST(baseURL+"/segments/:segmentID/output-storage-claim", wrapper.AllocateOutputStorageClaim)
 	router.POST(baseURL+"/sessions", wrapper.CreateSession)
+	router.GET(baseURL+"/:orderID/segments", wrapper.GetSegmentsByOrderID)
 
 }

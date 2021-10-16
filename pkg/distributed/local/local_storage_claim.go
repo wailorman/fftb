@@ -1,5 +1,7 @@
 package local
 
+// TODO: move under storage package
+
 import (
 	"fmt"
 	"io"
@@ -8,6 +10,9 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/files"
 )
+
+// StorageClaimTypeFile is local storage claim type, working only on single machine
+const StorageClaimTypeFile = "file"
 
 // StorageClaim _
 type StorageClaim struct {
@@ -34,6 +39,11 @@ func (s *StorageClaim) GetName() string {
 // GetSize _
 func (s *StorageClaim) GetSize() int {
 	return s.size
+}
+
+// GetType _
+func (s *StorageClaim) GetType() string {
+	return StorageClaimTypeFile
 }
 
 // WriteFrom _

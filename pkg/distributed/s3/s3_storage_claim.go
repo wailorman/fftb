@@ -1,3 +1,4 @@
+// TODO: move under storage package
 package s3
 
 import (
@@ -16,6 +17,10 @@ var Timeout = time.Duration(60 * time.Second)
 
 // DefaultContentType _
 const DefaultContentType = "application/octet-stream"
+
+// StorageClaimTypeS3 is remote storage claim type, working on S3.
+// Client works with http
+const StorageClaimTypeS3 = "s3"
 
 // StorageClaim _
 type StorageClaim struct {
@@ -42,6 +47,11 @@ func (s *StorageClaim) GetName() string {
 // GetSize _
 func (s *StorageClaim) GetSize() int {
 	return s.size
+}
+
+// GetType _
+func (s *StorageClaim) GetType() string {
+	return StorageClaimTypeS3
 }
 
 // SplittedIO _

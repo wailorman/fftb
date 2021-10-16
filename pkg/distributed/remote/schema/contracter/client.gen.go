@@ -49,16 +49,6 @@ type ConvertParams struct {
 	VideoQuality     int    `json:"video_quality"`
 }
 
-// ConvertSegment defines model for ConvertSegment.
-type ConvertSegment struct {
-	Id       string        `json:"id"`
-	Muxer    string        `json:"muxer"`
-	OrderId  string        `json:"order_id"`
-	Params   ConvertParams `json:"params"`
-	Position int           `json:"position"`
-	Type     string        `json:"type"`
-}
-
 // RFC 7807 Problem Details for HTTP APIs
 type ProblemDetails struct {
 	Detail *string                `json:"detail,omitempty"`
@@ -75,9 +65,6 @@ type ProblemDetails_Fields struct {
 // OrderIDParam defines model for orderIDParam.
 type OrderIDParam string
 
-// SegmentIDParam defines model for segmentIDParam.
-type SegmentIDParam string
-
 // RFC 7807 Problem Details for HTTP APIs
 type ResponseForbidden ProblemDetails
 
@@ -89,12 +76,6 @@ type ResponseOrder ConvertOrder
 
 // ResponseOrders defines model for ResponseOrders.
 type ResponseOrders []ConvertOrder
-
-// ResponseSegment defines model for ResponseSegment.
-type ResponseSegment ConvertSegment
-
-// ResponseSegments defines model for ResponseSegments.
-type ResponseSegments []ConvertSegment
 
 // RFC 7807 Problem Details for HTTP APIs
 type ResponseUnauthorized ProblemDetails
@@ -241,15 +222,6 @@ type ClientInterface interface {
 	CancelOrderByIDWithBody(ctx context.Context, orderID OrderIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	CancelOrderByID(ctx context.Context, orderID OrderIDParam, body CancelOrderByIDJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SearchSegmentsByOrderID request
-	SearchSegmentsByOrderID(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// SearchSegments request
-	SearchSegments(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetSegmentByID request
-	GetSegmentByID(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) SearchOrders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -290,42 +262,6 @@ func (c *Client) CancelOrderByIDWithBody(ctx context.Context, orderID OrderIDPar
 
 func (c *Client) CancelOrderByID(ctx context.Context, orderID OrderIDParam, body CancelOrderByIDJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelOrderByIDRequest(c.Server, orderID, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) SearchSegmentsByOrderID(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSearchSegmentsByOrderIDRequest(c.Server, orderID)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) SearchSegments(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewSearchSegmentsRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetSegmentByID(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSegmentByIDRequest(c.Server, segmentID)
 	if err != nil {
 		return nil, err
 	}
@@ -444,101 +380,6 @@ func NewCancelOrderByIDRequestWithBody(server string, orderID OrderIDParam, cont
 	return req, nil
 }
 
-// NewSearchSegmentsByOrderIDRequest generates requests for SearchSegmentsByOrderID
-func NewSearchSegmentsByOrderIDRequest(server string, orderID OrderIDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "orderID", runtime.ParamLocationPath, orderID)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/orders/%s/segments", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = operationPath[1:]
-	}
-	operationURL := url.URL{
-		Path: operationPath,
-	}
-
-	queryURL := serverURL.ResolveReference(&operationURL)
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewSearchSegmentsRequest generates requests for SearchSegments
-func NewSearchSegmentsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/segments")
-	if operationPath[0] == '/' {
-		operationPath = operationPath[1:]
-	}
-	operationURL := url.URL{
-		Path: operationPath,
-	}
-
-	queryURL := serverURL.ResolveReference(&operationURL)
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetSegmentByIDRequest generates requests for GetSegmentByID
-func NewGetSegmentByIDRequest(server string, segmentID SegmentIDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, segmentID)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/segments/%s", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = operationPath[1:]
-	}
-	operationURL := url.URL{
-		Path: operationPath,
-	}
-
-	queryURL := serverURL.ResolveReference(&operationURL)
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -592,15 +433,6 @@ type ClientWithResponsesInterface interface {
 	CancelOrderByIDWithBodyWithResponse(ctx context.Context, orderID OrderIDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CancelOrderByIDResponse, error)
 
 	CancelOrderByIDWithResponse(ctx context.Context, orderID OrderIDParam, body CancelOrderByIDJSONRequestBody, reqEditors ...RequestEditorFn) (*CancelOrderByIDResponse, error)
-
-	// SearchSegmentsByOrderID request
-	SearchSegmentsByOrderIDWithResponse(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*SearchSegmentsByOrderIDResponse, error)
-
-	// SearchSegments request
-	SearchSegmentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SearchSegmentsResponse, error)
-
-	// GetSegmentByID request
-	GetSegmentByIDWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error)
 }
 
 type SearchOrdersResponse struct {
@@ -676,80 +508,6 @@ func (r CancelOrderByIDResponse) StatusCode() int {
 	return 0
 }
 
-type SearchSegmentsByOrderIDResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]ConvertSegment
-	JSON401      *ProblemDetails
-	JSON403      *ProblemDetails
-	JSON404      *ProblemDetails
-}
-
-// Status returns HTTPResponse.Status
-func (r SearchSegmentsByOrderIDResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SearchSegmentsByOrderIDResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type SearchSegmentsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *[]ConvertSegment
-	JSON401      *ProblemDetails
-	JSON403      *ProblemDetails
-}
-
-// Status returns HTTPResponse.Status
-func (r SearchSegmentsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r SearchSegmentsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type GetSegmentByIDResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ConvertSegment
-	JSON401      *ProblemDetails
-	JSON403      *ProblemDetails
-	JSON404      *ProblemDetails
-}
-
-// Status returns HTTPResponse.Status
-func (r GetSegmentByIDResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetSegmentByIDResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 // SearchOrdersWithResponse request returning *SearchOrdersResponse
 func (c *ClientWithResponses) SearchOrdersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SearchOrdersResponse, error) {
 	rsp, err := c.SearchOrders(ctx, reqEditors...)
@@ -783,33 +541,6 @@ func (c *ClientWithResponses) CancelOrderByIDWithResponse(ctx context.Context, o
 		return nil, err
 	}
 	return ParseCancelOrderByIDResponse(rsp)
-}
-
-// SearchSegmentsByOrderIDWithResponse request returning *SearchSegmentsByOrderIDResponse
-func (c *ClientWithResponses) SearchSegmentsByOrderIDWithResponse(ctx context.Context, orderID OrderIDParam, reqEditors ...RequestEditorFn) (*SearchSegmentsByOrderIDResponse, error) {
-	rsp, err := c.SearchSegmentsByOrderID(ctx, orderID, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSearchSegmentsByOrderIDResponse(rsp)
-}
-
-// SearchSegmentsWithResponse request returning *SearchSegmentsResponse
-func (c *ClientWithResponses) SearchSegmentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*SearchSegmentsResponse, error) {
-	rsp, err := c.SearchSegments(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseSearchSegmentsResponse(rsp)
-}
-
-// GetSegmentByIDWithResponse request returning *GetSegmentByIDResponse
-func (c *ClientWithResponses) GetSegmentByIDWithResponse(ctx context.Context, segmentID SegmentIDParam, reqEditors ...RequestEditorFn) (*GetSegmentByIDResponse, error) {
-	rsp, err := c.GetSegmentByID(ctx, segmentID, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetSegmentByIDResponse(rsp)
 }
 
 // ParseSearchOrdersResponse parses an HTTP response from a SearchOrdersWithResponse call
@@ -939,140 +670,6 @@ func ParseCancelOrderByIDResponse(rsp *http.Response) (*CancelOrderByIDResponse,
 	return response, nil
 }
 
-// ParseSearchSegmentsByOrderIDResponse parses an HTTP response from a SearchSegmentsByOrderIDWithResponse call
-func ParseSearchSegmentsByOrderIDResponse(rsp *http.Response) (*SearchSegmentsByOrderIDResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer rsp.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SearchSegmentsByOrderIDResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []ConvertSegment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseSearchSegmentsResponse parses an HTTP response from a SearchSegmentsWithResponse call
-func ParseSearchSegmentsResponse(rsp *http.Response) (*SearchSegmentsResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer rsp.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &SearchSegmentsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []ConvertSegment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetSegmentByIDResponse parses an HTTP response from a GetSegmentByIDWithResponse call
-func ParseGetSegmentByIDResponse(rsp *http.Response) (*GetSegmentByIDResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer rsp.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetSegmentByIDResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ConvertSegment
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest ProblemDetails
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
@@ -1084,15 +681,6 @@ type ServerInterface interface {
 
 	// (GET /orders/{orderID}/cancel)
 	CancelOrderByID(ctx echo.Context, orderID OrderIDParam) error
-
-	// (GET /orders/{orderID}/segments)
-	SearchSegmentsByOrderID(ctx echo.Context, orderID OrderIDParam) error
-
-	// (GET /segments)
-	SearchSegments(ctx echo.Context) error
-
-	// (GET /segments/{segmentID})
-	GetSegmentByID(ctx echo.Context, segmentID SegmentIDParam) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -1147,53 +735,6 @@ func (w *ServerInterfaceWrapper) CancelOrderByID(ctx echo.Context) error {
 	return err
 }
 
-// SearchSegmentsByOrderID converts echo context to params.
-func (w *ServerInterfaceWrapper) SearchSegmentsByOrderID(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "orderID" -------------
-	var orderID OrderIDParam
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "orderID", runtime.ParamLocationPath, ctx.Param("orderID"), &orderID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter orderID: %s", err))
-	}
-
-	ctx.Set(BasicAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.SearchSegmentsByOrderID(ctx, orderID)
-	return err
-}
-
-// SearchSegments converts echo context to params.
-func (w *ServerInterfaceWrapper) SearchSegments(ctx echo.Context) error {
-	var err error
-
-	ctx.Set(BasicAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.SearchSegments(ctx)
-	return err
-}
-
-// GetSegmentByID converts echo context to params.
-func (w *ServerInterfaceWrapper) GetSegmentByID(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "segmentID" -------------
-	var segmentID SegmentIDParam
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "segmentID", runtime.ParamLocationPath, ctx.Param("segmentID"), &segmentID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter segmentID: %s", err))
-	}
-
-	ctx.Set(BasicAuthScopes, []string{""})
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.GetSegmentByID(ctx, segmentID)
-	return err
-}
-
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -1225,8 +766,5 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/orders", wrapper.SearchOrders)
 	router.GET(baseURL+"/orders/:orderID", wrapper.GetOrderByID)
 	router.GET(baseURL+"/orders/:orderID/cancel", wrapper.CancelOrderByID)
-	router.GET(baseURL+"/orders/:orderID/segments", wrapper.SearchSegmentsByOrderID)
-	router.GET(baseURL+"/segments", wrapper.SearchSegments)
-	router.GET(baseURL+"/segments/:segmentID", wrapper.GetSegmentByID)
 
 }

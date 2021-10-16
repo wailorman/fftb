@@ -11,9 +11,10 @@ import (
 
 // ConvertOrder _
 type ConvertOrder struct {
-	Identity  string         `json:"identity"`
-	Type      string         `json:"type"`
-	State     string         `json:"state"`
+	Identity string `json:"identity"`
+	Type     string `json:"type"`
+	State    string `json:"state"`
+	// TODO: use string & remove 'file' word
 	InFile    files.Filer    `json:"in_file"`
 	OutFile   files.Filer    `json:"out_file"`
 	Params    convert.Params `json:"params"`

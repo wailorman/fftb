@@ -20,7 +20,7 @@ import (
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/registry"
 	"github.com/wailorman/fftb/pkg/distributed/remote"
-	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
+	dSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 	"github.com/wailorman/fftb/pkg/distributed/s3"
 	"github.com/wailorman/fftb/pkg/distributed/ukvs/ubolt"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
@@ -219,7 +219,7 @@ func (a *DistributedConvertApp) StartWorker() error {
 func (a *DistributedConvertApp) StartRemoteWorker() error {
 	var err error
 
-	apiWrapper, err := dealerSchema.NewClientWithResponses("http://mbp-sp.h30.wailorman.ru:8080")
+	apiWrapper, err := dSchema.NewClientWithResponses("http://mbp-sp.h30.wailorman.ru:8080")
 
 	if err != nil {
 		return errors.Wrap(err, "Building api wrapper")

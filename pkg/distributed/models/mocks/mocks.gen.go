@@ -1021,49 +1021,19 @@ func (mr *MockIContracterMockRecorder) GetAllOrders(ctx interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllOrders", reflect.TypeOf((*MockIContracter)(nil).GetAllOrders), ctx)
 }
 
-// GetAllSegments mocks base method.
-func (m *MockIContracter) GetAllSegments(ctx context.Context) ([]models.ISegment, error) {
+// GetOrderByID mocks base method.
+func (m *MockIContracter) GetOrderByID(ctx context.Context, id string) (models.IOrder, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllSegments", ctx)
-	ret0, _ := ret[0].([]models.ISegment)
+	ret := m.ctrl.Call(m, "GetOrderByID", ctx, id)
+	ret0, _ := ret[0].(models.IOrder)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAllSegments indicates an expected call of GetAllSegments.
-func (mr *MockIContracterMockRecorder) GetAllSegments(ctx interface{}) *gomock.Call {
+// GetOrderByID indicates an expected call of GetOrderByID.
+func (mr *MockIContracterMockRecorder) GetOrderByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSegments", reflect.TypeOf((*MockIContracter)(nil).GetAllSegments), ctx)
-}
-
-// GetSegmentByID mocks base method.
-func (m *MockIContracter) GetSegmentByID(ctx context.Context, segmentID string) (models.ISegment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSegmentByID", ctx, segmentID)
-	ret0, _ := ret[0].(models.ISegment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSegmentByID indicates an expected call of GetSegmentByID.
-func (mr *MockIContracterMockRecorder) GetSegmentByID(ctx, segmentID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSegmentByID", reflect.TypeOf((*MockIContracter)(nil).GetSegmentByID), ctx, segmentID)
-}
-
-// GetSegmentsByOrderID mocks base method.
-func (m *MockIContracter) GetSegmentsByOrderID(ctx context.Context, orderID string) ([]models.ISegment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSegmentsByOrderID", ctx, orderID)
-	ret0, _ := ret[0].([]models.ISegment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSegmentsByOrderID indicates an expected call of GetSegmentsByOrderID.
-func (mr *MockIContracterMockRecorder) GetSegmentsByOrderID(ctx, orderID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSegmentsByOrderID", reflect.TypeOf((*MockIContracter)(nil).GetSegmentsByOrderID), ctx, orderID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByID", reflect.TypeOf((*MockIContracter)(nil).GetOrderByID), ctx, id)
 }
 
 // SearchAllOrders mocks base method.
@@ -1079,36 +1049,6 @@ func (m *MockIContracter) SearchAllOrders(ctx context.Context, search models.IOr
 func (mr *MockIContracterMockRecorder) SearchAllOrders(ctx, search interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchAllOrders", reflect.TypeOf((*MockIContracter)(nil).SearchAllOrders), ctx, search)
-}
-
-// SearchAllSegments mocks base method.
-func (m *MockIContracter) SearchAllSegments(ctx context.Context, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchAllSegments", ctx, search)
-	ret0, _ := ret[0].([]models.ISegment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SearchAllSegments indicates an expected call of SearchAllSegments.
-func (mr *MockIContracterMockRecorder) SearchAllSegments(ctx, search interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchAllSegments", reflect.TypeOf((*MockIContracter)(nil).SearchAllSegments), ctx, search)
-}
-
-// SearchSegmentsByOrderID mocks base method.
-func (m *MockIContracter) SearchSegmentsByOrderID(ctx context.Context, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchSegmentsByOrderID", ctx, orderID, search)
-	ret0, _ := ret[0].([]models.ISegment)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SearchSegmentsByOrderID indicates an expected call of SearchSegmentsByOrderID.
-func (mr *MockIContracterMockRecorder) SearchSegmentsByOrderID(ctx, orderID, search interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchSegmentsByOrderID", reflect.TypeOf((*MockIContracter)(nil).SearchSegmentsByOrderID), ctx, orderID, search)
 }
 
 // MockIDealer is a mock of IDealer interface.
@@ -2451,21 +2391,6 @@ func (mr *MockIStorageClaimMockRecorder) GetName() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetName", reflect.TypeOf((*MockIStorageClaim)(nil).GetName))
 }
 
-// GetReader mocks base method.
-func (m *MockIStorageClaim) GetReader() (io.ReadCloser, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReader")
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetReader indicates an expected call of GetReader.
-func (mr *MockIStorageClaimMockRecorder) GetReader() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReader", reflect.TypeOf((*MockIStorageClaim)(nil).GetReader))
-}
-
 // GetSize mocks base method.
 func (m *MockIStorageClaim) GetSize() int {
 	m.ctrl.T.Helper()
@@ -2478,6 +2403,20 @@ func (m *MockIStorageClaim) GetSize() int {
 func (mr *MockIStorageClaimMockRecorder) GetSize() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSize", reflect.TypeOf((*MockIStorageClaim)(nil).GetSize))
+}
+
+// GetType mocks base method.
+func (m *MockIStorageClaim) GetType() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetType")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetType indicates an expected call of GetType.
+func (mr *MockIStorageClaimMockRecorder) GetType() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetType", reflect.TypeOf((*MockIStorageClaim)(nil).GetType))
 }
 
 // GetURL mocks base method.
@@ -2494,19 +2433,32 @@ func (mr *MockIStorageClaimMockRecorder) GetURL() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockIStorageClaim)(nil).GetURL))
 }
 
-// GetWriter mocks base method.
-func (m *MockIStorageClaim) GetWriter() (io.WriteCloser, error) {
+// ReadTo mocks base method.
+func (m *MockIStorageClaim) ReadTo(arg0 io.Writer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetWriter")
-	ret0, _ := ret[0].(io.WriteCloser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "ReadTo", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// GetWriter indicates an expected call of GetWriter.
-func (mr *MockIStorageClaimMockRecorder) GetWriter() *gomock.Call {
+// ReadTo indicates an expected call of ReadTo.
+func (mr *MockIStorageClaimMockRecorder) ReadTo(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWriter", reflect.TypeOf((*MockIStorageClaim)(nil).GetWriter))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadTo", reflect.TypeOf((*MockIStorageClaim)(nil).ReadTo), arg0)
+}
+
+// WriteFrom mocks base method.
+func (m *MockIStorageClaim) WriteFrom(arg0 io.Reader) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WriteFrom", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// WriteFrom indicates an expected call of WriteFrom.
+func (mr *MockIStorageClaimMockRecorder) WriteFrom(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteFrom", reflect.TypeOf((*MockIStorageClaim)(nil).WriteFrom), arg0)
 }
 
 // MockIStorageClient is a mock of IStorageClient interface.

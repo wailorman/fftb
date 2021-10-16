@@ -6,10 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
+	dSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 )
 
-func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, details ...*dealerSchema.ProblemDetails) error {
+const noContentBody = http.StatusNoContent
+
+func parseError(successResponse interface{}, clientErr error, httpResponse *http.Response, rawBody []byte, details ...*dSchema.ProblemDetails) error {
 	if clientErr != nil {
 		return errors.Wrap(clientErr, "API request failed")
 	}
@@ -18,7 +20,7 @@ func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, de
 		return models.ErrUnknown
 	}
 
-	var targetDetails *dealerSchema.ProblemDetails
+	var targetDetails *dSchema.ProblemDetails
 
 	for _, detail := range details {
 		if detail != nil {
@@ -72,10 +74,14 @@ func parseError(clientErr error, httpResponse *http.Response, rawBody []byte, de
 		return errors.Wrapf(cause, errCtx(httpResponse, targetDetails))
 	}
 
+	if httpResponse.StatusCode < 300 && successResponse == nil {
+		return buildUnexpectedResponseError(httpResponse.StatusCode, rawBody)
+	}
+
 	return errors.Wrapf(models.ErrUnknown, *targetDetails.Detail)
 }
 
-func errCtx(httpResponse *http.Response, details *dealerSchema.ProblemDetails) string {
+func errCtx(httpResponse *http.Response, details *dSchema.ProblemDetails) string {
 	infoFormat := "HTTP %d - `%s` (`%s`, description: `%s`)"
 
 	detail := ""
@@ -165,4 +171,12 @@ func getKnownError(errStr string) error {
 	default:
 		return models.ErrUnknown
 	}
+}
+
+func buildEmptyResponseError(reqErr error, httpResponse *http.Response, rawBody []byte) error {
+	return errors.Wrapf(models.ErrUnknown, "Missing response (`%s`), httpStatus: `%d`, body: `%s`", reqErr, httpResponse.StatusCode, rawBody)
+}
+
+func buildUnexpectedResponseError(status int, httpBody []byte) error {
+	return errors.Wrapf(models.ErrUnknown, "Unexpected response (`%s`)", httpBody)
 }

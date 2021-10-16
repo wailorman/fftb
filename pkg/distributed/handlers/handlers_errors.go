@@ -6,7 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
+	dSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 )
 
 // APIError _
@@ -16,7 +16,7 @@ type APIError struct {
 	Detail string `json:"detail"`
 }
 
-func newAPIError(err error) (code int, body *dealerSchema.ProblemDetails) {
+func newAPIError(err error) (code int, body *dSchema.ProblemDetails) {
 	cause := errors.Cause(err)
 
 	code = http.StatusUnprocessableEntity
@@ -44,7 +44,7 @@ func newAPIError(err error) (code int, body *dealerSchema.ProblemDetails) {
 	detail := err.Error()
 	errType := "github.com/wailorman/fftb"
 
-	problemDetails := &dealerSchema.ProblemDetails{
+	problemDetails := &dSchema.ProblemDetails{
 		Type:   &errType,
 		Title:  cause.Error(),
 		Detail: &detail,
@@ -53,7 +53,7 @@ func newAPIError(err error) (code int, body *dealerSchema.ProblemDetails) {
 	var validationErr models.ValidationError
 	if errors.As(err, &validationErr) {
 		problemDetails.Title = models.ErrInvalid.Error()
-		problemDetails.Fields = &dealerSchema.ProblemDetails_Fields{}
+		problemDetails.Fields = &dSchema.ProblemDetails_Fields{}
 
 		for key, val := range validationErr.Errors() {
 			problemDetails.Fields.Set(key, val)

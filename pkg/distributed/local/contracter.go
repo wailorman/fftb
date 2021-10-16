@@ -70,6 +70,11 @@ func NewContracter(
 	}, nil
 }
 
+// GetOrderByID _
+func (contracter *ContracterInstance) GetOrderByID(ctx context.Context, id string) (models.IOrder, error) {
+	return contracter.registry.FindOrderByID(ctx, id)
+}
+
 // GetAllOrders _
 func (contracter *ContracterInstance) GetAllOrders(ctx context.Context) ([]models.IOrder, error) {
 	return contracter.SearchAllOrders(ctx, models.EmptyOrderFilters())

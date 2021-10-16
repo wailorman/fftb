@@ -2,12 +2,14 @@ package remote_test
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/wailorman/fftb/pkg/distributed/handlers"
 	"github.com/wailorman/fftb/pkg/distributed/models"
@@ -82,6 +84,45 @@ func (ew *echoClientWrap) Do(req *http.Request) (*http.Response, error) {
 	return rec.Result(), nil
 }
 
+type storageClaim struct {
+	id string
+}
+
+// GetID _
+func (sc *storageClaim) GetID() string {
+	return sc.id
+}
+
+// GetName _
+func (sc *storageClaim) GetName() string {
+	return sc.id
+}
+
+// GetURL _
+func (sc *storageClaim) GetURL() string {
+	return fmt.Sprintf("test://%s", sc.id)
+}
+
+// GetSize _
+func (sc *storageClaim) GetSize() int {
+	return 1
+}
+
+// GetType _
+func (sc *storageClaim) GetType() string {
+	return "test"
+}
+
+// WriteFrom _
+func (sc *storageClaim) WriteFrom(io.Reader) error {
+	return nil
+}
+
+// ReadTo _
+func (sc *storageClaim) ReadTo(io.Writer) error {
+	return nil
+}
+
 func createAuthor(t *testing.T) models.IAuthor {
 	author := &models.Author{Name: "remote_dealer_test"}
 
@@ -95,4 +136,8 @@ func createAuthor(t *testing.T) models.IAuthor {
 	author.SetAuthorityKey(authorityToken)
 
 	return author
+}
+
+func createStorageClaim(t *testing.T) models.IStorageClaim {
+	return &storageClaim{id: uuid.New().String()}
 }

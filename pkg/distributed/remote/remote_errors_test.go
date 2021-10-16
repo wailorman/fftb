@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
+	dSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 )
 
 func makeHTTPResponse(status int) *http.Response {
@@ -21,15 +21,16 @@ var pdDetails = "id: cannot be blank"
 
 func Test__parseError__Validation(t *testing.T) {
 	apiErr := parseError(
+		noContentBody,
 		nil,
 		makeHTTPResponse(422),
 		nil,
 		nil,
-		&dealerSchema.ProblemDetails{
+		&dSchema.ProblemDetails{
 			Title:  models.ErrInvalid.Error(),
 			Type:   &pdType,
 			Detail: &pdDetails,
-			Fields: &dealerSchema.ProblemDetails_Fields{
+			Fields: &dSchema.ProblemDetails_Fields{
 				AdditionalProperties: map[string]string{
 					"id": "blank",
 				},
@@ -57,11 +58,12 @@ func Test__parseError__Validation(t *testing.T) {
 
 func Test__parseError__UnknownType(t *testing.T) {
 	apiErr := parseError(
+		noContentBody,
 		nil,
 		makeHTTPResponse(422),
 		nil,
 		nil,
-		&dealerSchema.ProblemDetails{
+		&dSchema.ProblemDetails{
 			Title: models.ErrUnknownType.Error(),
 			Type:  &pdType,
 		},
@@ -79,7 +81,7 @@ func Test__parseError__UnknownType(t *testing.T) {
 }
 
 func Test__parseError__NotFound(t *testing.T) {
-	apiErr := parseError(nil, makeHTTPResponse(404), nil, nil, nil)
+	apiErr := parseError(noContentBody, nil, makeHTTPResponse(404), nil, nil, nil)
 
 	if assert.NotNil(t, apiErr) {
 		assert.Equalf(
@@ -92,7 +94,7 @@ func Test__parseError__NotFound(t *testing.T) {
 }
 
 func Test__parseError__Success(t *testing.T) {
-	apiErr := parseError(nil, makeHTTPResponse(200), nil, nil, nil, nil)
+	apiErr := parseError(noContentBody, nil, makeHTTPResponse(200), nil, nil, nil, nil)
 
 	assert.Nilf(
 		t,
@@ -102,7 +104,7 @@ func Test__parseError__Success(t *testing.T) {
 }
 
 func Test__parseError__UnknownErr(t *testing.T) {
-	apiErr := parseError(nil, makeHTTPResponse(500), []byte("Service unavailable"), nil, nil, nil)
+	apiErr := parseError(noContentBody, nil, makeHTTPResponse(500), []byte("Service unavailable"), nil, nil, nil)
 
 	if assert.NotNil(t, apiErr) {
 		assert.Equalf(
@@ -123,7 +125,7 @@ func Test__parseError__UnknownErr(t *testing.T) {
 func Test__parseError__requestErr(t *testing.T) {
 	ErrSome := errors.New("SOME_ERR")
 
-	apiErr := parseError(ErrSome, makeHTTPResponse(0), nil, nil, nil, nil)
+	apiErr := parseError(noContentBody, ErrSome, makeHTTPResponse(0), nil, nil, nil, nil)
 
 	if assert.NotNil(t, apiErr) {
 		assert.Equalf(

@@ -20,14 +20,13 @@ const OrderQueueTimeout = time.Duration(20 * time.Second)
 
 // Order _
 type Order struct {
-	ObjectType string   `json:"object_type"`
-	ID         string   `json:"id"`
-	Kind       string   `json:"kind"`
-	Payload    string   `json:"payload"`
-	Publisher  string   `json:"publisher"`
-	State      string   `json:"state"`
-	SegmentIDs []string `json:"segment_ids"`
-
+	ObjectType   string     `json:"object_type"`
+	ID           string     `json:"id"`
+	Kind         string     `json:"kind"`
+	Payload      string     `json:"payload"`
+	Publisher    string     `json:"publisher"`
+	State        string     `json:"state"`
+	SegmentsIDs  []string   `json:"segments_ids"`
 	RetriesCount int        `json:"retries_count"`
 	RetryAt      *time.Time `json:"retry_at"`
 }

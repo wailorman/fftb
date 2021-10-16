@@ -159,17 +159,17 @@ func (d *Dealer) AllocatePerformerAuthority(ctx context.Context, name string) (m
 
 // // WaitOnSegmentFinished _
 // func (d *Dealer) WaitOnSegmentFinished(ctx context.Context, id string) <-chan struct{} {
-// 	panic("not implemented")
+// 	panic("not implemented") // TODO:
 // }
 
 // // WaitOnSegmentFailed _
 // func (d *Dealer) WaitOnSegmentFailed(ctx context.Context, id string) <-chan error {
-// 	panic("not implemented")
+// 	panic("not implemented") // TODO:
 // }
 
 // // WaitOnSegmentCancelled _
 // func (d *Dealer) WaitOnSegmentCancelled(ctx context.Context, id string) <-chan struct{} {
-// 	panic("not implemented")
+// 	panic("not implemented") // TODO:
 // }
 
 // FailSegment _

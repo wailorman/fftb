@@ -199,7 +199,7 @@ type ISegmentMutator interface {
 
 // IContracter _
 type IContracter interface {
-	// PrepareOrder(req IContracterRequest) (IOrder, error)
+	GetOrderByID(ctx context.Context, id string) (IOrder, error)
 	GetAllOrders(ctx context.Context) ([]IOrder, error)
 	SearchAllOrders(ctx context.Context, search IOrderSearchCriteria) ([]IOrder, error)
 	GetAllSegments(ctx context.Context) ([]ISegment, error)
@@ -266,8 +266,10 @@ type IRegistry interface {
 	FindSegmentByID(ctx context.Context, id string) (ISegment, error)
 	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
 	PersistSegment(ctx context.Context, segment ISegment) error
+	// TODO: remove. Leave only searchAll
 	SearchOrder(ctx context.Context, check func(IOrder) bool) (IOrder, error)
 	SearchAllOrders(ctx context.Context, check func(IOrder) bool) ([]IOrder, error)
+	// TODO: remove. Leave only searchAll
 	SearchSegment(ctx context.Context, check func(ISegment) bool) (ISegment, error)
 	SearchAllSegments(ctx context.Context, check func(ISegment) bool) ([]ISegment, error)
 	Persist() error
@@ -310,10 +312,11 @@ type IStorageController interface {
 
 // IStorageClaim _
 type IStorageClaim interface {
-	GetID() string // TODO: remove. Move to storage controller
+	GetID() string
 	GetName() string
-	GetURL() string // TODO: remove. Move to storage controller
+	GetURL() string
 	GetSize() int
+	GetType() string
 	// GetWriter() (io.WriteCloser, error)
 	// GetReader() (io.ReadCloser, error)
 	// WriteFrom(io.ReadCloser) error

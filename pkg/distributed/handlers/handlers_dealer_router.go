@@ -8,7 +8,7 @@ import (
 	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
-	dealerSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
+	dSchema "github.com/wailorman/fftb/pkg/distributed/remote/schema/dealer"
 )
 
 // NewDealerAPIRouter _
@@ -19,13 +19,13 @@ func NewDealerAPIRouter(
 	authoritySecret []byte,
 	sessionSecret []byte) *echo.Echo {
 
-	h := NewDealerHandler(ctx, dealer, authoritySecret, sessionSecret)
+	h := NewDealerHandler(dealer, authoritySecret, sessionSecret)
 
 	e := echo.New()
 
 	e.Use(dlog.EchoLogger(ctxlog.WithPrefix(logger, dlog.PrefixAPI)))
 	e.Use(JWTMiddleware(sessionSecret))
-	dealerSchema.RegisterHandlers(e, h)
+	dSchema.RegisterHandlers(e, h)
 
 	return e
 }

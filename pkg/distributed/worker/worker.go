@@ -20,6 +20,8 @@ import (
 	"github.com/wailorman/fftb/pkg/media/minfo"
 )
 
+// TODO: do not pass regular context to cancellation code
+
 // FreeTaskDelay _
 const FreeTaskDelay = time.Duration(3) * time.Second
 
