@@ -1,0 +1,331 @@
+openapi: '3.0.2'
+info:
+  title: FFTB Contracter API
+  version: '1.0'
+servers:
+  - url: http://localhost:8080
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    basicAuth:
+      type: http
+      scheme: basic
+
+  responses:
+    ResponseNoContent:
+      description: No content
+
+    ResponseNotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ResponseForbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ResponseUnprocessableEntity:
+      description: Response caused by some validation errors
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+
+    ResponseUnauthorized:
+      description: Response caused by invalid (or missing) access token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+    ResponseOrder:
+      description: ConvertOrder object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConvertOrder'
+
+    ResponseOrders:
+      description: ConvertOrder objects
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ConvertOrder'
+
+    ResponseSegment:
+      description: ConvertSegment object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConvertSegment'
+
+    ResponseSegments:
+      description: ConvertSegment objects
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/ConvertSegment'
+
+  parameters:
+    segmentIDParam:
+      name: segmentID
+      in: path
+      description: Segment ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    orderIDParam:
+      name: orderID
+      in: path
+      description: Order ID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    ProblemDetails:
+      description: RFC 7807 Problem Details for HTTP APIs
+      type: object
+      required:
+        - title
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+
+    CancellationReason:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+
+    ConvertOrder:
+      type: object
+      required:
+        - type
+        - id
+        - input
+        - output
+        - state
+        - params
+      properties:
+        type:
+          type: string
+          enum:
+            - convert/v1
+        id:
+          type: string
+          format: uuid
+        input:
+          type: string
+          example: https://s3.amazonaws.com/test/footage.mp4?X-Amz-Signature=9a7e820d74
+        output:
+          type: string
+          example: https://s3.amazonaws.com/test_out/footage.mp4?X-Amz-Signature=9a7e820d74
+        state:
+          type: string
+          enum:
+            - queued
+            - in_progress
+            - finished
+            - cancelled
+        params:
+          required: true
+          $ref: '#/components/schemas/ConvertParams'
+
+    ConvertSegment:
+      type: object
+      required:
+        - type
+        - id
+        - order_id
+        - params
+        - muxer
+        - position
+      properties:
+        type:
+          type: string
+          enum:
+            - convert/v1
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        params:
+          required: true
+          $ref: '#/components/schemas/ConvertParams'
+        muxer:
+          type: string
+          example: 'mp4'
+        position:
+          type: integer
+          minimum: 0
+
+    ConvertParams:
+      type: object
+      required:
+        - video_codec
+        - hw_accel
+        - video_bit_rate
+        - video_quality
+        - preset
+        - scale
+        - keyframe_interval
+      properties:
+        video_codec:
+          type: string
+          enum:
+            - h264
+            - hevc
+        hw_accel:
+          type: string
+          enum:
+            - nvenc
+            - videotoolbox
+        video_bit_rate:
+          type: string
+          example: '14M'
+        video_quality:
+          type: integer
+          minimum: 1
+          maximum: 50
+        preset:
+          type: string
+          enum:
+            - slow
+            - medium
+            - fast
+        scale:
+          type: string
+          enum:
+            - '1/2'
+            - '1/4'
+        keyframe_interval:
+          type: integer
+          minimum: 0
+
+paths:
+  /segments:
+    get:
+      security:
+        - basicAuth: []
+      operationId: searchSegments
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseSegments'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /segments/{segmentID}:
+    get:
+      security:
+        - basicAuth: []
+      operationId: getSegmentByID
+      parameters:
+        - $ref: '#/components/parameters/segmentIDParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseSegment'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /orders:
+    get:
+      security:
+        - basicAuth: []
+      operationId: searchOrders
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseOrders'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /orders/{orderID}:
+    get:
+      security:
+        - basicAuth: []
+      operationId: getOrderByID
+      parameters:
+        - $ref: '#/components/parameters/orderIDParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseOrder'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /orders/{orderID}/cancel:
+    get:
+      security:
+        - basicAuth: []
+      operationId: cancelOrderByID
+      parameters:
+        - $ref: '#/components/parameters/orderIDParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancellationReason'
+      responses:
+        '204':
+          $ref: '#/components/responses/ResponseNoContent'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'
+
+  /orders/{orderID}/segments:
+    get:
+      security:
+        - basicAuth: []
+      operationId: searchSegmentsByOrderID
+      parameters:
+        - $ref: '#/components/parameters/orderIDParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ResponseSegments'
+        '404':
+          $ref: '#/components/responses/ResponseNotFound'
+        '401':
+          $ref: '#/components/responses/ResponseUnauthorized'
+        '403':
+          $ref: '#/components/responses/ResponseForbidden'

@@ -75,3 +75,8 @@ var ErrMissingAccessToken = errors.New("Missing access token")
 
 // ErrStorageClaimAlreadyAllocated _
 var ErrStorageClaimAlreadyAllocated = errors.New("Storage claim already allocated")
+
+// NewErrUnknownType builds ErrUnknownType with context of received type
+func NewErrUnknownType(receivedType string) error {
+	return errors.Wrapf(ErrUnknownType, "Received type: `%s`", receivedType)
+}

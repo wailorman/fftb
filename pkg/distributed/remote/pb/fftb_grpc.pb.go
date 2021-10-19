@@ -18,16 +18,11 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DealerClient interface {
-	// for contracter
-	AllocateSegment(ctx context.Context, in *DealerRequest, opts ...grpc.CallOption) (*AllocateSegmentResponse, error)
-	GetOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error)
-	AllocateInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error)
-	GetQueuedSegmentsCount(ctx context.Context, in *GetQueuedSegmentsCountRequest, opts ...grpc.CallOption) (*GetQueuedSegmentsCountResponse, error)
-	GetSegmentsByOrderId(ctx context.Context, in *GetSegmentsByOrderIdRequest, opts ...grpc.CallOption) (*SegmentsListResponse, error)
-	GetSegmentById(ctx context.Context, in *GetSegmentsByOrderIdRequest, opts ...grpc.CallOption) (*SegmentResponse, error)
-	// for worker
-	GetInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error)
-	AllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error)
+	AllocateSegment(ctx context.Context, in *DealerRequest, opts ...grpc.CallOption) (*Segment, error)
+	GetOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error)
+	AllocateInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error)
+	GetInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error)
+	AllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error)
 }
 
 type dealerClient struct {
@@ -38,8 +33,8 @@ func NewDealerClient(cc grpc.ClientConnInterface) DealerClient {
 	return &dealerClient{cc}
 }
 
-func (c *dealerClient) AllocateSegment(ctx context.Context, in *DealerRequest, opts ...grpc.CallOption) (*AllocateSegmentResponse, error) {
-	out := new(AllocateSegmentResponse)
+func (c *dealerClient) AllocateSegment(ctx context.Context, in *DealerRequest, opts ...grpc.CallOption) (*Segment, error) {
+	out := new(Segment)
 	err := c.cc.Invoke(ctx, "/Dealer/AllocateSegment", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -47,8 +42,8 @@ func (c *dealerClient) AllocateSegment(ctx context.Context, in *DealerRequest, o
 	return out, nil
 }
 
-func (c *dealerClient) GetOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error) {
-	out := new(StorageClaimResponse)
+func (c *dealerClient) GetOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error) {
+	out := new(StorageClaim)
 	err := c.cc.Invoke(ctx, "/Dealer/GetOutputStorageClaim", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -56,8 +51,8 @@ func (c *dealerClient) GetOutputStorageClaim(ctx context.Context, in *StorageCla
 	return out, nil
 }
 
-func (c *dealerClient) AllocateInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error) {
-	out := new(StorageClaimResponse)
+func (c *dealerClient) AllocateInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error) {
+	out := new(StorageClaim)
 	err := c.cc.Invoke(ctx, "/Dealer/AllocateInputStorageClaim", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -65,35 +60,8 @@ func (c *dealerClient) AllocateInputStorageClaim(ctx context.Context, in *Storag
 	return out, nil
 }
 
-func (c *dealerClient) GetQueuedSegmentsCount(ctx context.Context, in *GetQueuedSegmentsCountRequest, opts ...grpc.CallOption) (*GetQueuedSegmentsCountResponse, error) {
-	out := new(GetQueuedSegmentsCountResponse)
-	err := c.cc.Invoke(ctx, "/Dealer/GetQueuedSegmentsCount", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dealerClient) GetSegmentsByOrderId(ctx context.Context, in *GetSegmentsByOrderIdRequest, opts ...grpc.CallOption) (*SegmentsListResponse, error) {
-	out := new(SegmentsListResponse)
-	err := c.cc.Invoke(ctx, "/Dealer/GetSegmentsByOrderId", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dealerClient) GetSegmentById(ctx context.Context, in *GetSegmentsByOrderIdRequest, opts ...grpc.CallOption) (*SegmentResponse, error) {
-	out := new(SegmentResponse)
-	err := c.cc.Invoke(ctx, "/Dealer/GetSegmentById", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dealerClient) GetInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error) {
-	out := new(StorageClaimResponse)
+func (c *dealerClient) GetInputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error) {
+	out := new(StorageClaim)
 	err := c.cc.Invoke(ctx, "/Dealer/GetInputStorageClaim", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -101,8 +69,8 @@ func (c *dealerClient) GetInputStorageClaim(ctx context.Context, in *StorageClai
 	return out, nil
 }
 
-func (c *dealerClient) AllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaimResponse, error) {
-	out := new(StorageClaimResponse)
+func (c *dealerClient) AllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest, opts ...grpc.CallOption) (*StorageClaim, error) {
+	out := new(StorageClaim)
 	err := c.cc.Invoke(ctx, "/Dealer/AllocateOutputStorageClaim", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -114,16 +82,11 @@ func (c *dealerClient) AllocateOutputStorageClaim(ctx context.Context, in *Stora
 // All implementations must embed UnimplementedDealerServer
 // for forward compatibility
 type DealerServer interface {
-	// for contracter
-	AllocateSegment(context.Context, *DealerRequest) (*AllocateSegmentResponse, error)
-	GetOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error)
-	AllocateInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error)
-	GetQueuedSegmentsCount(context.Context, *GetQueuedSegmentsCountRequest) (*GetQueuedSegmentsCountResponse, error)
-	GetSegmentsByOrderId(context.Context, *GetSegmentsByOrderIdRequest) (*SegmentsListResponse, error)
-	GetSegmentById(context.Context, *GetSegmentsByOrderIdRequest) (*SegmentResponse, error)
-	// for worker
-	GetInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error)
-	AllocateOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error)
+	AllocateSegment(context.Context, *DealerRequest) (*Segment, error)
+	GetOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error)
+	AllocateInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error)
+	GetInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error)
+	AllocateOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error)
 	mustEmbedUnimplementedDealerServer()
 }
 
@@ -131,28 +94,19 @@ type DealerServer interface {
 type UnimplementedDealerServer struct {
 }
 
-func (UnimplementedDealerServer) AllocateSegment(context.Context, *DealerRequest) (*AllocateSegmentResponse, error) {
+func (UnimplementedDealerServer) AllocateSegment(context.Context, *DealerRequest) (*Segment, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllocateSegment not implemented")
 }
-func (UnimplementedDealerServer) GetOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error) {
+func (UnimplementedDealerServer) GetOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOutputStorageClaim not implemented")
 }
-func (UnimplementedDealerServer) AllocateInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error) {
+func (UnimplementedDealerServer) AllocateInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllocateInputStorageClaim not implemented")
 }
-func (UnimplementedDealerServer) GetQueuedSegmentsCount(context.Context, *GetQueuedSegmentsCountRequest) (*GetQueuedSegmentsCountResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetQueuedSegmentsCount not implemented")
-}
-func (UnimplementedDealerServer) GetSegmentsByOrderId(context.Context, *GetSegmentsByOrderIdRequest) (*SegmentsListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSegmentsByOrderId not implemented")
-}
-func (UnimplementedDealerServer) GetSegmentById(context.Context, *GetSegmentsByOrderIdRequest) (*SegmentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSegmentById not implemented")
-}
-func (UnimplementedDealerServer) GetInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error) {
+func (UnimplementedDealerServer) GetInputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetInputStorageClaim not implemented")
 }
-func (UnimplementedDealerServer) AllocateOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaimResponse, error) {
+func (UnimplementedDealerServer) AllocateOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AllocateOutputStorageClaim not implemented")
 }
 func (UnimplementedDealerServer) mustEmbedUnimplementedDealerServer() {}
@@ -222,60 +176,6 @@ func _Dealer_AllocateInputStorageClaim_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Dealer_GetQueuedSegmentsCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetQueuedSegmentsCountRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DealerServer).GetQueuedSegmentsCount(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Dealer/GetQueuedSegmentsCount",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DealerServer).GetQueuedSegmentsCount(ctx, req.(*GetQueuedSegmentsCountRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Dealer_GetSegmentsByOrderId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetSegmentsByOrderIdRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DealerServer).GetSegmentsByOrderId(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Dealer/GetSegmentsByOrderId",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DealerServer).GetSegmentsByOrderId(ctx, req.(*GetSegmentsByOrderIdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Dealer_GetSegmentById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetSegmentsByOrderIdRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DealerServer).GetSegmentById(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/Dealer/GetSegmentById",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DealerServer).GetSegmentById(ctx, req.(*GetSegmentsByOrderIdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Dealer_GetInputStorageClaim_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StorageClaimRequest)
 	if err := dec(in); err != nil {
@@ -330,18 +230,6 @@ var Dealer_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AllocateInputStorageClaim",
 			Handler:    _Dealer_AllocateInputStorageClaim_Handler,
-		},
-		{
-			MethodName: "GetQueuedSegmentsCount",
-			Handler:    _Dealer_GetQueuedSegmentsCount_Handler,
-		},
-		{
-			MethodName: "GetSegmentsByOrderId",
-			Handler:    _Dealer_GetSegmentsByOrderId_Handler,
-		},
-		{
-			MethodName: "GetSegmentById",
-			Handler:    _Dealer_GetSegmentById_Handler,
 		},
 		{
 			MethodName: "GetInputStorageClaim",

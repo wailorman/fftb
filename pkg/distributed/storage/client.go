@@ -36,7 +36,7 @@ func (uc *UniversalClient) BuildStorageClaimByURL(claimURL string) (models.IStor
 	claimType := u.Scheme
 
 	if uc.clientsMap[claimType] == nil {
-		return nil, errors.Wrapf(ErrUnknownClaimType, "(received claim type: `%s`)", claimType)
+		return nil, errors.Wrapf(ErrUnknownClaimType, "(received claim type: `%s` from url `%s`)", claimType, claimURL)
 	}
 
 	storageClient := uc.clientsMap[claimType]

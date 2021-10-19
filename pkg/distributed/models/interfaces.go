@@ -39,11 +39,11 @@ const MaxRetriesCount = 3
 // NextRetryOffset _
 const NextRetryOffset = time.Duration(30 * time.Second)
 
-// // LocalAuthorName _
-// var LocalAuthorName = "local"
+// LocalAuthorName _
+var LocalAuthorName = "local"
 
-// // LocalAuthor _
-// var LocalAuthor = &Author{name: LocalAuthorName}
+// LocalAuthor _
+var LocalAuthor = &Author{Name: LocalAuthorName}
 
 // CancellationReasonFailed _
 const CancellationReasonFailed = "failed"
@@ -222,7 +222,7 @@ type IContracterDealer interface {
 	AllocateSegment(ctx context.Context, publisher IAuthor, req IDealerRequest) (ISegment, error)
 
 	GetOutputStorageClaim(ctx context.Context, publisher IAuthor, segmentID string) (IStorageClaim, error)
-	AllocateInputStorageClaim(ctx context.Context, publisher IAuthor, id string) (IStorageClaim, error)
+	AllocateInputStorageClaim(ctx context.Context, publisher IAuthor, segmentID string) (IStorageClaim, error)
 
 	GetQueuedSegmentsCount(ctx context.Context, publisher IAuthor) (int, error)
 	GetSegmentsByOrderID(ctx context.Context, publisher IAuthor, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
@@ -256,7 +256,7 @@ type IWorkerDealer interface {
 	FailSegment(ctx context.Context, performer IAuthor, id string, err error) error
 
 	GetInputStorageClaim(ctx context.Context, performer IAuthor, segmentID string) (IStorageClaim, error)
-	AllocateOutputStorageClaim(ctx context.Context, performer IAuthor, id string) (IStorageClaim, error)
+	AllocateOutputStorageClaim(ctx context.Context, performer IAuthor, segmentID string) (IStorageClaim, error)
 }
 
 // IRegistry _
@@ -307,7 +307,7 @@ type IStorageController interface {
 	// TODO: receive string (identity) instead of claim
 	PurgeStorageClaim(ctx context.Context, claim IStorageClaim) error
 	// TODO: ctx
-	BuildStorageClaim(name string) (IStorageClaim, error)
+	BuildStorageClaim(identity string) (IStorageClaim, error)
 }
 
 // IStorageClaim _
@@ -366,3 +366,6 @@ type IAuthor interface {
 type TypeStub struct {
 	Type string `json:"type"`
 }
+
+// EmptyAuthor TODO: REMOVE
+var EmptyAuthor = &Author{}

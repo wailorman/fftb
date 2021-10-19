@@ -1,0 +1,13 @@
+# https://github.com/deepmap/oapi-codegen#using-oapi-codegen
+
+output:
+  pkg/distributed/remote/schema/contracter/client.gen.go
+package: contracter
+generate:
+  - types
+  - client
+  - server
+  
+# import-mapping:
+#   ./swagger.yml: github.com/deepmap/oapi-codegen/internal/test/externalref/packageA
+#   ./packageB/spec.yaml: github.com/deepmap/oapi-codegen/internal/test/externalref/packageB

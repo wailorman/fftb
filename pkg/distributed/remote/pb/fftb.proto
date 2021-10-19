@@ -9,60 +9,76 @@ option go_package = "github.com/wailorman/fftb/pkg/distributed;pb";
 
 
 service Dealer {
-  // for contracter
-  rpc AllocateSegment (DealerRequest) returns (AllocateSegmentResponse) {}
-  rpc GetOutputStorageClaim (StorageClaimRequest) returns (StorageClaimResponse) {}
-  rpc AllocateInputStorageClaim (StorageClaimRequest) returns (StorageClaimResponse) {}
-  rpc GetQueuedSegmentsCount (GetQueuedSegmentsCountRequest) returns (GetQueuedSegmentsCountResponse) {}
-  rpc GetSegmentsByOrderId (GetSegmentsByOrderIdRequest) returns (SegmentsListResponse) {}
-  rpc GetSegmentById (GetSegmentsByOrderIdRequest) returns (SegmentResponse) {}
+  rpc AllocateSegment (DealerRequest) returns (Segment) {}
+  rpc GetOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+  rpc AllocateInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+  // rpc GetQueuedSegmentsCount (GetQueuedSegmentsCountRequest) returns (GetQueuedSegmentsCountResponse) {}
+  // rpc GetSegmentsByOrderId (GetSegmentsByOrderIdRequest) returns (SegmentsListResponse) {}
+  // rpc GetSegmentById (GetSegmentsByOrderIdRequest) returns (SegmentResponse) {}
 
-  // for worker
-  rpc GetInputStorageClaim (StorageClaimRequest) returns (StorageClaimResponse) {}
-  rpc AllocateOutputStorageClaim (StorageClaimRequest) returns (StorageClaimResponse) {}
+  rpc GetInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+  rpc AllocateOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+
+  // rpc Notify(ProgressNotification) returns (Empty) {}
 }
 
 message DealerRequest {
   string authorization = 1;
-  Segment segment = 5;
+  string type = 2;
+  string id = 3;
+  string orderId = 4;
+  ConvertSegmentParams convertParams = 5;
 }
 
-message AllocateSegmentResponse {
-  Segment segment = 1;
-}
+// message AllocateSegmentResponse {
+//   Segment segment = 1;
+// }
 
 message StorageClaimRequest {
   string authorization = 1;
   string segmentId = 2;
 }
 
-message StorageClaimResponse {
-  StorageClaim storageClaim = 1;
-}
+// message StorageClaimResponse {
+//   StorageClaim storageClaim = 1;
+// }
 
-message GetQueuedSegmentsCountRequest {
-  string authorization = 1;
-}
+// message GetQueuedSegmentsCountRequest {
+//   string authorization = 1;
+// }
 
-message GetQueuedSegmentsCountResponse {
-  int64 count = 1;
-}
+// message GetQueuedSegmentsCountResponse {
+//   int64 count = 1;
+// }
 
-message GetSegmentsByOrderIdRequest {
-  string orderId = 1;
-}
+// message GetSegmentsByOrderIdRequest {
+//   string orderId = 1;
+// }
 
-message SegmentsListResponse {
-  repeated Segment segments = 1;
-}
+// message SegmentsListResponse {
+//   repeated Segment segments = 1;
+// }
 
 // message GetSegmentByIdRequest {
 //   string segmentId = 1;
 // }
 
-message SegmentResponse {
-  Segment segment = 1;
-}
+// message SegmentResponse {
+//   Segment segment = 1;
+// }
+
+// message ProgressNotification {
+//   enum Step {
+//     RAW_UPLOAD = 0;
+//     RESULT_DOWNLOAD = 1;
+//     RAW_DOWNLOAD = 2;
+//     RESULT_UPLOAD = 3;
+//     PROCESS = 4;
+//   }
+
+//   Step step = 1;
+//   double progress = 2;
+// }
 
 // ----------------------------------------------------------------
 
@@ -89,3 +105,6 @@ message ConvertSegmentParams {
 message StorageClaim {
   string url = 1;
 }
+
+// message Empty {
+// }

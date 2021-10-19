@@ -29,6 +29,17 @@ type StorageClaim struct {
 	size int
 }
 
+// TODO: Remove
+
+// BuildStorageClaim is function for internal purposes
+func BuildStorageClaim(id, url string, size int) *StorageClaim {
+	return &StorageClaim{
+		id:   id,
+		url:  url,
+		size: size,
+	}
+}
+
 // GetID _
 func (s *StorageClaim) GetID() string {
 	return s.id
