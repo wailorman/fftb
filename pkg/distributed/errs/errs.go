@@ -56,3 +56,8 @@ func WhileAllocateOutputStorageClaim(err error) error {
 func WhileBuildStorageClaimByURL(err error) error {
 	return errors.Wrap(err, "Building storage claim by URL")
 }
+
+// WhileCastingProgressStep _
+func WhileCastingProgressStep(err error) error {
+	return errors.Wrap(err, "Casting progress step")
+}

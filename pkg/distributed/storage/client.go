@@ -58,7 +58,7 @@ func (uc *UniversalClient) RemoveLocalCopy(ctx context.Context, sc models.IStora
 }
 
 // MakeLocalCopy implements IStorageClient's same method
-func (uc *UniversalClient) MakeLocalCopy(ctx context.Context, sc models.IStorageClaim, p chan models.Progresser) (files.Filer, error) {
+func (uc *UniversalClient) MakeLocalCopy(ctx context.Context, sc models.IStorageClaim, p chan models.IProgress) (files.Filer, error) {
 	claimType := sc.GetType()
 
 	if uc.clientsMap[claimType] == nil {
@@ -71,7 +71,7 @@ func (uc *UniversalClient) MakeLocalCopy(ctx context.Context, sc models.IStorage
 }
 
 // MoveFileToStorageClaim implements IStorageClient's same method
-func (uc *UniversalClient) MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.Progresser) error {
+func (uc *UniversalClient) MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.IProgress) error {
 	claimType := sc.GetType()
 
 	if uc.clientsMap[claimType] == nil {

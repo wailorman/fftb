@@ -60,7 +60,7 @@ func (client *StorageClient) RemoveLocalCopy(ctx context.Context, sc models.ISto
 }
 
 // MakeLocalCopy _
-func (client *StorageClient) MakeLocalCopy(ctx context.Context, sc models.IStorageClaim, p chan models.Progresser) (files.Filer, error) {
+func (client *StorageClient) MakeLocalCopy(ctx context.Context, sc models.IStorageClaim, p chan models.IProgress) (files.Filer, error) {
 	copyFile := buildLocalCopyFile(client.localCopiesPath, sc)
 
 	if client.isLocalCopyMatches(sc) {
@@ -113,7 +113,7 @@ func isLocalStorageClaim(sc models.IStorageClaim) bool {
 }
 
 // MoveFileToStorageClaim _
-func (client *StorageClient) MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.Progresser) error {
+func (client *StorageClient) MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.IProgress) error {
 	// TODO: just move file for local storage
 
 	err := client.UploadFileToStorageClaim(ctx, file, sc, p)
@@ -132,7 +132,7 @@ func (client *StorageClient) MoveFileToStorageClaim(ctx context.Context, file fi
 }
 
 // UploadFileToStorageClaim _
-func (client *StorageClient) UploadFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.Progresser) error {
+func (client *StorageClient) UploadFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.IProgress) error {
 	// TODO: notify progress
 	// TODO: handle ctx cancel
 
@@ -158,7 +158,7 @@ func (client *StorageClient) UploadFileToStorageClaim(ctx context.Context, file 
 }
 
 // DownloadFileFromStorageClaim _
-func (client *StorageClient) DownloadFileFromStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.Progresser) error {
+func (client *StorageClient) DownloadFileFromStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.IProgress) error {
 	// TODO: notify progress
 	// TODO: handle ctx cancel
 

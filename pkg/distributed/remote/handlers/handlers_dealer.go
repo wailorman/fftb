@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"github.com/wailorman/fftb/pkg/distributed/errs"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/remote/converters"
@@ -99,4 +100,116 @@ func (h *DealerHandler) AllocateOutputStorageClaim(ctx context.Context, scReq *p
 	}
 
 	return converters.ToRPCStorageClaim(storageClaim), nil
+}
+
+// Notify handles gRPC requests
+func (h *DealerHandler) Notify(ctx context.Context, notification *pb.ProgressNotification) (*pb.Empty, error) {
+	_, mProgress, err := converters.FromRPCProgress(notification)
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileCastingProgressStep(err))
+	}
+
+	switch mProgress.Step() {
+	case models.UploadingInputStep:
+		err = h.dealer.NotifyRawUpload(ctx, models.LocalAuthor, notification.SegmentId, mProgress)
+
+	case models.DownloadingInputStep:
+		err = h.dealer.NotifyRawDownload(ctx, models.LocalAuthor, notification.SegmentId, mProgress)
+
+	case models.ProcessingStep:
+		err = h.dealer.NotifyProcess(ctx, models.LocalAuthor, notification.SegmentId, mProgress)
+
+	case models.UploadingOutputStep:
+		err = h.dealer.NotifyResultUpload(ctx, models.LocalAuthor, notification.SegmentId, mProgress)
+
+	case models.DownloadingOutputStep:
+		err = h.dealer.NotifyResultDownload(ctx, models.LocalAuthor, notification.SegmentId, mProgress)
+
+	default:
+		err = errors.Wrapf(models.ErrNotImplemented, "Received unimplemented step: `%s`", mProgress.Step())
+	}
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
+}
+
+// PublishSegment _
+func (h *DealerHandler) PublishSegment(ctx context.Context, gReq *pb.PublishSegmentRequest) (*pb.Empty, error) {
+	err := h.dealer.PublishSegment(ctx, models.LocalAuthor, gReq.SegmentId)
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
+}
+
+// RepublishSegment _
+func (h *DealerHandler) RepublishSegment(ctx context.Context, gReq *pb.RepublishSegmentRequest) (*pb.Empty, error) {
+	err := h.dealer.RepublishSegment(ctx, models.LocalAuthor, gReq.SegmentId)
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
+}
+
+// AcceptSegment _
+func (h *DealerHandler) AcceptSegment(ctx context.Context, gReq *pb.AcceptSegmentRequest) (*pb.Empty, error) {
+	err := h.dealer.AcceptSegment(ctx, models.LocalAuthor, gReq.SegmentId)
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
+}
+
+// FinishSegment _
+func (h *DealerHandler) FinishSegment(ctx context.Context, gReq *pb.FinishSegmentRequest) (*pb.Empty, error) {
+	err := h.dealer.FinishSegment(ctx, models.LocalAuthor, gReq.SegmentId)
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
+}
+
+// QuitSegment _
+func (h *DealerHandler) QuitSegment(ctx context.Context, gReq *pb.QuitSegmentRequest) (*pb.Empty, error) {
+	err := h.dealer.QuitSegment(ctx, models.LocalAuthor, gReq.SegmentId)
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
+}
+
+// CancelSegment _
+func (h *DealerHandler) CancelSegment(ctx context.Context, gReq *pb.CancelSegmentRequest) (*pb.Empty, error) {
+	err := h.dealer.CancelSegment(ctx, models.LocalAuthor, gReq.SegmentId, gReq.Reason)
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
+}
+
+// FailSegment _
+func (h *DealerHandler) FailSegment(ctx context.Context, gReq *pb.FailSegmentRequest) (*pb.Empty, error) {
+	err := h.dealer.FailSegment(ctx, models.LocalAuthor, gReq.SegmentId, errors.New(gReq.Failure))
+
+	if err != nil {
+		return nil, converters.ToRPCError(errs.WhileHandleRequest(err))
+	}
+
+	return &pb.Empty{}, nil
 }

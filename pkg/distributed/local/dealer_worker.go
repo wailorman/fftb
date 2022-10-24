@@ -112,21 +112,21 @@ func (d *Dealer) FinishSegment(ctx context.Context, performer models.IAuthor, se
 }
 
 // NotifyProcess _
-func (d *Dealer) NotifyProcess(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) NotifyProcess(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	return d.segmentProgress(ctx, performer, segmentID, p)
 }
 
 // NotifyRawDownload _
-func (d *Dealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	return d.segmentProgress(ctx, performer, segmentID, p)
 }
 
 // NotifyResultUpload _
-func (d *Dealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	return d.segmentProgress(ctx, performer, segmentID, p)
 }
 
-func (d *Dealer) segmentProgress(ctx context.Context, performer models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) segmentProgress(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	seg, err := d.registry.FindSegmentByID(ctx, segmentID)
 
 	if err != nil {

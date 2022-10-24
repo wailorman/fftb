@@ -12,14 +12,14 @@ type ProgressMessage struct {
 	percent float64
 }
 
-func makeProgresserFromConvert(pm ff.Progressable) models.Progresser {
+func makeProgresserFromConvert(pm ff.Progressable) models.IProgress {
 	return &ProgressMessage{
 		step:    models.ProcessingStep,
 		percent: pm.Percent(),
 	}
 }
 
-func makeIoProgresser(iop progress.Progress, step models.ProgressStep) models.Progresser {
+func makeIoProgresser(iop progress.Progress, step models.ProgressStep) models.IProgress {
 	return &ProgressMessage{
 		step:    step,
 		percent: iop.Percent(),

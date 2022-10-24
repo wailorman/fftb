@@ -1,6 +1,9 @@
 package factories
 
 import (
+	"errors"
+
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
 	"github.com/wailorman/fftb/pkg/distributed/s3"
@@ -30,6 +33,9 @@ type Builder struct {
 	StorageClaimID   string
 	StorageClaimURL  string
 	StorageClaimSize int
+
+	CancellationReason string
+	FailureReason      error
 }
 
 // NewBuilder _
@@ -56,6 +62,9 @@ func NewBuilder() *Builder {
 		StorageClaimID:   "s3://bucket/test.mp4",
 		StorageClaimURL:  "https://s3.example.com/bucket/test.mp4",
 		StorageClaimSize: 9999,
+
+		CancellationReason: "Just something went wrong",
+		FailureReason:      errors.New("Something failed"),
 	}
 }
 
@@ -140,4 +149,19 @@ func (b *Builder) StorageClaim() models.IStorageClaim {
 // RPCStorageClaim _
 func (b *Builder) RPCStorageClaim() *pb.StorageClaim {
 	return &pb.StorageClaim{Url: b.StorageClaimURL}
+}
+
+// Progress _
+func (b *Builder) Progress(step models.ProgressStep, progress float64) models.IProgress {
+	return dlog.BuildProgress(step, progress)
+}
+
+// RPCProgress _
+func (b *Builder) RPCProgress(step pb.ProgressNotification_Step, progress float64) *pb.ProgressNotification {
+	return &pb.ProgressNotification{
+		Authorization: b.Authorization,
+		Step:          step,
+		Progress:      progress,
+		SegmentId:     b.SegmentID,
+	}
 }

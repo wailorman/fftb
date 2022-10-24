@@ -3,6 +3,7 @@ package converters
 import (
 	"github.com/pkg/errors"
 
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
 	"github.com/wailorman/fftb/pkg/media/convert"
@@ -136,5 +137,83 @@ func ToRPCStorageClaimRequest(authorization string, segmentID string) *pb.Storag
 	return &pb.StorageClaimRequest{
 		Authorization: authorization,
 		SegmentId:     segmentID,
+	}
+}
+
+// FromRPCProgress converts progress notification from rpc format to internal
+func FromRPCProgress(progress *pb.ProgressNotification) (authorization string, _ models.IProgress, _ error) {
+	switch progress.Step {
+	case pb.ProgressNotification_UPLOADING_INPUT:
+		return progress.Authorization,
+			dlog.BuildProgress(models.UploadingInputStep, progress.Progress),
+			nil
+
+	case pb.ProgressNotification_DOWNLOADING_INPUT:
+		return progress.Authorization,
+			dlog.BuildProgress(models.DownloadingInputStep, progress.Progress),
+			nil
+
+	case pb.ProgressNotification_PROCESSING:
+		return progress.Authorization,
+			dlog.BuildProgress(models.ProcessingStep, progress.Progress),
+			nil
+
+	case pb.ProgressNotification_UPLOADING_OUTPUT:
+		return progress.Authorization,
+			dlog.BuildProgress(models.UploadingOutputStep, progress.Progress),
+			nil
+
+	case pb.ProgressNotification_DOWNLOADING_OUTPUT:
+		return progress.Authorization,
+			dlog.BuildProgress(models.DownloadingOutputStep, progress.Progress),
+			nil
+
+	default:
+		return progress.Authorization,
+			nil,
+			models.NewErrUnknownType(string(progress.Step))
+	}
+}
+
+// ToRPCProgress converts internal progress message to rpc format
+func ToRPCProgress(authorization, segmentID string, progress models.IProgress) (*pb.ProgressNotification, error) {
+	switch progress.Step() {
+	case models.UploadingInputStep:
+		return &pb.ProgressNotification{
+			Authorization: authorization,
+			Step:          pb.ProgressNotification_UPLOADING_INPUT,
+			Progress:      progress.Percent(),
+			SegmentId:     segmentID}, nil
+
+	case models.DownloadingInputStep:
+		return &pb.ProgressNotification{
+			Authorization: authorization,
+			Step:          pb.ProgressNotification_DOWNLOADING_INPUT,
+			Progress:      progress.Percent(),
+			SegmentId:     segmentID}, nil
+
+	case models.ProcessingStep:
+		return &pb.ProgressNotification{
+			Authorization: authorization,
+			Step:          pb.ProgressNotification_PROCESSING,
+			Progress:      progress.Percent(),
+			SegmentId:     segmentID}, nil
+
+	case models.UploadingOutputStep:
+		return &pb.ProgressNotification{
+			Authorization: authorization,
+			Step:          pb.ProgressNotification_UPLOADING_OUTPUT,
+			Progress:      progress.Percent(),
+			SegmentId:     segmentID}, nil
+
+	case models.DownloadingOutputStep:
+		return &pb.ProgressNotification{
+			Authorization: authorization,
+			Step:          pb.ProgressNotification_DOWNLOADING_OUTPUT,
+			Progress:      progress.Percent(),
+			SegmentId:     segmentID}, nil
+
+	default:
+		return nil, models.NewErrUnknownType(string(progress.Step()))
 	}
 }

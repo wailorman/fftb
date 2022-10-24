@@ -228,8 +228,8 @@ type IContracterDealer interface {
 	GetSegmentsByOrderID(ctx context.Context, publisher IAuthor, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
 	GetSegmentByID(ctx context.Context, publisher IAuthor, segmentID string) (ISegment, error)
 
-	NotifyRawUpload(ctx context.Context, publisher IAuthor, id string, p Progresser) error
-	NotifyResultDownload(ctx context.Context, publisher IAuthor, id string, p Progresser) error
+	NotifyRawUpload(ctx context.Context, publisher IAuthor, segmentID string, p IProgress) error
+	NotifyResultDownload(ctx context.Context, publisher IAuthor, segmentID string, p IProgress) error
 
 	PublishSegment(ctx context.Context, publisher IAuthor, id string) error
 	RepublishSegment(ctx context.Context, publisher IAuthor, id string) error
@@ -247,9 +247,9 @@ type IWorkerDealer interface {
 	// TODO: add search criteria
 	FindFreeSegment(ctx context.Context, performer IAuthor) (ISegment, error)
 
-	NotifyRawDownload(ctx context.Context, performer IAuthor, id string, p Progresser) error
-	NotifyResultUpload(ctx context.Context, performer IAuthor, id string, p Progresser) error
-	NotifyProcess(ctx context.Context, performer IAuthor, id string, p Progresser) error
+	NotifyRawDownload(ctx context.Context, performer IAuthor, segmentID string, p IProgress) error
+	NotifyResultUpload(ctx context.Context, performer IAuthor, segmentID string, p IProgress) error
+	NotifyProcess(ctx context.Context, performer IAuthor, segmentID string, p IProgress) error
 
 	FinishSegment(ctx context.Context, performer IAuthor, id string) error
 	QuitSegment(ctx context.Context, performer IAuthor, id string) error
@@ -330,26 +330,26 @@ type IStorageClient interface {
 	// TODO: ctx
 	BuildStorageClaimByURL(url string) (IStorageClaim, error)
 	RemoveLocalCopy(ctx context.Context, sc IStorageClaim) error
-	MakeLocalCopy(ctx context.Context, sc IStorageClaim, p chan Progresser) (files.Filer, error)
-	MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc IStorageClaim, p chan Progresser) error
+	MakeLocalCopy(ctx context.Context, sc IStorageClaim, p chan IProgress) (files.Filer, error)
+	MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc IStorageClaim, p chan IProgress) error
 }
 
-// Progresser _
-type Progresser interface {
+// IProgress _
+type IProgress interface {
 	Step() ProgressStep
 	Percent() float64
 }
 
 // Subscriber _
 type Subscriber interface {
-	GetOutput() chan Progresser
+	GetOutput() chan IProgress
 	Unsubscribe()
 }
 
 // PublishSubscriber _
 type PublishSubscriber interface {
 	Subscribe() Subscriber
-	Publish(Progresser)
+	Publish(IProgress)
 }
 
 // IAuthor _

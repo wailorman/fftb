@@ -156,12 +156,12 @@ func (d *Dealer) AcceptSegment(ctx context.Context, publisher models.IAuthor, se
 }
 
 // NotifyRawUpload _
-func (d *Dealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.IProgress) error {
 	panic(models.ErrNotImplemented)
 }
 
 // NotifyResultDownload _
-func (d *Dealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.Progresser) error {
+func (d *Dealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.IProgress) error {
 	panic(models.ErrNotImplemented)
 }
 

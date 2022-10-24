@@ -60,7 +60,7 @@ const PrefixSegmSliceOperation = "fftb.segm.slice_operation"
 const PrefixAPI = "fftb.api"
 
 // SegmentProgress _
-func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Progresser) {
+func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.IProgress) {
 	entry := WithSegment(logger, seg).
 		WithField(KeyPercent, fmt.Sprintf("%.4f", p.Percent())).
 		WithField(KeySegmentState, p.Step())
@@ -68,19 +68,26 @@ func SegmentProgress(logger logrus.FieldLogger, seg models.ISegment, p models.Pr
 	entry.Debug("Processing segment")
 }
 
-// basicProgress _
-type basicProgress struct {
+// BasicProgress _
+type BasicProgress struct {
 	step    models.ProgressStep
 	percent float64
 }
 
+// TODO: Remove
+
+// BuildProgress is internal function
+func BuildProgress(step models.ProgressStep, percent float64) *BasicProgress {
+	return &BasicProgress{step, percent}
+}
+
 // Step _
-func (bP *basicProgress) Step() models.ProgressStep {
+func (bP *BasicProgress) Step() models.ProgressStep {
 	return bP.step
 }
 
 // Percent _
-func (bP *basicProgress) Percent() float64 {
+func (bP *BasicProgress) Percent() float64 {
 	return bP.percent
 }
 
@@ -96,8 +103,8 @@ func WithSegment(logger logrus.FieldLogger, segment models.ISegment) logrus.Fiel
 }
 
 // MakeIOProgress _
-func MakeIOProgress(step models.ProgressStep, percent float64) models.Progresser {
-	return &basicProgress{
+func MakeIOProgress(step models.ProgressStep, percent float64) models.IProgress {
+	return &BasicProgress{
 		step:    step,
 		percent: percent,
 	}
