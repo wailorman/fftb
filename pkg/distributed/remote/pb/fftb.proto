@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 option go_package = "github.com/wailorman/fftb/pkg/distributed;pb";
+option ruby_package = "Fftb";
 
 // go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
 // go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
@@ -9,83 +10,72 @@ option go_package = "github.com/wailorman/fftb/pkg/distributed;pb";
 
 
 service Dealer {
-  rpc AllocateSegment (DealerRequest) returns (Segment) {}
-  rpc GetOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
-  rpc AllocateInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
-  // rpc GetQueuedSegmentsCount (GetQueuedSegmentsCountRequest) returns (GetQueuedSegmentsCountResponse) {}
-  // rpc GetSegmentsByOrderId (GetSegmentsByOrderIdRequest) returns (SegmentsListResponse) {}
-  // rpc GetSegmentById (GetSegmentsByOrderIdRequest) returns (SegmentResponse) {}
+  // rpc GetOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+  // rpc AllocateInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
 
   rpc GetInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
   rpc AllocateOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
 
-  // rpc Notify(ProgressNotification) returns (Empty) {}
-}
+  rpc FinishSegment(FinishSegmentRequest) returns (Empty) {}
+  rpc QuitSegment(QuitSegmentRequest) returns (Empty) {}
+  rpc FailSegment(FailSegmentRequest) returns (Empty) {}
 
-message DealerRequest {
-  string authorization = 1;
-  string type = 2;
-  string id = 3;
-  string orderId = 4;
-  ConvertSegmentParams convertParams = 5;
-}
+  rpc FindFreeSegment(FindFreeSegmentRequest) returns (Segment) {}
 
-// message AllocateSegmentResponse {
-//   Segment segment = 1;
-// }
+  rpc Notify(ProgressNotification) returns (Empty) {}
+}
 
 message StorageClaimRequest {
   string authorization = 1;
   string segmentId = 2;
 }
 
-// message StorageClaimResponse {
-//   StorageClaim storageClaim = 1;
-// }
+message ProgressNotification {
+  enum Step {
+    UPLOADING_INPUT = 0;
+    DOWNLOADING_INPUT = 1;
+    PROCESSING = 2;
+    UPLOADING_OUTPUT = 3;
+    DOWNLOADING_OUTPUT = 4;
+  }
 
-// message GetQueuedSegmentsCountRequest {
-//   string authorization = 1;
-// }
+  Step step = 1;
+  string authorization = 2;
+  double progress = 3;
+  string segmentId = 4;
+}
 
-// message GetQueuedSegmentsCountResponse {
-//   int64 count = 1;
-// }
+message FinishSegmentRequest {
+  string authorization = 1;
+  string segmentId = 2;
+}
 
-// message GetSegmentsByOrderIdRequest {
-//   string orderId = 1;
-// }
+message QuitSegmentRequest {
+  string authorization = 1;
+  string segmentId = 2;
+}
 
-// message SegmentsListResponse {
-//   repeated Segment segments = 1;
-// }
+message FailSegmentRequest {
+  string authorization = 1;
+  string segmentId = 2;
+  string failure = 3;
+}
 
-// message GetSegmentByIdRequest {
-//   string segmentId = 1;
-// }
+message FindFreeSegmentRequest {
+  string authorization = 1;
+}
 
-// message SegmentResponse {
-//   Segment segment = 1;
-// }
-
-// message ProgressNotification {
-//   enum Step {
-//     RAW_UPLOAD = 0;
-//     RESULT_DOWNLOAD = 1;
-//     RAW_DOWNLOAD = 2;
-//     RESULT_UPLOAD = 3;
-//     PROCESS = 4;
-//   }
-
-//   Step step = 1;
-//   double progress = 2;
-// }
 
 // ----------------------------------------------------------------
 
+enum SegmentType {
+  CONVERT_V1 = 0;
+}
+
 message Segment {
-  string type = 1;
+  SegmentType type = 1;
   string id = 2;
-  string orderId = 3;
+  // string orderId = 3;
   ConvertSegmentParams convertParams = 4;
 }
 
@@ -106,5 +96,5 @@ message StorageClaim {
   string url = 1;
 }
 
-// message Empty {
-// }
+message Empty {
+}

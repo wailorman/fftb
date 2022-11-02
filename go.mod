@@ -23,6 +23,8 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.7.0
 	github.com/subchen/go-trylock/v2 v2.0.0
+	github.com/twitchtv/twirp v8.1.3+incompatible // indirect
+	github.com/twitchtv/twirp-ruby v1.9.0 // indirect
 	github.com/urfave/cli/v2 v2.2.0
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208

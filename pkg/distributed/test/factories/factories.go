@@ -64,7 +64,7 @@ func NewBuilder() *Builder {
 		StorageClaimSize: 9999,
 
 		CancellationReason: "Just something went wrong",
-		FailureReason:      errors.New("Something failed"),
+		FailureReason:      errors.New("SOMETHING FAILED"),
 	}
 }
 
@@ -108,17 +108,6 @@ func (b *Builder) ConvertDealerRequest() models.IDealerRequest {
 	}
 }
 
-// RPCConvertDealerRequest _
-func (b *Builder) RPCConvertDealerRequest() *pb.DealerRequest {
-	return &pb.DealerRequest{
-		Authorization: b.Authorization,
-		Type:          models.ConvertV1Type,
-		Id:            b.SegmentID,
-		OrderId:       b.OrderID,
-		ConvertParams: b.RPCConvertParams(),
-	}
-}
-
 // ConvertSegment _
 func (b *Builder) ConvertSegment() models.ISegment {
 	return &models.ConvertSegment{
@@ -134,9 +123,8 @@ func (b *Builder) ConvertSegment() models.ISegment {
 // RPCConvertSegment _
 func (b *Builder) RPCConvertSegment() *pb.Segment {
 	return &pb.Segment{
-		Type:          models.ConvertV1Type,
+		Type:          *pb.SegmentType_CONVERT_V1.Enum(),
 		Id:            b.SegmentID,
-		OrderId:       b.OrderID,
 		ConvertParams: b.RPCConvertParams(),
 	}
 }

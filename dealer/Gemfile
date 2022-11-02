@@ -48,11 +48,16 @@ gem 'bootsnap', require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 # gem "image_processing", "~> 1.2"
 
+gem 'active_interaction', '~> 4.0'
+gem 'aws-sdk-s3', '~> 1'
+gem 'factory_bot_rails'
+gem 'google-protobuf'
 gem 'jwt'
-gem 'rubocop'
+gem 'net-http'
 gem 'sidekiq', '~> 5.2'
 gem 'sidekiq-cron', require: false
 gem 'sidekiq-grouping'
+gem 'twirp-rails'
 gem 'with_advisory_lock'
 
 group :development, :test do

@@ -1,5 +1,17 @@
 AllCops:
   TargetRubyVersion: 2.7
+  Exclude:
+    - 'lib/pb/**/*'
+    - 'db/schema.rb'
 
 Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/AbcSize:
   Enabled: false

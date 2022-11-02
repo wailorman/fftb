@@ -26,25 +26,6 @@ func setup() {
 
 func teardown() {}
 
-func Test__DealerRequest(t *testing.T) {
-	t.Run("model -> rpc", func(t *testing.T) {
-		actual, err := converters.ToRPCDealerRequest(f.Authorization, f.ConvertDealerRequest())
-
-		if assert.NoError(t, err) {
-			assert.Equal(t, f.RPCConvertDealerRequest(), actual)
-		}
-	})
-
-	t.Run("rpc -> model", func(t *testing.T) {
-		actualAuthorization, actualRequest, err := converters.FromRPCDealerRequest(f.RPCConvertDealerRequest())
-
-		if assert.NoError(t, err) {
-			assert.Equal(t, f.Authorization, actualAuthorization)
-			assert.Equal(t, f.ConvertDealerRequest(), actualRequest)
-		}
-	})
-}
-
 func Test__Segment(t *testing.T) {
 	t.Run("model -> rpc", func(t *testing.T) {
 		actual, err := converters.ToRPCSegment(f.ConvertSegment())

@@ -9,77 +9,17 @@ import (
 	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
-// FromRPCDealerRequest converts RPC dealer request to internal abstract format. Returns authorization string, dealer request & error
-func FromRPCDealerRequest(gReq *pb.DealerRequest) (string, models.IDealerRequest, error) {
-	switch gReq.Type {
-	case models.ConvertV1Type:
-		if gReq.ConvertParams == nil {
-			return "", nil, errors.New("Missing .convertParams")
-		}
-
-		return gReq.Authorization, &models.ConvertDealerRequest{
-			Type:          models.ConvertV1Type,
-			Identity:      gReq.Id,
-			OrderIdentity: gReq.OrderId,
-
-			Params: convert.Params{
-				VideoCodec:       gReq.ConvertParams.VideoCodec,
-				HWAccel:          gReq.ConvertParams.HwAccel,
-				VideoBitRate:     gReq.ConvertParams.VideoBitRate,
-				VideoQuality:     int(gReq.ConvertParams.VideoQuality),
-				Preset:           gReq.ConvertParams.Preset,
-				Scale:            gReq.ConvertParams.Scale,
-				KeyframeInterval: int(gReq.ConvertParams.KeyframeInterval),
-			},
-
-			Muxer:    gReq.ConvertParams.Muxer,
-			Position: int(gReq.ConvertParams.Position),
-		}, nil
-
-	default:
-		return "", nil, models.NewErrUnknownType(gReq.Type)
-	}
-}
-
-// ToRPCDealerRequest converts internal dealer request to RPC format
-func ToRPCDealerRequest(authorization string, mReq models.IDealerRequest) (*pb.DealerRequest, error) {
-	switch tmReq := mReq.(type) {
-	case *models.ConvertDealerRequest:
-		return &pb.DealerRequest{
-			Authorization: authorization,
-			Type:          models.ConvertV1Type,
-			Id:            tmReq.Identity,
-			OrderId:       tmReq.OrderIdentity,
-			ConvertParams: &pb.ConvertSegmentParams{
-				VideoCodec:       tmReq.Params.VideoCodec,
-				HwAccel:          tmReq.Params.HWAccel,
-				VideoBitRate:     tmReq.Params.VideoBitRate,
-				VideoQuality:     int32(tmReq.Params.VideoQuality),
-				Preset:           tmReq.Params.Preset,
-				Scale:            tmReq.Params.Scale,
-				KeyframeInterval: int32(tmReq.Params.KeyframeInterval),
-				Muxer:            tmReq.Muxer,
-				Position:         int32(tmReq.Position),
-			},
-		}, nil
-
-	default:
-		return nil, models.NewErrUnknownType(mReq.GetType())
-	}
-}
-
 // FromRPCSegment converts RPC segment to internal object
 func FromRPCSegment(gSeg *pb.Segment) (models.ISegment, error) {
 	switch gSeg.Type {
-	case models.ConvertV1Type:
+	case *pb.SegmentType_CONVERT_V1.Enum():
 		if gSeg.ConvertParams == nil {
 			return nil, errors.New("Missing convertParams")
 		}
 
 		return &models.ConvertSegment{
-			Type:          models.ConvertV1Type,
-			Identity:      gSeg.Id,
-			OrderIdentity: gSeg.OrderId,
+			Type:     models.ConvertV1Type,
+			Identity: gSeg.Id,
 
 			Params: convert.Params{
 				VideoCodec:       gSeg.ConvertParams.VideoCodec,
@@ -96,7 +36,7 @@ func FromRPCSegment(gSeg *pb.Segment) (models.ISegment, error) {
 		}, nil
 
 	default:
-		return nil, models.NewErrUnknownType(gSeg.Type)
+		return nil, models.NewErrUnknownType(gSeg.Type.Enum().String())
 	}
 }
 
@@ -105,9 +45,8 @@ func ToRPCSegment(mSeg models.ISegment) (*pb.Segment, error) {
 	switch tmSeg := mSeg.(type) {
 	case *models.ConvertSegment:
 		return &pb.Segment{
-			Type:    models.ConvertV1Type,
-			Id:      tmSeg.Identity,
-			OrderId: tmSeg.OrderIdentity,
+			Type: *pb.SegmentType_CONVERT_V1.Enum(),
+			Id:   tmSeg.Identity,
 			ConvertParams: &pb.ConvertSegmentParams{
 				VideoCodec:       tmSeg.Params.VideoCodec,
 				HwAccel:          tmSeg.Params.HWAccel,

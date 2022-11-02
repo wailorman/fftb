@@ -1021,6 +1021,21 @@ func (mr *MockIContracterMockRecorder) GetAllOrders(ctx interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllOrders", reflect.TypeOf((*MockIContracter)(nil).GetAllOrders), ctx)
 }
 
+// GetAllSegments mocks base method.
+func (m *MockIContracter) GetAllSegments(ctx context.Context) ([]models.ISegment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllSegments", ctx)
+	ret0, _ := ret[0].([]models.ISegment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllSegments indicates an expected call of GetAllSegments.
+func (mr *MockIContracterMockRecorder) GetAllSegments(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllSegments", reflect.TypeOf((*MockIContracter)(nil).GetAllSegments), ctx)
+}
+
 // GetOrderByID mocks base method.
 func (m *MockIContracter) GetOrderByID(ctx context.Context, id string) (models.IOrder, error) {
 	m.ctrl.T.Helper()
@@ -1036,6 +1051,36 @@ func (mr *MockIContracterMockRecorder) GetOrderByID(ctx, id interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrderByID", reflect.TypeOf((*MockIContracter)(nil).GetOrderByID), ctx, id)
 }
 
+// GetSegmentByID mocks base method.
+func (m *MockIContracter) GetSegmentByID(ctx context.Context, segmentID string) (models.ISegment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSegmentByID", ctx, segmentID)
+	ret0, _ := ret[0].(models.ISegment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSegmentByID indicates an expected call of GetSegmentByID.
+func (mr *MockIContracterMockRecorder) GetSegmentByID(ctx, segmentID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSegmentByID", reflect.TypeOf((*MockIContracter)(nil).GetSegmentByID), ctx, segmentID)
+}
+
+// GetSegmentsByOrderID mocks base method.
+func (m *MockIContracter) GetSegmentsByOrderID(ctx context.Context, orderID string) ([]models.ISegment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSegmentsByOrderID", ctx, orderID)
+	ret0, _ := ret[0].([]models.ISegment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSegmentsByOrderID indicates an expected call of GetSegmentsByOrderID.
+func (mr *MockIContracterMockRecorder) GetSegmentsByOrderID(ctx, orderID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSegmentsByOrderID", reflect.TypeOf((*MockIContracter)(nil).GetSegmentsByOrderID), ctx, orderID)
+}
+
 // SearchAllOrders mocks base method.
 func (m *MockIContracter) SearchAllOrders(ctx context.Context, search models.IOrderSearchCriteria) ([]models.IOrder, error) {
 	m.ctrl.T.Helper()
@@ -1049,6 +1094,36 @@ func (m *MockIContracter) SearchAllOrders(ctx context.Context, search models.IOr
 func (mr *MockIContracterMockRecorder) SearchAllOrders(ctx, search interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchAllOrders", reflect.TypeOf((*MockIContracter)(nil).SearchAllOrders), ctx, search)
+}
+
+// SearchAllSegments mocks base method.
+func (m *MockIContracter) SearchAllSegments(ctx context.Context, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchAllSegments", ctx, search)
+	ret0, _ := ret[0].([]models.ISegment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchAllSegments indicates an expected call of SearchAllSegments.
+func (mr *MockIContracterMockRecorder) SearchAllSegments(ctx, search interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchAllSegments", reflect.TypeOf((*MockIContracter)(nil).SearchAllSegments), ctx, search)
+}
+
+// SearchSegmentsByOrderID mocks base method.
+func (m *MockIContracter) SearchSegmentsByOrderID(ctx context.Context, orderID string, search models.ISegmentSearchCriteria) ([]models.ISegment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchSegmentsByOrderID", ctx, orderID, search)
+	ret0, _ := ret[0].([]models.ISegment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchSegmentsByOrderID indicates an expected call of SearchSegmentsByOrderID.
+func (mr *MockIContracterMockRecorder) SearchSegmentsByOrderID(ctx, orderID, search interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchSegmentsByOrderID", reflect.TypeOf((*MockIContracter)(nil).SearchSegmentsByOrderID), ctx, orderID, search)
 }
 
 // MockIDealer is a mock of IDealer interface.
@@ -1089,33 +1164,33 @@ func (mr *MockIDealerMockRecorder) AcceptSegment(ctx, publisher, id interface{})
 }
 
 // AllocateInputStorageClaim mocks base method.
-func (m *MockIDealer) AllocateInputStorageClaim(ctx context.Context, publisher models.IAuthor, id string) (models.IStorageClaim, error) {
+func (m *MockIDealer) AllocateInputStorageClaim(ctx context.Context, publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllocateInputStorageClaim", ctx, publisher, id)
+	ret := m.ctrl.Call(m, "AllocateInputStorageClaim", ctx, publisher, segmentID)
 	ret0, _ := ret[0].(models.IStorageClaim)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllocateInputStorageClaim indicates an expected call of AllocateInputStorageClaim.
-func (mr *MockIDealerMockRecorder) AllocateInputStorageClaim(ctx, publisher, id interface{}) *gomock.Call {
+func (mr *MockIDealerMockRecorder) AllocateInputStorageClaim(ctx, publisher, segmentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateInputStorageClaim", reflect.TypeOf((*MockIDealer)(nil).AllocateInputStorageClaim), ctx, publisher, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateInputStorageClaim", reflect.TypeOf((*MockIDealer)(nil).AllocateInputStorageClaim), ctx, publisher, segmentID)
 }
 
 // AllocateOutputStorageClaim mocks base method.
-func (m *MockIDealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, id string) (models.IStorageClaim, error) {
+func (m *MockIDealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllocateOutputStorageClaim", ctx, performer, id)
+	ret := m.ctrl.Call(m, "AllocateOutputStorageClaim", ctx, performer, segmentID)
 	ret0, _ := ret[0].(models.IStorageClaim)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllocateOutputStorageClaim indicates an expected call of AllocateOutputStorageClaim.
-func (mr *MockIDealerMockRecorder) AllocateOutputStorageClaim(ctx, performer, id interface{}) *gomock.Call {
+func (mr *MockIDealerMockRecorder) AllocateOutputStorageClaim(ctx, performer, segmentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateOutputStorageClaim", reflect.TypeOf((*MockIDealer)(nil).AllocateOutputStorageClaim), ctx, performer, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateOutputStorageClaim", reflect.TypeOf((*MockIDealer)(nil).AllocateOutputStorageClaim), ctx, performer, segmentID)
 }
 
 // AllocatePerformerAuthority mocks base method.
@@ -1296,73 +1371,73 @@ func (mr *MockIDealerMockRecorder) GetSegmentsByOrderID(ctx, publisher, orderID,
 }
 
 // NotifyProcess mocks base method.
-func (m *MockIDealer) NotifyProcess(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIDealer) NotifyProcess(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyProcess", ctx, performer, id, p)
+	ret := m.ctrl.Call(m, "NotifyProcess", ctx, performer, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyProcess indicates an expected call of NotifyProcess.
-func (mr *MockIDealerMockRecorder) NotifyProcess(ctx, performer, id, p interface{}) *gomock.Call {
+func (mr *MockIDealerMockRecorder) NotifyProcess(ctx, performer, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyProcess", reflect.TypeOf((*MockIDealer)(nil).NotifyProcess), ctx, performer, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyProcess", reflect.TypeOf((*MockIDealer)(nil).NotifyProcess), ctx, performer, segmentID, p)
 }
 
 // NotifyRawDownload mocks base method.
-func (m *MockIDealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIDealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRawDownload", ctx, performer, id, p)
+	ret := m.ctrl.Call(m, "NotifyRawDownload", ctx, performer, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyRawDownload indicates an expected call of NotifyRawDownload.
-func (mr *MockIDealerMockRecorder) NotifyRawDownload(ctx, performer, id, p interface{}) *gomock.Call {
+func (mr *MockIDealerMockRecorder) NotifyRawDownload(ctx, performer, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawDownload", reflect.TypeOf((*MockIDealer)(nil).NotifyRawDownload), ctx, performer, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawDownload", reflect.TypeOf((*MockIDealer)(nil).NotifyRawDownload), ctx, performer, segmentID, p)
 }
 
 // NotifyRawUpload mocks base method.
-func (m *MockIDealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIDealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRawUpload", ctx, publisher, id, p)
+	ret := m.ctrl.Call(m, "NotifyRawUpload", ctx, publisher, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyRawUpload indicates an expected call of NotifyRawUpload.
-func (mr *MockIDealerMockRecorder) NotifyRawUpload(ctx, publisher, id, p interface{}) *gomock.Call {
+func (mr *MockIDealerMockRecorder) NotifyRawUpload(ctx, publisher, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawUpload", reflect.TypeOf((*MockIDealer)(nil).NotifyRawUpload), ctx, publisher, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawUpload", reflect.TypeOf((*MockIDealer)(nil).NotifyRawUpload), ctx, publisher, segmentID, p)
 }
 
 // NotifyResultDownload mocks base method.
-func (m *MockIDealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIDealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyResultDownload", ctx, publisher, id, p)
+	ret := m.ctrl.Call(m, "NotifyResultDownload", ctx, publisher, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyResultDownload indicates an expected call of NotifyResultDownload.
-func (mr *MockIDealerMockRecorder) NotifyResultDownload(ctx, publisher, id, p interface{}) *gomock.Call {
+func (mr *MockIDealerMockRecorder) NotifyResultDownload(ctx, publisher, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultDownload", reflect.TypeOf((*MockIDealer)(nil).NotifyResultDownload), ctx, publisher, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultDownload", reflect.TypeOf((*MockIDealer)(nil).NotifyResultDownload), ctx, publisher, segmentID, p)
 }
 
 // NotifyResultUpload mocks base method.
-func (m *MockIDealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIDealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyResultUpload", ctx, performer, id, p)
+	ret := m.ctrl.Call(m, "NotifyResultUpload", ctx, performer, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyResultUpload indicates an expected call of NotifyResultUpload.
-func (mr *MockIDealerMockRecorder) NotifyResultUpload(ctx, performer, id, p interface{}) *gomock.Call {
+func (mr *MockIDealerMockRecorder) NotifyResultUpload(ctx, performer, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultUpload", reflect.TypeOf((*MockIDealer)(nil).NotifyResultUpload), ctx, performer, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultUpload", reflect.TypeOf((*MockIDealer)(nil).NotifyResultUpload), ctx, performer, segmentID, p)
 }
 
 // ObserveSegments mocks base method.
@@ -1457,18 +1532,18 @@ func (mr *MockIContracterDealerMockRecorder) AcceptSegment(ctx, publisher, id in
 }
 
 // AllocateInputStorageClaim mocks base method.
-func (m *MockIContracterDealer) AllocateInputStorageClaim(ctx context.Context, publisher models.IAuthor, id string) (models.IStorageClaim, error) {
+func (m *MockIContracterDealer) AllocateInputStorageClaim(ctx context.Context, publisher models.IAuthor, segmentID string) (models.IStorageClaim, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllocateInputStorageClaim", ctx, publisher, id)
+	ret := m.ctrl.Call(m, "AllocateInputStorageClaim", ctx, publisher, segmentID)
 	ret0, _ := ret[0].(models.IStorageClaim)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllocateInputStorageClaim indicates an expected call of AllocateInputStorageClaim.
-func (mr *MockIContracterDealerMockRecorder) AllocateInputStorageClaim(ctx, publisher, id interface{}) *gomock.Call {
+func (mr *MockIContracterDealerMockRecorder) AllocateInputStorageClaim(ctx, publisher, segmentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateInputStorageClaim", reflect.TypeOf((*MockIContracterDealer)(nil).AllocateInputStorageClaim), ctx, publisher, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateInputStorageClaim", reflect.TypeOf((*MockIContracterDealer)(nil).AllocateInputStorageClaim), ctx, publisher, segmentID)
 }
 
 // AllocatePublisherAuthority mocks base method.
@@ -1576,31 +1651,31 @@ func (mr *MockIContracterDealerMockRecorder) GetSegmentsByOrderID(ctx, publisher
 }
 
 // NotifyRawUpload mocks base method.
-func (m *MockIContracterDealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIContracterDealer) NotifyRawUpload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRawUpload", ctx, publisher, id, p)
+	ret := m.ctrl.Call(m, "NotifyRawUpload", ctx, publisher, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyRawUpload indicates an expected call of NotifyRawUpload.
-func (mr *MockIContracterDealerMockRecorder) NotifyRawUpload(ctx, publisher, id, p interface{}) *gomock.Call {
+func (mr *MockIContracterDealerMockRecorder) NotifyRawUpload(ctx, publisher, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawUpload", reflect.TypeOf((*MockIContracterDealer)(nil).NotifyRawUpload), ctx, publisher, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawUpload", reflect.TypeOf((*MockIContracterDealer)(nil).NotifyRawUpload), ctx, publisher, segmentID, p)
 }
 
 // NotifyResultDownload mocks base method.
-func (m *MockIContracterDealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIContracterDealer) NotifyResultDownload(ctx context.Context, publisher models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyResultDownload", ctx, publisher, id, p)
+	ret := m.ctrl.Call(m, "NotifyResultDownload", ctx, publisher, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyResultDownload indicates an expected call of NotifyResultDownload.
-func (mr *MockIContracterDealerMockRecorder) NotifyResultDownload(ctx, publisher, id, p interface{}) *gomock.Call {
+func (mr *MockIContracterDealerMockRecorder) NotifyResultDownload(ctx, publisher, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultDownload", reflect.TypeOf((*MockIContracterDealer)(nil).NotifyResultDownload), ctx, publisher, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultDownload", reflect.TypeOf((*MockIContracterDealer)(nil).NotifyResultDownload), ctx, publisher, segmentID, p)
 }
 
 // ObserveSegments mocks base method.
@@ -1667,18 +1742,18 @@ func (m *MockIWorkerDealer) EXPECT() *MockIWorkerDealerMockRecorder {
 }
 
 // AllocateOutputStorageClaim mocks base method.
-func (m *MockIWorkerDealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, id string) (models.IStorageClaim, error) {
+func (m *MockIWorkerDealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AllocateOutputStorageClaim", ctx, performer, id)
+	ret := m.ctrl.Call(m, "AllocateOutputStorageClaim", ctx, performer, segmentID)
 	ret0, _ := ret[0].(models.IStorageClaim)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AllocateOutputStorageClaim indicates an expected call of AllocateOutputStorageClaim.
-func (mr *MockIWorkerDealerMockRecorder) AllocateOutputStorageClaim(ctx, performer, id interface{}) *gomock.Call {
+func (mr *MockIWorkerDealerMockRecorder) AllocateOutputStorageClaim(ctx, performer, segmentID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateOutputStorageClaim", reflect.TypeOf((*MockIWorkerDealer)(nil).AllocateOutputStorageClaim), ctx, performer, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllocateOutputStorageClaim", reflect.TypeOf((*MockIWorkerDealer)(nil).AllocateOutputStorageClaim), ctx, performer, segmentID)
 }
 
 // AllocatePerformerAuthority mocks base method.
@@ -1755,45 +1830,45 @@ func (mr *MockIWorkerDealerMockRecorder) GetInputStorageClaim(ctx, performer, se
 }
 
 // NotifyProcess mocks base method.
-func (m *MockIWorkerDealer) NotifyProcess(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIWorkerDealer) NotifyProcess(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyProcess", ctx, performer, id, p)
+	ret := m.ctrl.Call(m, "NotifyProcess", ctx, performer, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyProcess indicates an expected call of NotifyProcess.
-func (mr *MockIWorkerDealerMockRecorder) NotifyProcess(ctx, performer, id, p interface{}) *gomock.Call {
+func (mr *MockIWorkerDealerMockRecorder) NotifyProcess(ctx, performer, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyProcess", reflect.TypeOf((*MockIWorkerDealer)(nil).NotifyProcess), ctx, performer, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyProcess", reflect.TypeOf((*MockIWorkerDealer)(nil).NotifyProcess), ctx, performer, segmentID, p)
 }
 
 // NotifyRawDownload mocks base method.
-func (m *MockIWorkerDealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIWorkerDealer) NotifyRawDownload(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyRawDownload", ctx, performer, id, p)
+	ret := m.ctrl.Call(m, "NotifyRawDownload", ctx, performer, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyRawDownload indicates an expected call of NotifyRawDownload.
-func (mr *MockIWorkerDealerMockRecorder) NotifyRawDownload(ctx, performer, id, p interface{}) *gomock.Call {
+func (mr *MockIWorkerDealerMockRecorder) NotifyRawDownload(ctx, performer, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawDownload", reflect.TypeOf((*MockIWorkerDealer)(nil).NotifyRawDownload), ctx, performer, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyRawDownload", reflect.TypeOf((*MockIWorkerDealer)(nil).NotifyRawDownload), ctx, performer, segmentID, p)
 }
 
 // NotifyResultUpload mocks base method.
-func (m *MockIWorkerDealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, id string, p models.Progresser) error {
+func (m *MockIWorkerDealer) NotifyResultUpload(ctx context.Context, performer models.IAuthor, segmentID string, p models.IProgress) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotifyResultUpload", ctx, performer, id, p)
+	ret := m.ctrl.Call(m, "NotifyResultUpload", ctx, performer, segmentID, p)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // NotifyResultUpload indicates an expected call of NotifyResultUpload.
-func (mr *MockIWorkerDealerMockRecorder) NotifyResultUpload(ctx, performer, id, p interface{}) *gomock.Call {
+func (mr *MockIWorkerDealerMockRecorder) NotifyResultUpload(ctx, performer, segmentID, p interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultUpload", reflect.TypeOf((*MockIWorkerDealer)(nil).NotifyResultUpload), ctx, performer, id, p)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyResultUpload", reflect.TypeOf((*MockIWorkerDealer)(nil).NotifyResultUpload), ctx, performer, segmentID, p)
 }
 
 // QuitSegment mocks base method.
@@ -2312,18 +2387,18 @@ func (mr *MockIStorageControllerMockRecorder) AllocateStorageClaim(ctx, name int
 }
 
 // BuildStorageClaim mocks base method.
-func (m *MockIStorageController) BuildStorageClaim(name string) (models.IStorageClaim, error) {
+func (m *MockIStorageController) BuildStorageClaim(identity string) (models.IStorageClaim, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BuildStorageClaim", name)
+	ret := m.ctrl.Call(m, "BuildStorageClaim", identity)
 	ret0, _ := ret[0].(models.IStorageClaim)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // BuildStorageClaim indicates an expected call of BuildStorageClaim.
-func (mr *MockIStorageControllerMockRecorder) BuildStorageClaim(name interface{}) *gomock.Call {
+func (mr *MockIStorageControllerMockRecorder) BuildStorageClaim(identity interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildStorageClaim", reflect.TypeOf((*MockIStorageController)(nil).BuildStorageClaim), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildStorageClaim", reflect.TypeOf((*MockIStorageController)(nil).BuildStorageClaim), identity)
 }
 
 // PurgeStorageClaim mocks base method.
@@ -2500,7 +2575,7 @@ func (mr *MockIStorageClientMockRecorder) BuildStorageClaimByURL(url interface{}
 }
 
 // MakeLocalCopy mocks base method.
-func (m *MockIStorageClient) MakeLocalCopy(ctx context.Context, sc models.IStorageClaim, p chan models.Progresser) (files.Filer, error) {
+func (m *MockIStorageClient) MakeLocalCopy(ctx context.Context, sc models.IStorageClaim, p chan models.IProgress) (files.Filer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MakeLocalCopy", ctx, sc, p)
 	ret0, _ := ret[0].(files.Filer)
@@ -2515,7 +2590,7 @@ func (mr *MockIStorageClientMockRecorder) MakeLocalCopy(ctx, sc, p interface{}) 
 }
 
 // MoveFileToStorageClaim mocks base method.
-func (m *MockIStorageClient) MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.Progresser) error {
+func (m *MockIStorageClient) MoveFileToStorageClaim(ctx context.Context, file files.Filer, sc models.IStorageClaim, p chan models.IProgress) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "MoveFileToStorageClaim", ctx, file, sc, p)
 	ret0, _ := ret[0].(error)
@@ -2542,31 +2617,31 @@ func (mr *MockIStorageClientMockRecorder) RemoveLocalCopy(ctx, sc interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveLocalCopy", reflect.TypeOf((*MockIStorageClient)(nil).RemoveLocalCopy), ctx, sc)
 }
 
-// MockProgresser is a mock of Progresser interface.
-type MockProgresser struct {
+// MockIProgress is a mock of IProgress interface.
+type MockIProgress struct {
 	ctrl     *gomock.Controller
-	recorder *MockProgresserMockRecorder
+	recorder *MockIProgressMockRecorder
 }
 
-// MockProgresserMockRecorder is the mock recorder for MockProgresser.
-type MockProgresserMockRecorder struct {
-	mock *MockProgresser
+// MockIProgressMockRecorder is the mock recorder for MockIProgress.
+type MockIProgressMockRecorder struct {
+	mock *MockIProgress
 }
 
-// NewMockProgresser creates a new mock instance.
-func NewMockProgresser(ctrl *gomock.Controller) *MockProgresser {
-	mock := &MockProgresser{ctrl: ctrl}
-	mock.recorder = &MockProgresserMockRecorder{mock}
+// NewMockIProgress creates a new mock instance.
+func NewMockIProgress(ctrl *gomock.Controller) *MockIProgress {
+	mock := &MockIProgress{ctrl: ctrl}
+	mock.recorder = &MockIProgressMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockProgresser) EXPECT() *MockProgresserMockRecorder {
+func (m *MockIProgress) EXPECT() *MockIProgressMockRecorder {
 	return m.recorder
 }
 
 // Percent mocks base method.
-func (m *MockProgresser) Percent() float64 {
+func (m *MockIProgress) Percent() float64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Percent")
 	ret0, _ := ret[0].(float64)
@@ -2574,13 +2649,13 @@ func (m *MockProgresser) Percent() float64 {
 }
 
 // Percent indicates an expected call of Percent.
-func (mr *MockProgresserMockRecorder) Percent() *gomock.Call {
+func (mr *MockIProgressMockRecorder) Percent() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Percent", reflect.TypeOf((*MockProgresser)(nil).Percent))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Percent", reflect.TypeOf((*MockIProgress)(nil).Percent))
 }
 
 // Step mocks base method.
-func (m *MockProgresser) Step() models.ProgressStep {
+func (m *MockIProgress) Step() models.ProgressStep {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Step")
 	ret0, _ := ret[0].(models.ProgressStep)
@@ -2588,9 +2663,9 @@ func (m *MockProgresser) Step() models.ProgressStep {
 }
 
 // Step indicates an expected call of Step.
-func (mr *MockProgresserMockRecorder) Step() *gomock.Call {
+func (mr *MockIProgressMockRecorder) Step() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Step", reflect.TypeOf((*MockProgresser)(nil).Step))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Step", reflect.TypeOf((*MockIProgress)(nil).Step))
 }
 
 // MockSubscriber is a mock of Subscriber interface.
@@ -2617,10 +2692,10 @@ func (m *MockSubscriber) EXPECT() *MockSubscriberMockRecorder {
 }
 
 // GetOutput mocks base method.
-func (m *MockSubscriber) GetOutput() chan models.Progresser {
+func (m *MockSubscriber) GetOutput() chan models.IProgress {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOutput")
-	ret0, _ := ret[0].(chan models.Progresser)
+	ret0, _ := ret[0].(chan models.IProgress)
 	return ret0
 }
 
@@ -2666,7 +2741,7 @@ func (m *MockPublishSubscriber) EXPECT() *MockPublishSubscriberMockRecorder {
 }
 
 // Publish mocks base method.
-func (m *MockPublishSubscriber) Publish(arg0 models.Progresser) {
+func (m *MockPublishSubscriber) Publish(arg0 models.IProgress) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Publish", arg0)
 }

@@ -73,6 +73,8 @@ func NewWorker(ctx context.Context, tmpPath files.Pather, dealer models.IWorkerD
 
 // Start _
 func (w *Instance) Start() {
+	w.wg.Add(1)
+
 	go func() {
 		for {
 			freeSegment, err := w.dealer.FindFreeSegment(w.ctx, w.performer)
