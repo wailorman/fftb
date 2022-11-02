@@ -15,3 +15,8 @@ Metrics/MethodLength:
 
 Metrics/AbcSize:
   Enabled: false
+
+Style/ClassAndModuleChildren:
+  Exclude:
+    - 'app/handlers/**/*'
+    - 'app/controllers/**/*'
