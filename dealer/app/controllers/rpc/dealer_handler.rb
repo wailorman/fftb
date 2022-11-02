@@ -22,9 +22,7 @@ class DealerHandler
   end
 
   def fail_segment(req, _env)
-    Rails.logger.info "fail_segment req: #{req}"
-
-    Fftb::Empty.new
+    Dealer::FailSegmentHandler.new(req, env).call
   end
 
   def find_free_segment(req, env)
