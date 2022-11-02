@@ -1,10 +1,11 @@
 module Dealer
   class AllocateOutputStorageClaimHandler < ApplicationHandler
+    before_execute :set_task
+    before_execute :authorize_performer
+
+    attr_accessor :task
+
     def execute
-      task = Task.find_by(id: req.segmentId)
-
-      return Twirp::Error.not_found('Segment not found') unless task
-
       # TODO: use default provider
       task.output_storage_claim = StorageClaim.new(kind: :s3, provider: :yandex, path: "claims/#{SecureRandom.uuid}")
 
@@ -13,6 +14,16 @@ module Dealer
       signer = S3UrlSignService.new(task.output_storage_claim)
 
       Fftb::StorageClaim.new(url: signer.put(expires_in: StorageClaim::DEFAULT_URL_TTL))
+    end
+
+    private
+
+    def set_task
+      self.task = Task.find(req.segmentId)
+    end
+
+    def authorize_performer
+      Twirp::Error.permission_denied('performer mismatch') if task.occupied_by != current_performer
     end
   end
 end

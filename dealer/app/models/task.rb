@@ -11,6 +11,10 @@ class Task < ApplicationRecord
   belongs_to :input_storage_claim, class_name: 'StorageClaim', optional: true
   belongs_to :output_storage_claim, class_name: 'StorageClaim', optional: true
 
+  validates :current_progress, comparison: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 }
+  validates :current_step, inclusion: { in: %w[uploading_input downloading_input processing
+                                               uploading_output downloading_output] }, if: :current_step
+
   scope :not_occupied, -> { where('occupied_at < ? OR occupied_at IS NULL', Time.current - OCCUPATION_TTL) }
   scope :not_occupied_for, -> (performer) {
     where(

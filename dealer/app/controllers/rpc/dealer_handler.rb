@@ -33,9 +33,7 @@ class DealerHandler
     Dealer::FindFreeSegmentHandler.new(req, env).call
   end
 
-  def notify(req, _env)
-    Rails.logger.info "notify req: #{req}"
-
-    Fftb::Empty.new
+  def notify(req, env)
+    Dealer::NotifyHandler.new(req, env).call
   end
 end

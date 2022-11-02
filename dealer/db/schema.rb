@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2022_10_28_215459) do
+ActiveRecord::Schema[7.0].define(version: 2022_11_02_204124) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
@@ -40,6 +40,8 @@ ActiveRecord::Schema[7.0].define(version: 2022_10_28_215459) do
     t.uuid "occupied_by_id"
     t.uuid "input_storage_claim_id"
     t.uuid "output_storage_claim_id"
+    t.string "current_step"
+    t.float "current_progress", default: 0.0, null: false
     t.index ["input_storage_claim_id"], name: "index_tasks_on_input_storage_claim_id"
     t.index ["occupied_by_id"], name: "index_tasks_on_occupied_by_id"
     t.index ["output_storage_claim_id"], name: "index_tasks_on_output_storage_claim_id"

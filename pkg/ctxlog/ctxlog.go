@@ -9,7 +9,7 @@ import (
 
 // New _
 func New(contextName string) *logrus.Entry {
-	loggerInstance.SetLevel(logrus.TraceLevel)
+	loggerInstance.SetLevel(logrus.DebugLevel)
 	loggerInstance.Formatter = new(prefixed.TextFormatter)
 
 	return WithPrefix(loggerInstance, contextName)
