@@ -11,10 +11,8 @@ class DealerHandler
     Dealer::AllocateOutputStorageClaimHandler.new(req, env).call
   end
 
-  def finish_segment(req, _env)
-    Rails.logger.info "finish_segment req: #{req}"
-
-    Fftb::Empty.new
+  def finish_segment(req, env)
+    Dealer::FinishSegmentHandler.new(req, env).call
   end
 
   def quit_segment(req, _env)
