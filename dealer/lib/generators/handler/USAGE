@@ -1,0 +1,8 @@
+Description:
+    Creates RPC handler
+
+Example:
+    bin/rails generate handler <name>
+
+    This will create:
+        app/handlers/<name>_handler.rb
