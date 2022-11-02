@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/urfave/cli/v2"
+	"github.com/wailorman/fftb/pkg/ctxinterrupt"
 	"github.com/wailorman/fftb/pkg/distributed/remote"
 	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
 	"github.com/wailorman/fftb/pkg/distributed/s3"
@@ -21,11 +22,13 @@ func DistributedCliConfig() *cli.Command {
 			{
 				Name: "work",
 				Action: func(c *cli.Context) error {
+					ctx := ctxinterrupt.ContextWithInterruptHandling(c.Context)
+
 					tmpPath := files.NewTempPath("fftb")
 					rpcClient := pb.NewDealerProtobufClient("http://localhost:3000", &http.Client{})
 					storageClient := s3.NewStorageClient(tmpPath.FullPath())
 					remoteDealer := remote.NewDealer(rpcClient, storageClient)
-					w, err := worker.NewWorker(c.Context, tmpPath, remoteDealer, storageClient)
+					w, err := worker.NewWorker(ctx, tmpPath, remoteDealer, storageClient)
 
 					fmt.Printf("NewWorker err: %#v\n", err)
 

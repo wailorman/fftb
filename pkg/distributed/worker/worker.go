@@ -77,36 +77,43 @@ func (w *Instance) Start() {
 
 	go func() {
 		for {
-			freeSegment, err := w.dealer.FindFreeSegment(w.ctx, w.performer)
+			select {
+			case <-w.ctx.Done():
+				w.wg.Done()
+				return
 
-			if err != nil {
-				if errors.Is(err, models.ErrNotFound) {
-					w.logger.Debug("Free segment not found")
-				} else {
-					w.logger.WithError(err).Warn("Searching free segment error")
+			default:
+				freeSegment, err := w.dealer.FindFreeSegment(w.ctx, w.performer)
+
+				if err != nil {
+					if errors.Is(err, models.ErrNotFound) {
+						w.logger.Debug("Free segment not found")
+					} else {
+						w.logger.WithError(err).Warn("Searching free segment error")
+					}
+
+					time.Sleep(FreeTaskDelay)
+					continue
 				}
 
-				time.Sleep(FreeTaskDelay)
-				continue
-			}
+				logger := dlog.WithSegment(w.logger, freeSegment).
+					WithField(dlog.KeyPerformer, w.performer.GetName())
 
-			logger := dlog.WithSegment(w.logger, freeSegment).
-				WithField(dlog.KeyPerformer, w.performer.GetName())
+				logger.Info("Found free segment")
 
-			logger.Info("Found free segment")
+				err = proceedSegment(
+					w.ctx,
+					w.wg,
+					logger,
+					w.performer,
+					w.dealer,
+					w.storageClient,
+					w.tmpPath,
+					freeSegment)
 
-			err = proceedSegment(
-				w.ctx,
-				w.wg,
-				logger,
-				w.performer,
-				w.dealer,
-				w.storageClient,
-				w.tmpPath,
-				freeSegment)
-
-			if err != nil {
-				logger.WithError(err).Warn("Processing segment error")
+				if err != nil && err != w.ctx.Err() {
+					logger.WithError(err).Warn("Processing segment error")
+				}
 			}
 		}
 	}()
@@ -163,7 +170,7 @@ func proceedSegment(
 	for {
 		select {
 		case <-ctx.Done():
-			logger.Info("Terminating worker thread")
+			logger.WithField(dlog.KeyReason, ctx.Err()).Info("Terminating worker thread")
 
 			// <-converter.Closed()
 

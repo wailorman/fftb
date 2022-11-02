@@ -16,9 +16,7 @@ class DealerHandler
   end
 
   def quit_segment(req, _env)
-    Rails.logger.info "quit_segment req: #{req}"
-
-    Fftb::Empty.new
+    Dealer::QuitSegmentHandler.new(req, env).call
   end
 
   def fail_segment(req, _env)

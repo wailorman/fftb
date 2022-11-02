@@ -23,4 +23,9 @@ class Task < ApplicationRecord
       performer_id: performer.id
     )
   }
+
+  def deoccupy
+    self.occupied_at = nil
+    self.occupied_by = nil
+  end
 end
