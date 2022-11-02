@@ -1,9 +1,8 @@
 class Dealer::NotifyHandler < ApplicationHandler
+  include ::Dealer::SetTask
+  include ::Dealer::AuthorizePerformer
+
   def execute
-    task = Task.find(req.segmentId)
-
-    return Twirp::Error.not_found('Segment not found') unless task
-
     task.current_step = req.step.to_s.downcase
     task.current_progress = req.progress
     task.occupied_at = Time.current
