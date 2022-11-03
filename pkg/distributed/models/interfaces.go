@@ -153,38 +153,39 @@ type IOrderMutator interface {
 // ISegment _
 type ISegment interface {
 	GetID() string
-	GetOrderID() string
+	GetOrderID() string // TODO: Deprecated
 	GetType() string
-	GetInputStorageClaimIdentity() string
-	GetOutputStorageClaimIdentity() string
+	GetInputStorageClaimIdentity() string  // TODO: Deprecated
+	GetOutputStorageClaimIdentity() string // TODO: Deprecated
 	// GetStorageClaim() IStorageClaim // should be done by dealer
 	// GetPayload() (string, error)
-	GetIsLocked() bool
-	GetLockedBy() IAuthor
-	GetLockedUntil() *time.Time
+	GetIsLocked() bool          // TODO: Deprecated
+	GetLockedBy() IAuthor       // TODO: Deprecated
+	GetLockedUntil() *time.Time // TODO: Deprecated
 	// TODO: use specific type for state
-	GetState() string
-	GetCurrentState() string
-	GetPublisher() IAuthor
-	GetPerformer() IAuthor
+	GetState() string        // TODO: Deprecated
+	GetCurrentState() string // TODO: Deprecated
+	GetPublisher() IAuthor   // TODO: Deprecated
+	GetPerformer() IAuthor   // TODO: Deprecated
 	GetPosition() int
-	MatchPublisher(IAuthor) bool
-	MatchPerformer(IAuthor) bool
-	Validate() error
-	GetRetriesCount() int
-	GetRetryAt() *time.Time
-	GetCanRetry() bool
-	GetCanPerform() bool
+	MatchPublisher(IAuthor) bool // TODO: Deprecated
+	MatchPerformer(IAuthor) bool // TODO: Deprecated
+	Validate() error             // TODO: Deprecated
+	GetRetriesCount() int        // TODO: Deprecated
+	GetRetryAt() *time.Time      // TODO: Deprecated
+	GetCanRetry() bool           // TODO: Deprecated
+	GetCanPerform() bool         // TODO: Deprecated
 
-	lock(performer IAuthor)
-	unlock()
-	incrementRetriesCount()
-	setLastError(err error)
-	cancel(reason string)
-	publish()
-	finish()
+	lock(performer IAuthor) // TODO: Deprecated
+	unlock()                // TODO: Deprecated
+	incrementRetriesCount() // TODO: Deprecated
+	setLastError(err error) // TODO: Deprecated
+	cancel(reason string)   // TODO: Deprecated
+	publish()               // TODO: Deprecated
+	finish()                // TODO: Deprecated
 }
 
+// TODO: Deprecated
 // ISegmentMutator _
 type ISegmentMutator interface {
 	// UnlockSegment
@@ -197,6 +198,7 @@ type ISegmentMutator interface {
 	UnlockSegment(segment ISegment) error
 }
 
+// TODO: Deprecated
 // IContracter _
 type IContracter interface {
 	GetOrderByID(ctx context.Context, id string) (IOrder, error)

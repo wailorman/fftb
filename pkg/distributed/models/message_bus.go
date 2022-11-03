@@ -16,5 +16,4 @@ func (mb *MessageBus) Subscribe() Subscriber {
 
 // Publish _
 func (mb *MessageBus) Publish(IProgress) {
-	return
 }

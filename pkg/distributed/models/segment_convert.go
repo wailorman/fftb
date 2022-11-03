@@ -30,24 +30,24 @@ const SegmentStateCancelled = "cancelled"
 // ConvertSegment _
 type ConvertSegment struct {
 	Identity                   string `json:"identity"`
-	OrderIdentity              string `json:"order_identity"`
+	OrderIdentity              string `json:"order_identity"` // TODO: Deprecated
 	Type                       string `json:"type"`
-	InputStorageClaimIdentity  string `json:"input_storage_claim_identity"`
-	OutputStorageClaimIdentity string `json:"output_storage_claim_identity"`
-	State                      string `json:"state"`
+	InputStorageClaimIdentity  string `json:"input_storage_claim_identity"`  // TODO: Deprecated
+	OutputStorageClaimIdentity string `json:"output_storage_claim_identity"` // TODO: Deprecated
+	State                      string `json:"state"`                         // TODO: Deprecated
 
 	Params   convert.Params `json:"params"`
 	Muxer    string         `json:"muxer"`
-	Position int            `json:"position"`
+	Position int            `json:"position"` // TODO: Deprecated
 
-	Publisher   IAuthor    `json:"publisher"`
-	LockedUntil *time.Time `json:"locked_until"`
-	LockedBy    IAuthor    `json:"locked_by"`
+	Publisher   IAuthor    `json:"publisher"`    // TODO: Deprecated
+	LockedUntil *time.Time `json:"locked_until"` // TODO: Deprecated
+	LockedBy    IAuthor    `json:"locked_by"`    // TODO: Deprecated
 
-	RetriesCount       int        `json:"retries_count"`
-	RetryAt            *time.Time `json:"retry_at"`
-	LastError          string     `json:"last_error"`
-	CancellationReason string     `json:"cancellation_reason"`
+	RetriesCount       int        `json:"retries_count"`       // TODO: Deprecated
+	RetryAt            *time.Time `json:"retry_at"`            // TODO: Deprecated
+	LastError          string     `json:"last_error"`          // TODO: Deprecated
+	CancellationReason string     `json:"cancellation_reason"` // TODO: Deprecated
 }
 
 // GetID _
