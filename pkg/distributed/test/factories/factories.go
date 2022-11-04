@@ -96,27 +96,14 @@ func (b *Builder) RPCConvertParams() *pb.ConvertSegmentParams {
 	}
 }
 
-// ConvertDealerRequest _
-func (b *Builder) ConvertDealerRequest() models.IDealerRequest {
-	return &models.ConvertDealerRequest{
-		Type:          models.ConvertV1Type,
-		Identity:      b.SegmentID,
-		OrderIdentity: b.OrderID,
-		Params:        b.ConvertParams(),
-		Muxer:         b.Muxer,
-		Position:      b.Position,
-	}
-}
-
 // ConvertSegment _
 func (b *Builder) ConvertSegment() models.ISegment {
 	return &models.ConvertSegment{
-		Identity:      b.SegmentID,
-		OrderIdentity: b.OrderID,
-		Type:          models.ConvertV1Type,
-		Params:        b.ConvertParams(),
-		Muxer:         b.Muxer,
-		Position:      b.Position,
+		Identity: b.SegmentID,
+		Type:     models.ConvertV1Type,
+		Params:   b.ConvertParams(),
+		Muxer:    b.Muxer,
+		Position: b.Position,
 	}
 }
 

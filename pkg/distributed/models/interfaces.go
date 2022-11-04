@@ -3,14 +3,9 @@ package models
 import (
 	"context"
 	"io"
-	"time"
 
-	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/files"
 )
-
-// // ErrCancelled _
-// var ErrCancelled = errors.New("Cancelled")
 
 // ProgressStep _
 type ProgressStep string
@@ -30,38 +25,15 @@ const UploadingOutputStep ProgressStep = "uploading_output"
 // DownloadingOutputStep _
 const DownloadingOutputStep ProgressStep = "downloading_output"
 
-// SegmentLockDuration _
-const SegmentLockDuration = time.Duration(1 * time.Minute)
-
-// MaxRetriesCount _
-const MaxRetriesCount = 3
-
-// NextRetryOffset _
-const NextRetryOffset = time.Duration(30 * time.Second)
-
 // LocalAuthorName _
 var LocalAuthorName = "local"
 
 // LocalAuthor _
 var LocalAuthor = &Author{Name: LocalAuthorName}
 
-// CancellationReasonFailed _
-const CancellationReasonFailed = "failed"
-
-// CancellationReasonByUser _
-const CancellationReasonByUser = "by_user"
-
-// CancellationReasonOrderCancelled _
-const CancellationReasonOrderCancelled = "order_cancelled"
-
-// CancellationReasonNotAccepted _
-const CancellationReasonNotAccepted = "not_accepted"
-
 // Author _
 type Author struct {
-	Name         string `json:"name"`
-	AuthorityKey string `json:"authority_key,omitempty"`
-	SessionKey   string `json:"session_key,omitempty"`
+	Name string `json:"name"`
 }
 
 // GetName _
@@ -69,177 +41,15 @@ func (a *Author) GetName() string {
 	return a.Name
 }
 
-// GetAuthorityKey _
-func (a *Author) GetAuthorityKey() string {
-	return a.AuthorityKey
-}
-
-// GetSessionKey _
-func (a *Author) GetSessionKey() string {
-	return a.SessionKey
-}
-
-// SetAuthorityKey _
-func (a *Author) SetAuthorityKey(key string) {
-	a.AuthorityKey = key
-}
-
-// SetSessionKey _
-func (a *Author) SetSessionKey(key string) {
-	a.SessionKey = key
-}
-
-// IsEqual _
-func (a *Author) IsEqual(anotherAuthor IAuthor) bool {
-	return a.Name == anotherAuthor.GetName()
-}
-
-// IContracterRequest _
-type IContracterRequest interface {
-	GetType() string
-	// GetAuthor() IAuthor
-	Validate() error
-}
-
-// IDealerRequest _
-type IDealerRequest interface {
-	GetID() string
-	GetType() string
-	// GetAuthor() IAuthor
-	// TODO: validate segment & order id format
-	Validate() error
-}
-
-// IOrder _
-type IOrder interface {
-	GetID() string
-	// SetID(string)
-	GetType() string
-	// SetType(string)
-	// GetSegments() []ISegment
-	// GetPayload() (string, error)
-	GetPublisher() IAuthor
-	// SetPublisher(IAuthor)
-	// TODO: use specific type for state
-	GetState() string
-	// SetState(string)
-	MatchPublisher(IAuthor) bool
-	Validate() error
-	GetInputFile() files.Filer
-	GetOutputFile() files.Filer
-	CalculateProgress([]ISegment) float64
-	GetRetriesCount() int
-	GetRetryAt() *time.Time
-	GetCanRetry() bool
-	GetCanPublish() bool
-	GetCanConcat(segments []ISegment) bool
-
-	setLastError(err error)
-	incrementRetriesCount()
-	cancel(reason string)
-}
-
-// SegmentCanceller _
-type SegmentCanceller interface {
-	CancelSegment(segment ISegment, reason string) error
-}
-
-// IOrderMutator _
-type IOrderMutator interface {
-	CancelOrder(segmentMutator SegmentCanceller, order IOrder, segments []ISegment, reason string) error
-	FailOrder(segmentMutator SegmentCanceller, order IOrder, segments []ISegment, err error) error
-}
-
 // ISegment _
 type ISegment interface {
 	GetID() string
-	GetOrderID() string // TODO: Deprecated
 	GetType() string
-	GetInputStorageClaimIdentity() string  // TODO: Deprecated
-	GetOutputStorageClaimIdentity() string // TODO: Deprecated
-	// GetStorageClaim() IStorageClaim // should be done by dealer
-	// GetPayload() (string, error)
-	GetIsLocked() bool          // TODO: Deprecated
-	GetLockedBy() IAuthor       // TODO: Deprecated
-	GetLockedUntil() *time.Time // TODO: Deprecated
-	// TODO: use specific type for state
-	GetState() string        // TODO: Deprecated
-	GetCurrentState() string // TODO: Deprecated
-	GetPublisher() IAuthor   // TODO: Deprecated
-	GetPerformer() IAuthor   // TODO: Deprecated
-	GetPosition() int
-	MatchPublisher(IAuthor) bool // TODO: Deprecated
-	MatchPerformer(IAuthor) bool // TODO: Deprecated
-	Validate() error             // TODO: Deprecated
-	GetRetriesCount() int        // TODO: Deprecated
-	GetRetryAt() *time.Time      // TODO: Deprecated
-	GetCanRetry() bool           // TODO: Deprecated
-	GetCanPerform() bool         // TODO: Deprecated
-
-	lock(performer IAuthor) // TODO: Deprecated
-	unlock()                // TODO: Deprecated
-	incrementRetriesCount() // TODO: Deprecated
-	setLastError(err error) // TODO: Deprecated
-	cancel(reason string)   // TODO: Deprecated
-	publish()               // TODO: Deprecated
-	finish()                // TODO: Deprecated
-}
-
-// TODO: Deprecated
-// ISegmentMutator _
-type ISegmentMutator interface {
-	// UnlockSegment
-	PublishSegment(segment ISegment) error
-	FinishSegment(segment ISegment) error
-	// RepublishSegment(segment ISegment) error
-	CancelSegment(segment ISegment, reason string) error
-	FailSegment(segment ISegment, err error) error
-	LockSegment(segment ISegment, performer IAuthor) error
-	UnlockSegment(segment ISegment) error
-}
-
-// TODO: Deprecated
-// IContracter _
-type IContracter interface {
-	GetOrderByID(ctx context.Context, id string) (IOrder, error)
-	GetAllOrders(ctx context.Context) ([]IOrder, error)
-	SearchAllOrders(ctx context.Context, search IOrderSearchCriteria) ([]IOrder, error)
-	GetAllSegments(ctx context.Context) ([]ISegment, error)
-	SearchAllSegments(ctx context.Context, search ISegmentSearchCriteria) ([]ISegment, error)
-	GetSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	SearchSegmentsByOrderID(ctx context.Context, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
-	GetSegmentByID(ctx context.Context, segmentID string) (ISegment, error)
-	CancelOrderByID(ctx context.Context, orderID string, reason string) error
 }
 
 // IDealer _
 type IDealer interface {
-	IContracterDealer
 	IWorkerDealer
-}
-
-// IContracterDealer _
-type IContracterDealer interface {
-	AllocatePublisherAuthority(ctx context.Context, name string) (IAuthor, error)
-	AllocateSegment(ctx context.Context, publisher IAuthor, req IDealerRequest) (ISegment, error)
-
-	GetOutputStorageClaim(ctx context.Context, publisher IAuthor, segmentID string) (IStorageClaim, error)
-	AllocateInputStorageClaim(ctx context.Context, publisher IAuthor, segmentID string) (IStorageClaim, error)
-
-	GetQueuedSegmentsCount(ctx context.Context, publisher IAuthor) (int, error)
-	GetSegmentsByOrderID(ctx context.Context, publisher IAuthor, orderID string, search ISegmentSearchCriteria) ([]ISegment, error)
-	GetSegmentByID(ctx context.Context, publisher IAuthor, segmentID string) (ISegment, error)
-
-	NotifyRawUpload(ctx context.Context, publisher IAuthor, segmentID string, p IProgress) error
-	NotifyResultDownload(ctx context.Context, publisher IAuthor, segmentID string, p IProgress) error
-
-	PublishSegment(ctx context.Context, publisher IAuthor, id string) error
-	RepublishSegment(ctx context.Context, publisher IAuthor, id string) error
-	CancelSegment(ctx context.Context, publisher IAuthor, id string, reason string) error
-	AcceptSegment(ctx context.Context, publisher IAuthor, id string) error
-
-	// TODO: make local func
-	ObserveSegments(ctx context.Context, wg chwg.WaitGrouper)
 }
 
 // IWorkerDealer _
@@ -259,57 +69,6 @@ type IWorkerDealer interface {
 
 	GetInputStorageClaim(ctx context.Context, performer IAuthor, segmentID string) (IStorageClaim, error)
 	AllocateOutputStorageClaim(ctx context.Context, performer IAuthor, segmentID string) (IStorageClaim, error)
-}
-
-// IRegistry _
-type IRegistry interface {
-	FindOrderByID(ctx context.Context, id string) (IOrder, error)
-	PersistOrder(ctx context.Context, order IOrder) error
-	FindSegmentByID(ctx context.Context, id string) (ISegment, error)
-	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	PersistSegment(ctx context.Context, segment ISegment) error
-	// TODO: remove. Leave only searchAll
-	SearchOrder(ctx context.Context, check func(IOrder) bool) (IOrder, error)
-	SearchAllOrders(ctx context.Context, check func(IOrder) bool) ([]IOrder, error)
-	// TODO: remove. Leave only searchAll
-	SearchSegment(ctx context.Context, check func(ISegment) bool) (ISegment, error)
-	SearchAllSegments(ctx context.Context, check func(ISegment) bool) ([]ISegment, error)
-	Persist() error
-	Closed() <-chan struct{}
-}
-
-// IContracterRegistry _
-type IContracterRegistry interface {
-	FindOrderByID(ctx context.Context, id string) (IOrder, error)
-	PersistOrder(ctx context.Context, order IOrder) error
-
-	FindSegmentByID(ctx context.Context, id string) (ISegment, error)
-	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	PersistSegment(ctx context.Context, segment ISegment) error
-	SearchOrder(ctx context.Context, check func(IOrder) bool) (IOrder, error)
-	SearchAllOrders(ctx context.Context, check func(IOrder) bool) ([]IOrder, error)
-	Persist() error
-	Closed() <-chan struct{}
-}
-
-// IDealerRegistry _
-type IDealerRegistry interface {
-	FindSegmentByID(ctx context.Context, id string) (ISegment, error)
-	FindSegmentsByOrderID(ctx context.Context, orderID string) ([]ISegment, error)
-	PersistSegment(ctx context.Context, segment ISegment) error
-	SearchSegment(ctx context.Context, check func(ISegment) bool) (ISegment, error)
-	SearchAllSegments(ctx context.Context, check func(ISegment) bool) ([]ISegment, error)
-	Persist() error
-	Closed() <-chan struct{}
-}
-
-// IStorageController _
-type IStorageController interface {
-	AllocateStorageClaim(ctx context.Context, name string) (IStorageClaim, error)
-	// TODO: receive string (identity) instead of claim
-	PurgeStorageClaim(ctx context.Context, claim IStorageClaim) error
-	// TODO: ctx
-	BuildStorageClaim(identity string) (IStorageClaim, error)
 }
 
 // IStorageClaim _
@@ -342,31 +101,9 @@ type IProgress interface {
 	Percent() float64
 }
 
-// Subscriber _
-type Subscriber interface {
-	GetOutput() chan IProgress
-	Unsubscribe()
-}
-
-// PublishSubscriber _
-type PublishSubscriber interface {
-	Subscribe() Subscriber
-	Publish(IProgress)
-}
-
 // IAuthor _
 type IAuthor interface {
 	GetName() string
-	GetAuthorityKey() string
-	SetAuthorityKey(key string)
-	GetSessionKey() string
-	SetSessionKey(key string)
-	IsEqual(IAuthor) bool
-}
-
-// TypeStub _
-type TypeStub struct {
-	Type string `json:"type"`
 }
 
 // EmptyAuthor TODO: REMOVE

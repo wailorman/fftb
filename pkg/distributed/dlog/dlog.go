@@ -91,15 +91,9 @@ func (bP *BasicProgress) Percent() float64 {
 	return bP.percent
 }
 
-// WithOrder _
-func WithOrder(logger logrus.FieldLogger, order models.IOrder) logrus.FieldLogger {
-	return logger.WithField(KeyOrderID, order.GetID())
-}
-
 // WithSegment _
 func WithSegment(logger logrus.FieldLogger, segment models.ISegment) logrus.FieldLogger {
-	return logger.WithField(KeyOrderID, segment.GetOrderID()).
-		WithField(KeySegmentID, segment.GetID())
+	return logger.WithField(KeySegmentID, segment.GetID())
 }
 
 // MakeIOProgress _
