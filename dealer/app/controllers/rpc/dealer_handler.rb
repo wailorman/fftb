@@ -3,8 +3,8 @@ class DealerHandler
 
   bind Fftb::DealerService
 
-  def get_input_storage_claim(req, env)
-    Dealer::GetInputStorageClaimHandler.new(req, env).call
+  def get_all_input_storage_claims(req, env)
+    Dealer::GetAllInputStorageClaimsHandler.new(req, env).call
   end
 
   def allocate_output_storage_claim(req, env)

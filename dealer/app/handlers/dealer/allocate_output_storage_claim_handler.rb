@@ -4,13 +4,21 @@ class Dealer::AllocateOutputStorageClaimHandler < ApplicationHandler
 
   def execute
     # TODO: use default provider
-    task.output_storage_claim = StorageClaim.new(kind: :s3, provider: :yandex, path: "claims/#{SecureRandom.uuid}")
 
-    return Twirp::Error.unknown(task.full_messages.join(', ')) unless task.save
+    storage_claim_id = SecureRandom.uuid
 
-    signer = S3UrlSignService.new(task.output_storage_claim)
+    claim =
+      OutputStorageClaim.new(id: storage_claim_id,
+                             task: task,
+                             kind: :s3,
+                             provider: :yandex,
+                             purpose: req.purpose.downcase.to_sym,
+                             name: req.name,
+                             path: "claims/#{storage_claim_id}/#{req.name}")
 
-    Fftb::StorageClaim.new(url: signer.put(expires_in: StorageClaim::DEFAULT_URL_TTL))
+    return Twirp::Error.unknown(claim.full_messages.join(', ')) unless claim.save
+
+    ::Rpc::StorageClaimPresenter.new(claim, access_type: :put).call
   end
 end
 

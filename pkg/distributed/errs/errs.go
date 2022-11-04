@@ -42,9 +42,9 @@ func WhileAllocateInputStorageClaim(err error) error {
 	return errors.Wrap(err, "Allocating input storage claim")
 }
 
-// WhileGetInputStorageClaim _
-func WhileGetInputStorageClaim(err error) error {
-	return errors.Wrap(err, "Getting input storage claim")
+// WhileGetAllInputStorageClaims _
+func WhileGetAllInputStorageClaims(err error) error {
+	return errors.Wrap(err, "Getting input storage claims")
 }
 
 // WhileAllocateOutputStorageClaim _

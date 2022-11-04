@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
+	"github.com/wailorman/fftb/pkg/distributed/errs"
 	"github.com/wailorman/fftb/pkg/throttle"
 
 	"github.com/sirupsen/logrus"
@@ -279,16 +280,29 @@ func prepareSegmentIO(
 	convSegment *models.ConvertSegment,
 	tmpPath files.Pather) (*segmentIO, error) {
 
-	inputClaim, err := dealer.GetInputStorageClaim(ctx, performer, convSegment.GetID())
+	inputClaims, err := dealer.GetAllInputStorageClaims(ctx, performer, models.StorageClaimRequest{
+		SegmentID: convSegment.GetID(),
+		Purpose:   models.ConvertInputStorageClaimPurpose,
+	})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Getting input storage claim")
+		return nil, errs.WhileGetAllInputStorageClaims(err)
 	}
 
-	outputClaim, err := dealer.AllocateOutputStorageClaim(ctx, performer, convSegment.GetID())
+	if len(inputClaims) > 1 {
+		return nil, errors.Wrapf(models.ErrInvalid, "Received %d storage claims instead of 1", len(inputClaims))
+	}
+
+	inputClaim := inputClaims[0]
+
+	outputClaim, err := dealer.AllocateOutputStorageClaim(ctx, performer, models.StorageClaimRequest{
+		SegmentID: convSegment.GetID(),
+		Purpose:   models.ConvertOutputStorageClaimPurpose,
+		Name:      fmt.Sprintf("%s.%s", convSegment.GetID(), convSegment.Muxer),
+	})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "Getting output storage claim")
+		return nil, errs.WhileAllocateOutputStorageClaim(err)
 	}
 
 	inputFile, err := storageClient.MakeLocalCopy(ctx, inputClaim, nil)

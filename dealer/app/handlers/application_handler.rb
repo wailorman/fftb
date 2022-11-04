@@ -1,8 +1,7 @@
 class ApplicationHandler
-  include ActiveSupport::Callbacks
-  define_callbacks :execute, terminator: ->(_target, result_lambda) { result_lambda.call.is_a?(Twirp::Error) }
-
   attr_reader :req, :env
+
+  delegate :callbacks, to: :class
 
   def initialize(req, env)
     @req = req
@@ -10,24 +9,37 @@ class ApplicationHandler
   end
 
   def call
-    run_callbacks(:execute) do
-      execute
+    callbacks.each do |method_name|
+      callback_result = send(method_name.to_sym)
+
+      return callback_result if callback_result.is_a?(Twirp::Error)
     end
-  rescue ActiveRecord::NotFound => e
+
+    execute
+  rescue ActiveRecord::RecordNotFound => e
     handle_not_found(e)
-  rescue => e
+  rescue => e # rubocop:disable Style/RescueStandardError
     log_exception(e)
     raise e
   end
 
   def self.before_execute(method_name)
-    set_callback :execute, :before, method_name
+    @callbacks ||= []
+    @callbacks << method_name
+  end
+
+  def self.callbacks
+    @callbacks ||= []
   end
 
   private
 
   def execute
     raise NotImplementedError
+  end
+
+  def empty_response
+    Fftb::Empty.new
   end
 
   def current_performer
@@ -40,7 +52,7 @@ class ApplicationHandler
   end
 
   def handle_not_found(error)
-    if error && error.respond_to?(:model)
+    if error.present? && error.respond_to?(:model)
       model_name = error.model.underscore
 
       return Twirp::Error.not_found("#{model_name} not found")

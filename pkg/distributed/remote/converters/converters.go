@@ -3,7 +3,6 @@ package converters
 import (
 	"github.com/pkg/errors"
 
-	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
 	"github.com/wailorman/fftb/pkg/media/convert"
@@ -64,53 +63,35 @@ func ToRPCSegment(mSeg models.ISegment) (*pb.Segment, error) {
 	}
 }
 
-// ToRPCStorageClaim converts internal storage claim to rpc format
-func ToRPCStorageClaim(sc models.IStorageClaim) *pb.StorageClaim {
-	return &pb.StorageClaim{
-		Url: sc.GetURL(),
-	}
-}
-
 // ToRPCStorageClaimRequest generates RPC storage claim request
-func ToRPCStorageClaimRequest(authorization string, segmentID string) *pb.StorageClaimRequest {
+func ToRPCStorageClaimRequest(authorization string, req models.StorageClaimRequest) *pb.StorageClaimRequest {
 	return &pb.StorageClaimRequest{
 		Authorization: authorization,
-		SegmentId:     segmentID,
+		SegmentId:     req.SegmentID,
+		Purpose:       ToRPCStorageClaimPurpose(req.Purpose),
+		Name:          req.Name,
 	}
 }
 
-// FromRPCProgress converts progress notification from rpc format to internal
-func FromRPCProgress(progress *pb.ProgressNotification) (authorization string, _ models.IProgress, _ error) {
-	switch progress.Step {
-	case pb.ProgressNotification_UPLOADING_INPUT:
-		return progress.Authorization,
-			dlog.BuildProgress(models.UploadingInputStep, progress.Progress),
-			nil
-
-	case pb.ProgressNotification_DOWNLOADING_INPUT:
-		return progress.Authorization,
-			dlog.BuildProgress(models.DownloadingInputStep, progress.Progress),
-			nil
-
-	case pb.ProgressNotification_PROCESSING:
-		return progress.Authorization,
-			dlog.BuildProgress(models.ProcessingStep, progress.Progress),
-			nil
-
-	case pb.ProgressNotification_UPLOADING_OUTPUT:
-		return progress.Authorization,
-			dlog.BuildProgress(models.UploadingOutputStep, progress.Progress),
-			nil
-
-	case pb.ProgressNotification_DOWNLOADING_OUTPUT:
-		return progress.Authorization,
-			dlog.BuildProgress(models.DownloadingOutputStep, progress.Progress),
-			nil
-
+func FromRPCStorageClaimPurpose(purpose pb.StorageClaimPurpose) models.StorageClaimPurpose {
+	switch purpose {
+	case pb.StorageClaimPurpose_CONVERT_INPUT:
+		return models.ConvertInputStorageClaimPurpose
+	case pb.StorageClaimPurpose_CONVERT_OUTPUT:
+		return models.ConvertOutputStorageClaimPurpose
 	default:
-		return progress.Authorization,
-			nil,
-			models.NewErrUnknownType(string(progress.Step))
+		return models.NoneStorageClaimPurpose
+	}
+}
+
+func ToRPCStorageClaimPurpose(purpose models.StorageClaimPurpose) pb.StorageClaimPurpose {
+	switch purpose {
+	case models.ConvertInputStorageClaimPurpose:
+		return pb.StorageClaimPurpose_CONVERT_INPUT
+	case models.ConvertOutputStorageClaimPurpose:
+		return pb.StorageClaimPurpose_CONVERT_OUTPUT
+	default:
+		return pb.StorageClaimPurpose_NONE
 	}
 }
 

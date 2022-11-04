@@ -5,7 +5,7 @@ require_relative 'fftb_pb.rb'
 module Fftb
   class DealerService < Twirp::Service
     service 'Dealer'
-    rpc :GetInputStorageClaim, StorageClaimRequest, StorageClaim, :ruby_method => :get_input_storage_claim
+    rpc :GetAllInputStorageClaims, StorageClaimRequest, StorageClaimList, :ruby_method => :get_all_input_storage_claims
     rpc :AllocateOutputStorageClaim, StorageClaimRequest, StorageClaim, :ruby_method => :allocate_output_storage_claim
     rpc :FinishSegment, FinishSegmentRequest, Empty, :ruby_method => :finish_segment
     rpc :QuitSegment, QuitSegmentRequest, Empty, :ruby_method => :quit_segment

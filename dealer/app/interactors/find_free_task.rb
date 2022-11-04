@@ -12,6 +12,7 @@ class FindFreeTask < ApplicationInteractor
         found.occupied_by = performer
         found.current_step = nil
         found.current_progress = 0
+        found.output_storage_claims.destroy_all
 
         unless found.save
           errors.merge!(found.errors)

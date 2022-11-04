@@ -28,28 +28,38 @@ func (d *Dealer) AllocatePerformerAuthority(ctx context.Context, name string) (m
 	return models.LocalAuthor, nil
 }
 
-// GetInputStorageClaim implements IDealer interface
-func (d *Dealer) GetInputStorageClaim(ctx context.Context, performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
-	scReq := converters.ToRPCStorageClaimRequest(performer.GetName(), segmentID)
+// GetAllInputStorageClaims implements IDealer interface
+func (d *Dealer) GetAllInputStorageClaims(ctx context.Context, performer models.IAuthor, req models.StorageClaimRequest) ([]models.IStorageClaim, error) {
+	scReq := converters.ToRPCStorageClaimRequest(performer.GetName(), req)
 
-	rpcStorageClaim, err := d.rpcClient.GetInputStorageClaim(ctx, scReq)
-
-	if err != nil {
-		return nil, errs.WhileGetInputStorageClaim(converters.FromRPCError(err))
-	}
-
-	localStorageClaim, err := d.storageClient.BuildStorageClaimByURL(rpcStorageClaim.Url)
+	rpcStorageClaimList, err := d.rpcClient.GetAllInputStorageClaims(ctx, scReq)
 
 	if err != nil {
-		return nil, errs.WhileBuildStorageClaimByURL(err)
+		return nil, errs.WhileGetAllInputStorageClaims(converters.FromRPCError(err))
 	}
 
-	return localStorageClaim, nil
+	if len(rpcStorageClaimList.StorageClaims) == 0 {
+		return nil, models.ErrNotFound
+	}
+
+	localStorageClaims := make([]models.IStorageClaim, 0)
+
+	for _, remoteStorageClaim := range rpcStorageClaimList.StorageClaims {
+		localStorageClaim, err := d.storageClient.BuildStorageClaimByURL(remoteStorageClaim.Url)
+
+		if err != nil {
+			return nil, errs.WhileBuildStorageClaimByURL(err)
+		}
+
+		localStorageClaims = append(localStorageClaims, localStorageClaim)
+	}
+
+	return localStorageClaims, nil
 }
 
 // AllocateOutputStorageClaim implements IDealer interface
-func (d *Dealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, segmentID string) (models.IStorageClaim, error) {
-	scReq := converters.ToRPCStorageClaimRequest(performer.GetName(), segmentID)
+func (d *Dealer) AllocateOutputStorageClaim(ctx context.Context, performer models.IAuthor, req models.StorageClaimRequest) (models.IStorageClaim, error) {
+	scReq := converters.ToRPCStorageClaimRequest(performer.GetName(), req)
 
 	rpcStorageClaim, err := d.rpcClient.AllocateOutputStorageClaim(ctx, scReq)
 

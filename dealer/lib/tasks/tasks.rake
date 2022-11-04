@@ -1,12 +1,16 @@
 namespace :tasks do
   task generate: :environment do
-    input_storage_claim = StorageClaim.new(kind: :s3, provider: :yandex, path: 'aerial_shot_of_a_lighthouse.mp4')
+    input_storage_claim =
+      InputStorageClaim.new(kind: :s3,
+                            provider: :yandex,
+                            purpose: :convert_input,
+                            path: 'aerial_shot_of_a_lighthouse.mp4')
 
     task =
       Task.create!(kind: :convert_v1,
                    state: :published,
-                   input_storage_claim: input_storage_claim,
-                   params: {
+                   input_storage_claims: [input_storage_claim],
+                   convert_params: ConvertParams.new(
                      video_codec: :h264,
                      hw_accel: nil,
                      video_bit_rate: nil,
@@ -14,9 +18,8 @@ namespace :tasks do
                      preset: 'fast',
                      scale: nil,
                      keyframe_interval: nil,
-                     muxer: 'mp4',
-                     position: nil
-                   })
+                     muxer: 'mp4'
+                   ))
 
     puts "Created task #{task.id}"
   end

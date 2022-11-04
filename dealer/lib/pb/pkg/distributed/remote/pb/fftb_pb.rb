@@ -8,6 +8,8 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
     add_message "StorageClaimRequest" do
       optional :authorization, :string, 1
       optional :segmentId, :string, 2
+      optional :purpose, :enum, 3, "StorageClaimPurpose"
+      optional :name, :string, 4
     end
     add_message "ProgressNotification" do
       optional :step, :enum, 1, "ProgressNotification.Step"
@@ -54,13 +56,24 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
       optional :muxer, :string, 8
       optional :position, :int32, 9
     end
+    add_message "StorageClaimList" do
+      repeated :storageClaims, :message, 1, "StorageClaim"
+    end
     add_message "StorageClaim" do
-      optional :url, :string, 1
+      optional :id, :string, 1
+      optional :url, :string, 2
+      optional :purpose, :enum, 3, "StorageClaimPurpose"
+      optional :name, :string, 4
     end
     add_message "Empty" do
     end
     add_enum "SegmentType" do
       value :CONVERT_V1, 0
+    end
+    add_enum "StorageClaimPurpose" do
+      value :NONE, 0
+      value :CONVERT_INPUT, 1
+      value :CONVERT_OUTPUT, 2
     end
   end
 end
@@ -75,7 +88,9 @@ module Fftb
   FindFreeSegmentRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FindFreeSegmentRequest").msgclass
   Segment = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Segment").msgclass
   ConvertSegmentParams = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ConvertSegmentParams").msgclass
+  StorageClaimList = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("StorageClaimList").msgclass
   StorageClaim = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("StorageClaim").msgclass
   Empty = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Empty").msgclass
   SegmentType = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("SegmentType").enummodule
+  StorageClaimPurpose = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("StorageClaimPurpose").enummodule
 end

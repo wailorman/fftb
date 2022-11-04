@@ -1,0 +1,2 @@
+class InputStorageClaim < StorageClaim
+end

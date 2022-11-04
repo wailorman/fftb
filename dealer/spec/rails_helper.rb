@@ -61,5 +61,9 @@ RSpec.configure do |config|
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
 
+  config.before(:suite) do
+    Rails.application.load_seed # loading seeds
+  end
+
   config.include FactoryBot::Syntax::Methods
 end

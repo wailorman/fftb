@@ -1,0 +1,2 @@
+class ConvertParams < ApplicationRecord
+end

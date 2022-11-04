@@ -10,10 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2022_11_02_220738) do
+ActiveRecord::Schema[7.0].define(version: 2022_11_04_185904) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
   enable_extension "plpgsql"
+
+  create_table "convert_params", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "video_codec"
+    t.string "hw_accel"
+    t.string "video_bit_rate"
+    t.integer "video_quality"
+    t.string "preset"
+    t.string "scale"
+    t.integer "keyframe_interval"
+    t.string "muxer"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
 
   create_table "performers", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "name"
@@ -28,27 +41,29 @@ ActiveRecord::Schema[7.0].define(version: 2022_11_02_220738) do
     t.string "path"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
+    t.string "purpose", default: "none", null: false
+    t.string "type"
+    t.uuid "task_id"
+    t.index ["task_id"], name: "index_storage_claims_on_task_id"
   end
 
   create_table "tasks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "kind"
-    t.jsonb "params"
     t.string "state", default: "published"
     t.datetime "occupied_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.uuid "occupied_by_id"
-    t.uuid "input_storage_claim_id"
-    t.uuid "output_storage_claim_id"
     t.string "current_step"
     t.float "current_progress", default: 0.0, null: false
     t.string "failure"
-    t.index ["input_storage_claim_id"], name: "index_tasks_on_input_storage_claim_id"
+    t.uuid "convert_params_id"
+    t.index ["convert_params_id"], name: "index_tasks_on_convert_params_id"
     t.index ["occupied_by_id"], name: "index_tasks_on_occupied_by_id"
-    t.index ["output_storage_claim_id"], name: "index_tasks_on_output_storage_claim_id"
   end
 
+  add_foreign_key "storage_claims", "tasks"
+  add_foreign_key "tasks", "convert_params", column: "convert_params_id"
   add_foreign_key "tasks", "performers", column: "occupied_by_id"
-  add_foreign_key "tasks", "storage_claims", column: "input_storage_claim_id"
-  add_foreign_key "tasks", "storage_claims", column: "output_storage_claim_id"
 end

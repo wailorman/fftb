@@ -1,0 +1,2 @@
+class OutputStorageClaim < StorageClaim
+end

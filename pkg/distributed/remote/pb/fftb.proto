@@ -13,7 +13,7 @@ service Dealer {
   // rpc GetOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
   // rpc AllocateInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
 
-  rpc GetInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+  rpc GetAllInputStorageClaims (StorageClaimRequest) returns (StorageClaimList) {}
   rpc AllocateOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
 
   rpc FinishSegment(FinishSegmentRequest) returns (Empty) {}
@@ -28,6 +28,8 @@ service Dealer {
 message StorageClaimRequest {
   string authorization = 1;
   string segmentId = 2;
+  StorageClaimPurpose purpose = 3;
+  string name = 4;
 }
 
 message ProgressNotification {
@@ -89,11 +91,40 @@ message ConvertSegmentParams {
   int32 keyframeInterval = 7;
 
   string muxer = 8;
-  int32 position = 9;
+  int32 position = 9; // TODO: Deprecated
+}
+
+// message YtdlSegmentParams {
+//   string url = 1;
+//   string videoFormat = 2;
+//   string audioFormat = 3;
+//   bool downloadFullVideo = 4;
+//   bool downloadVideo = 5;
+//   bool downloadAudio = 6;
+//   bool downloadMetadata = 7;
+//   bool downloadCaptions = 8;
+// }
+
+enum StorageClaimPurpose {
+  NONE = 0; // default
+  CONVERT_INPUT = 1;
+  CONVERT_OUTPUT = 2;
+  // YTDL_FULL_VIDEO = 2;
+  // YTDL_AUDIO = 3;
+  // YTDL_VIDEO = 4;
+  // YTDL_METADATA = 5;
+  // YTDL_CAPTIONS = 6;
+}
+
+message StorageClaimList {
+  repeated StorageClaim storageClaims = 1;
 }
 
 message StorageClaim {
-  string url = 1;
+  string id = 1;
+  string url = 2;
+  StorageClaimPurpose purpose = 3;
+  string name = 4;
 }
 
 message Empty {

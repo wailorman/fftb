@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"github.com/machinebox/progress"
 	"github.com/wailorman/fftb/pkg/distributed/models"
 	"github.com/wailorman/fftb/pkg/media/ff"
 )
@@ -16,13 +15,6 @@ func makeProgresserFromConvert(pm ff.Progressable) models.IProgress {
 	return &ProgressMessage{
 		step:    models.ProcessingStep,
 		percent: pm.Percent(),
-	}
-}
-
-func makeIoProgresser(iop progress.Progress, step models.ProgressStep) models.IProgress {
-	return &ProgressMessage{
-		step:    step,
-		percent: iop.Percent(),
 	}
 }
 

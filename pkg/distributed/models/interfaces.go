@@ -10,6 +10,8 @@ import (
 // ProgressStep _
 type ProgressStep string
 
+type StorageClaimPurpose string
+
 // UploadingInputStep _
 const UploadingInputStep ProgressStep = "uploading_input"
 
@@ -24,6 +26,10 @@ const UploadingOutputStep ProgressStep = "uploading_output"
 
 // DownloadingOutputStep _
 const DownloadingOutputStep ProgressStep = "downloading_output"
+
+const NoneStorageClaimPurpose StorageClaimPurpose = "none"
+const ConvertInputStorageClaimPurpose StorageClaimPurpose = "convert_input"
+const ConvertOutputStorageClaimPurpose StorageClaimPurpose = "convert_output"
 
 // LocalAuthorName _
 var LocalAuthorName = "local"
@@ -52,6 +58,12 @@ type IDealer interface {
 	IWorkerDealer
 }
 
+type StorageClaimRequest struct {
+	SegmentID string
+	Purpose   StorageClaimPurpose
+	Name      string
+}
+
 // IWorkerDealer _
 type IWorkerDealer interface {
 	AllocatePerformerAuthority(ctx context.Context, name string) (IAuthor, error)
@@ -67,8 +79,8 @@ type IWorkerDealer interface {
 	QuitSegment(ctx context.Context, performer IAuthor, id string) error
 	FailSegment(ctx context.Context, performer IAuthor, id string, err error) error
 
-	GetInputStorageClaim(ctx context.Context, performer IAuthor, segmentID string) (IStorageClaim, error)
-	AllocateOutputStorageClaim(ctx context.Context, performer IAuthor, segmentID string) (IStorageClaim, error)
+	GetAllInputStorageClaims(ctx context.Context, performer IAuthor, req StorageClaimRequest) ([]IStorageClaim, error)
+	AllocateOutputStorageClaim(ctx context.Context, performer IAuthor, req StorageClaimRequest) (IStorageClaim, error)
 }
 
 // IStorageClaim _
