@@ -15,11 +15,11 @@ class DealerHandler
     Dealer::FinishSegmentHandler.new(req, env).call
   end
 
-  def quit_segment(req, _env)
+  def quit_segment(req, env)
     Dealer::QuitSegmentHandler.new(req, env).call
   end
 
-  def fail_segment(req, _env)
+  def fail_segment(req, env)
     Dealer::FailSegmentHandler.new(req, env).call
   end
 
