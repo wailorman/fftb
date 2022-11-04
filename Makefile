@@ -1,15 +1,12 @@
-distributed-client:
-	oapi-codegen --config pkg/distributed/remote/schema/dealer/generator_config.yml pkg/distributed/remote/schema/dealer/swagger.yml
-	oapi-codegen --config pkg/distributed/remote/schema/contracter/generator_config.yml pkg/distributed/remote/schema/contracter/swagger.yml
-
-distributed-mocks:
-	mockgen -source=pkg/distributed/models/interfaces.go -destination=pkg/distributed/models/mocks/mocks.gen.go IDealer,IContracter
-
-distributed-grpc-dependencies:
+setup:
+	go install github.com/golang/mock/mockgen
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.26
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
 	go get github.com/twitchtv/twirp-ruby/protoc-gen-twirp_ruby
 	go get github.com/twitchtv/twirp
+
+distributed-mocks:
+	mockgen -source=pkg/distributed/models/interfaces.go -destination=pkg/distributed/models/mocks/mocks.gen.go IDealer
 
 distributed-grpc:
 	protoc --go_out=. --go_opt=paths=source_relative --twirp_opt=paths=source_relative --twirp_out=. --ruby_out=dealer/lib/pb --twirp_ruby_out=dealer/lib/pb pkg/distributed/remote/pb/fftb.proto
