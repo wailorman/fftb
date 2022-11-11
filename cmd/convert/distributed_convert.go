@@ -1,7 +1,6 @@
 package convert
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/urfave/cli/v2"
@@ -30,8 +29,6 @@ func DistributedCliConfig() *cli.Command {
 					remoteDealer := remote.NewDealer(rpcClient, storageClient)
 					w, err := worker.NewWorker(ctx, tmpPath, remoteDealer, storageClient)
 
-					fmt.Printf("NewWorker err: %#v\n", err)
-
 					if err != nil {
 						return err
 					}
@@ -39,8 +36,6 @@ func DistributedCliConfig() *cli.Command {
 					w.Start()
 
 					<-w.Closed()
-
-					fmt.Println("Closed")
 
 					return nil
 				},
