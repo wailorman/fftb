@@ -4,7 +4,9 @@ import (
 	"context"
 	"io"
 
+	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
 	"github.com/wailorman/fftb/pkg/files"
+	"github.com/wailorman/fftb/pkg/media/convert"
 )
 
 // ProgressStep _
@@ -50,7 +52,8 @@ func (a *Author) GetName() string {
 // ISegment _
 type ISegment interface {
 	GetID() string
-	GetType() string
+	GetType() pb.SegmentType
+	GetConvertSegmentParams() convert.Params
 }
 
 // IDealer _

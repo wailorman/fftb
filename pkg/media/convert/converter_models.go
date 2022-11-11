@@ -50,6 +50,7 @@ type Params struct {
 	Preset           string `json:"preset" yaml:"preset"`
 	Scale            string `json:"scale" yaml:"scale"`
 	KeyframeInterval int    `json:"keyframe_interval" yaml:"keyframe_interval"`
+	Muxer            string `json:"muxer" yaml:"muxer"`
 }
 
 // ErrFileIsNotVideo _

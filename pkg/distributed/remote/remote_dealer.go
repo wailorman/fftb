@@ -167,11 +167,5 @@ func (d *Dealer) FindFreeSegment(ctx context.Context, performer models.IAuthor) 
 		return nil, converters.FromRPCError(errs.WhilePerformRequest(err))
 	}
 
-	mSeg, err := converters.FromRPCSegment(rpcSegment)
-
-	if err != nil {
-		return nil, errs.WhileDeserializeResponse(err)
-	}
-
-	return mSeg, nil
+	return rpcSegment, nil
 }

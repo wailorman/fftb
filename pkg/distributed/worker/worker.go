@@ -9,6 +9,7 @@ import (
 	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/errs"
+	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
 	"github.com/wailorman/fftb/pkg/throttle"
 
 	"github.com/sirupsen/logrus"
@@ -137,13 +138,14 @@ func proceedSegment(
 		return failSegment(ctx, logger, wg, performer, dealer, freeSegment, err)
 	}
 
-	convertSegment, ok := freeSegment.(*models.ConvertSegment)
+	// convertSegment, ok := freeSegment.(*models.ConvertSegment)
+	// convertSegment := freeSegment
 
-	if !ok {
+	if freeSegment.GetType() != pb.SegmentType_CONVERT_V1 {
 		return fail(errors.Wrapf(models.ErrUnknownType, "Received type `%s`", freeSegment.GetType()))
 	}
 
-	sio, err := prepareSegmentIO(ctx, performer, dealer, storageClient, convertSegment, tmpPath)
+	sio, err := prepareSegmentIO(ctx, performer, dealer, storageClient, freeSegment, tmpPath)
 
 	if err != nil {
 		return fail(errors.Wrap(err, "Preparing segment IO"))
@@ -152,7 +154,7 @@ func proceedSegment(
 	task := convert.Task{
 		InFile:  sio.inputFile.FullPath(),
 		OutFile: sio.outputFile.FullPath(),
-		Params:  convertSegment.Params,
+		Params:  freeSegment.GetConvertSegmentParams(),
 	}
 
 	converter := convert.NewConverter(
@@ -277,11 +279,13 @@ func prepareSegmentIO(
 	performer models.IAuthor,
 	dealer models.IWorkerDealer,
 	storageClient models.IStorageClient,
-	convSegment *models.ConvertSegment,
+	segment models.ISegment,
 	tmpPath files.Pather) (*segmentIO, error) {
 
+	convertParams := segment.GetConvertSegmentParams()
+
 	inputClaims, err := dealer.GetAllInputStorageClaims(ctx, performer, models.StorageClaimRequest{
-		SegmentID: convSegment.GetID(),
+		SegmentID: segment.GetID(),
 		Purpose:   models.ConvertInputStorageClaimPurpose,
 	})
 
@@ -296,9 +300,9 @@ func prepareSegmentIO(
 	inputClaim := inputClaims[0]
 
 	outputClaim, err := dealer.AllocateOutputStorageClaim(ctx, performer, models.StorageClaimRequest{
-		SegmentID: convSegment.GetID(),
+		SegmentID: segment.GetID(),
 		Purpose:   models.ConvertOutputStorageClaimPurpose,
-		Name:      fmt.Sprintf("%s.%s", convSegment.GetID(), convSegment.Muxer),
+		Name:      fmt.Sprintf("%s.%s", segment.GetID(), convertParams.Muxer),
 	})
 
 	if err != nil {
@@ -311,7 +315,7 @@ func prepareSegmentIO(
 		return nil, errors.Wrap(err, "Downloading local copy of input storage claim")
 	}
 
-	outputFile := tmpPath.BuildFile(fmt.Sprintf("%s.%s", outputClaim.GetID(), convSegment.Muxer))
+	outputFile := tmpPath.BuildFile(fmt.Sprintf("%s.%s", outputClaim.GetID(), convertParams.Muxer))
 
 	return &segmentIO{
 		inputClaim:  inputClaim,
