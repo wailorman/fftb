@@ -4,3 +4,6 @@
 .fftb
 .history
 tmp
+fftbd_config.yml
+rclone.cfg
+dist/

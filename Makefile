@@ -5,14 +5,12 @@ setup:
 	go get github.com/twitchtv/twirp-ruby/protoc-gen-twirp_ruby
 	go get github.com/twitchtv/twirp
 
-distributed-mocks:
-	mockgen -source=pkg/distributed/models/interfaces.go -destination=pkg/distributed/models/mocks/mocks.gen.go IDealer
-
-distributed-grpc:
+proto:
 	protoc --go_out=. --go_opt=paths=source_relative --twirp_opt=paths=source_relative --twirp_out=. --ruby_out=dealer/lib/pb --twirp_ruby_out=dealer/lib/pb pkg/distributed/remote/pb/fftb.proto
 
-deploy:
-	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o ~/Resilio\ Sync/wailorman_cmder/fftbdev.exe cmd/main/main.go
-	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o ~/Resilio\ Sync/kuzmech_cmder/fftbdev.exe cmd/main/main.go
-	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o ~/Resilio\ Sync/polardeer_cmder/fftbdev.exe cmd/main/main.go
-	go build -ldflags="-X main.version=`git describe`" -o ~/bin/fftbdev cmd/main/main.go
+build:
+	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o dist/windows_amd64/fftb.exe cmd/main/main.go
+	GOOS=linux GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o dist/linux_amd64/fftb cmd/main/main.go
+	GOOS=linux GOARCH=arm64 go build -ldflags="-X main.version=`git describe`" -o dist/linux_arm64/fftb cmd/main/main.go
+	GOOS=darwin GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o dist/darwin_amd64/fftb cmd/main/main.go
+	GOOS=darwin GOARCH=arm64 go build -ldflags="-X main.version=`git describe`" -o dist/darwin_arm64/fftb cmd/main/main.go

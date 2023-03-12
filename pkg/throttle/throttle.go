@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type Throttler func(f func())
+
 // New _
 func New(every time.Duration) func(f func()) {
 	d := &throttler{every: every}

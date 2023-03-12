@@ -33,19 +33,15 @@ const _ = twirp.TwirpPackageMinVersion_8_1_0
 // ================
 
 type Dealer interface {
-	GetAllInputStorageClaims(context.Context, *StorageClaimRequest) (*StorageClaimList, error)
+	FinishTask(context.Context, *FinishTaskRequest) (*Empty, error)
 
-	AllocateOutputStorageClaim(context.Context, *StorageClaimRequest) (*StorageClaim, error)
+	QuitTask(context.Context, *QuitTaskRequest) (*Empty, error)
 
-	FinishSegment(context.Context, *FinishSegmentRequest) (*Empty, error)
+	FailTask(context.Context, *FailTaskRequest) (*Empty, error)
 
-	QuitSegment(context.Context, *QuitSegmentRequest) (*Empty, error)
+	FindFreeTask(context.Context, *FindFreeTaskRequest) (*Task, error)
 
-	FailSegment(context.Context, *FailSegmentRequest) (*Empty, error)
-
-	FindFreeSegment(context.Context, *FindFreeSegmentRequest) (*Segment, error)
-
-	Notify(context.Context, *ProgressNotification) (*Empty, error)
+	Notify(context.Context, *NotifyRequest) (*Empty, error)
 }
 
 // ======================
@@ -54,7 +50,7 @@ type Dealer interface {
 
 type dealerProtobufClient struct {
 	client      HTTPClient
-	urls        [7]string
+	urls        [5]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -82,13 +78,11 @@ func NewDealerProtobufClient(baseURL string, client HTTPClient, opts ...twirp.Cl
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "", "Dealer")
-	urls := [7]string{
-		serviceURL + "GetAllInputStorageClaims",
-		serviceURL + "AllocateOutputStorageClaim",
-		serviceURL + "FinishSegment",
-		serviceURL + "QuitSegment",
-		serviceURL + "FailSegment",
-		serviceURL + "FindFreeSegment",
+	urls := [5]string{
+		serviceURL + "FinishTask",
+		serviceURL + "QuitTask",
+		serviceURL + "FailTask",
+		serviceURL + "FindFreeTask",
 		serviceURL + "Notify",
 	}
 
@@ -100,112 +94,20 @@ func NewDealerProtobufClient(baseURL string, client HTTPClient, opts ...twirp.Cl
 	}
 }
 
-func (c *dealerProtobufClient) GetAllInputStorageClaims(ctx context.Context, in *StorageClaimRequest) (*StorageClaimList, error) {
+func (c *dealerProtobufClient) FinishTask(ctx context.Context, in *FinishTaskRequest) (*Empty, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "")
 	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "GetAllInputStorageClaims")
-	caller := c.callGetAllInputStorageClaims
+	ctx = ctxsetters.WithMethodName(ctx, "FinishTask")
+	caller := c.callFinishTask
 	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaimList, error) {
+		caller = func(ctx context.Context, req *FinishTaskRequest) (*Empty, error) {
 			resp, err := c.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
+					typedReq, ok := req.(*FinishTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FinishTaskRequest) when calling interceptor")
 					}
-					return c.callGetAllInputStorageClaims(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*StorageClaimList)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaimList) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerProtobufClient) callGetAllInputStorageClaims(ctx context.Context, in *StorageClaimRequest) (*StorageClaimList, error) {
-	out := new(StorageClaimList)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[0], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerProtobufClient) AllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest) (*StorageClaim, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "AllocateOutputStorageClaim")
-	caller := c.callAllocateOutputStorageClaim
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaim, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
-					}
-					return c.callAllocateOutputStorageClaim(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*StorageClaim)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaim) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerProtobufClient) callAllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest) (*StorageClaim, error) {
-	out := new(StorageClaim)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerProtobufClient) FinishSegment(ctx context.Context, in *FinishSegmentRequest) (*Empty, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "FinishSegment")
-	caller := c.callFinishSegment
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FinishSegmentRequest) (*Empty, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishSegmentRequest) when calling interceptor")
-					}
-					return c.callFinishSegment(ctx, typedReq)
+					return c.callFinishTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -221,7 +123,99 @@ func (c *dealerProtobufClient) FinishSegment(ctx context.Context, in *FinishSegm
 	return caller(ctx, in)
 }
 
-func (c *dealerProtobufClient) callFinishSegment(ctx context.Context, in *FinishSegmentRequest) (*Empty, error) {
+func (c *dealerProtobufClient) callFinishTask(ctx context.Context, in *FinishTaskRequest) (*Empty, error) {
+	out := new(Empty)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[0], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *dealerProtobufClient) QuitTask(ctx context.Context, in *QuitTaskRequest) (*Empty, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "")
+	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
+	ctx = ctxsetters.WithMethodName(ctx, "QuitTask")
+	caller := c.callQuitTask
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *QuitTaskRequest) (*Empty, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*QuitTaskRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*QuitTaskRequest) when calling interceptor")
+					}
+					return c.callQuitTask(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*Empty)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *dealerProtobufClient) callQuitTask(ctx context.Context, in *QuitTaskRequest) (*Empty, error) {
+	out := new(Empty)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *dealerProtobufClient) FailTask(ctx context.Context, in *FailTaskRequest) (*Empty, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "")
+	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
+	ctx = ctxsetters.WithMethodName(ctx, "FailTask")
+	caller := c.callFailTask
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *FailTaskRequest) (*Empty, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*FailTaskRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*FailTaskRequest) when calling interceptor")
+					}
+					return c.callFailTask(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*Empty)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *dealerProtobufClient) callFailTask(ctx context.Context, in *FailTaskRequest) (*Empty, error) {
 	out := new(Empty)
 	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
 	if err != nil {
@@ -238,26 +232,26 @@ func (c *dealerProtobufClient) callFinishSegment(ctx context.Context, in *Finish
 	return out, nil
 }
 
-func (c *dealerProtobufClient) QuitSegment(ctx context.Context, in *QuitSegmentRequest) (*Empty, error) {
+func (c *dealerProtobufClient) FindFreeTask(ctx context.Context, in *FindFreeTaskRequest) (*Task, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "")
 	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "QuitSegment")
-	caller := c.callQuitSegment
+	ctx = ctxsetters.WithMethodName(ctx, "FindFreeTask")
+	caller := c.callFindFreeTask
 	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *QuitSegmentRequest) (*Empty, error) {
+		caller = func(ctx context.Context, req *FindFreeTaskRequest) (*Task, error) {
 			resp, err := c.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*QuitSegmentRequest)
+					typedReq, ok := req.(*FindFreeTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*QuitSegmentRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FindFreeTaskRequest) when calling interceptor")
 					}
-					return c.callQuitSegment(ctx, typedReq)
+					return c.callFindFreeTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*Empty)
+				typedResp, ok := resp.(*Task)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Task) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -267,8 +261,8 @@ func (c *dealerProtobufClient) QuitSegment(ctx context.Context, in *QuitSegmentR
 	return caller(ctx, in)
 }
 
-func (c *dealerProtobufClient) callQuitSegment(ctx context.Context, in *QuitSegmentRequest) (*Empty, error) {
-	out := new(Empty)
+func (c *dealerProtobufClient) callFindFreeTask(ctx context.Context, in *FindFreeTaskRequest) (*Task, error) {
+	out := new(Task)
 	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[3], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
@@ -284,110 +278,18 @@ func (c *dealerProtobufClient) callQuitSegment(ctx context.Context, in *QuitSegm
 	return out, nil
 }
 
-func (c *dealerProtobufClient) FailSegment(ctx context.Context, in *FailSegmentRequest) (*Empty, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "FailSegment")
-	caller := c.callFailSegment
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FailSegmentRequest) (*Empty, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FailSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FailSegmentRequest) when calling interceptor")
-					}
-					return c.callFailSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Empty)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerProtobufClient) callFailSegment(ctx context.Context, in *FailSegmentRequest) (*Empty, error) {
-	out := new(Empty)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerProtobufClient) FindFreeSegment(ctx context.Context, in *FindFreeSegmentRequest) (*Segment, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "FindFreeSegment")
-	caller := c.callFindFreeSegment
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FindFreeSegmentRequest) (*Segment, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FindFreeSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FindFreeSegmentRequest) when calling interceptor")
-					}
-					return c.callFindFreeSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Segment)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Segment) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerProtobufClient) callFindFreeSegment(ctx context.Context, in *FindFreeSegmentRequest) (*Segment, error) {
-	out := new(Segment)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[5], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerProtobufClient) Notify(ctx context.Context, in *ProgressNotification) (*Empty, error) {
+func (c *dealerProtobufClient) Notify(ctx context.Context, in *NotifyRequest) (*Empty, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "")
 	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
 	ctx = ctxsetters.WithMethodName(ctx, "Notify")
 	caller := c.callNotify
 	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *ProgressNotification) (*Empty, error) {
+		caller = func(ctx context.Context, req *NotifyRequest) (*Empty, error) {
 			resp, err := c.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*ProgressNotification)
+					typedReq, ok := req.(*NotifyRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*ProgressNotification) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*NotifyRequest) when calling interceptor")
 					}
 					return c.callNotify(ctx, typedReq)
 				},
@@ -405,9 +307,9 @@ func (c *dealerProtobufClient) Notify(ctx context.Context, in *ProgressNotificat
 	return caller(ctx, in)
 }
 
-func (c *dealerProtobufClient) callNotify(ctx context.Context, in *ProgressNotification) (*Empty, error) {
+func (c *dealerProtobufClient) callNotify(ctx context.Context, in *NotifyRequest) (*Empty, error) {
 	out := new(Empty)
-	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	ctx, err := doProtobufRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
 		if !ok {
@@ -428,7 +330,7 @@ func (c *dealerProtobufClient) callNotify(ctx context.Context, in *ProgressNotif
 
 type dealerJSONClient struct {
 	client      HTTPClient
-	urls        [7]string
+	urls        [5]string
 	interceptor twirp.Interceptor
 	opts        twirp.ClientOptions
 }
@@ -456,13 +358,11 @@ func NewDealerJSONClient(baseURL string, client HTTPClient, opts ...twirp.Client
 	// Build method URLs: <baseURL>[<prefix>]/<package>.<Service>/<Method>
 	serviceURL := sanitizeBaseURL(baseURL)
 	serviceURL += baseServicePath(pathPrefix, "", "Dealer")
-	urls := [7]string{
-		serviceURL + "GetAllInputStorageClaims",
-		serviceURL + "AllocateOutputStorageClaim",
-		serviceURL + "FinishSegment",
-		serviceURL + "QuitSegment",
-		serviceURL + "FailSegment",
-		serviceURL + "FindFreeSegment",
+	urls := [5]string{
+		serviceURL + "FinishTask",
+		serviceURL + "QuitTask",
+		serviceURL + "FailTask",
+		serviceURL + "FindFreeTask",
 		serviceURL + "Notify",
 	}
 
@@ -474,112 +374,20 @@ func NewDealerJSONClient(baseURL string, client HTTPClient, opts ...twirp.Client
 	}
 }
 
-func (c *dealerJSONClient) GetAllInputStorageClaims(ctx context.Context, in *StorageClaimRequest) (*StorageClaimList, error) {
+func (c *dealerJSONClient) FinishTask(ctx context.Context, in *FinishTaskRequest) (*Empty, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "")
 	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "GetAllInputStorageClaims")
-	caller := c.callGetAllInputStorageClaims
+	ctx = ctxsetters.WithMethodName(ctx, "FinishTask")
+	caller := c.callFinishTask
 	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaimList, error) {
+		caller = func(ctx context.Context, req *FinishTaskRequest) (*Empty, error) {
 			resp, err := c.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
+					typedReq, ok := req.(*FinishTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FinishTaskRequest) when calling interceptor")
 					}
-					return c.callGetAllInputStorageClaims(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*StorageClaimList)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaimList) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerJSONClient) callGetAllInputStorageClaims(ctx context.Context, in *StorageClaimRequest) (*StorageClaimList, error) {
-	out := new(StorageClaimList)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[0], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerJSONClient) AllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest) (*StorageClaim, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "AllocateOutputStorageClaim")
-	caller := c.callAllocateOutputStorageClaim
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaim, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
-					}
-					return c.callAllocateOutputStorageClaim(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*StorageClaim)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaim) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerJSONClient) callAllocateOutputStorageClaim(ctx context.Context, in *StorageClaimRequest) (*StorageClaim, error) {
-	out := new(StorageClaim)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerJSONClient) FinishSegment(ctx context.Context, in *FinishSegmentRequest) (*Empty, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "FinishSegment")
-	caller := c.callFinishSegment
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FinishSegmentRequest) (*Empty, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishSegmentRequest) when calling interceptor")
-					}
-					return c.callFinishSegment(ctx, typedReq)
+					return c.callFinishTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -595,7 +403,99 @@ func (c *dealerJSONClient) FinishSegment(ctx context.Context, in *FinishSegmentR
 	return caller(ctx, in)
 }
 
-func (c *dealerJSONClient) callFinishSegment(ctx context.Context, in *FinishSegmentRequest) (*Empty, error) {
+func (c *dealerJSONClient) callFinishTask(ctx context.Context, in *FinishTaskRequest) (*Empty, error) {
+	out := new(Empty)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[0], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *dealerJSONClient) QuitTask(ctx context.Context, in *QuitTaskRequest) (*Empty, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "")
+	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
+	ctx = ctxsetters.WithMethodName(ctx, "QuitTask")
+	caller := c.callQuitTask
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *QuitTaskRequest) (*Empty, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*QuitTaskRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*QuitTaskRequest) when calling interceptor")
+					}
+					return c.callQuitTask(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*Empty)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *dealerJSONClient) callQuitTask(ctx context.Context, in *QuitTaskRequest) (*Empty, error) {
+	out := new(Empty)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[1], in, out)
+	if err != nil {
+		twerr, ok := err.(twirp.Error)
+		if !ok {
+			twerr = twirp.InternalErrorWith(err)
+		}
+		callClientError(ctx, c.opts.Hooks, twerr)
+		return nil, err
+	}
+
+	callClientResponseReceived(ctx, c.opts.Hooks)
+
+	return out, nil
+}
+
+func (c *dealerJSONClient) FailTask(ctx context.Context, in *FailTaskRequest) (*Empty, error) {
+	ctx = ctxsetters.WithPackageName(ctx, "")
+	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
+	ctx = ctxsetters.WithMethodName(ctx, "FailTask")
+	caller := c.callFailTask
+	if c.interceptor != nil {
+		caller = func(ctx context.Context, req *FailTaskRequest) (*Empty, error) {
+			resp, err := c.interceptor(
+				func(ctx context.Context, req interface{}) (interface{}, error) {
+					typedReq, ok := req.(*FailTaskRequest)
+					if !ok {
+						return nil, twirp.InternalError("failed type assertion req.(*FailTaskRequest) when calling interceptor")
+					}
+					return c.callFailTask(ctx, typedReq)
+				},
+			)(ctx, req)
+			if resp != nil {
+				typedResp, ok := resp.(*Empty)
+				if !ok {
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+				}
+				return typedResp, err
+			}
+			return nil, err
+		}
+	}
+	return caller(ctx, in)
+}
+
+func (c *dealerJSONClient) callFailTask(ctx context.Context, in *FailTaskRequest) (*Empty, error) {
 	out := new(Empty)
 	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[2], in, out)
 	if err != nil {
@@ -612,26 +512,26 @@ func (c *dealerJSONClient) callFinishSegment(ctx context.Context, in *FinishSegm
 	return out, nil
 }
 
-func (c *dealerJSONClient) QuitSegment(ctx context.Context, in *QuitSegmentRequest) (*Empty, error) {
+func (c *dealerJSONClient) FindFreeTask(ctx context.Context, in *FindFreeTaskRequest) (*Task, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "")
 	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "QuitSegment")
-	caller := c.callQuitSegment
+	ctx = ctxsetters.WithMethodName(ctx, "FindFreeTask")
+	caller := c.callFindFreeTask
 	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *QuitSegmentRequest) (*Empty, error) {
+		caller = func(ctx context.Context, req *FindFreeTaskRequest) (*Task, error) {
 			resp, err := c.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*QuitSegmentRequest)
+					typedReq, ok := req.(*FindFreeTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*QuitSegmentRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FindFreeTaskRequest) when calling interceptor")
 					}
-					return c.callQuitSegment(ctx, typedReq)
+					return c.callFindFreeTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*Empty)
+				typedResp, ok := resp.(*Task)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Task) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -641,8 +541,8 @@ func (c *dealerJSONClient) QuitSegment(ctx context.Context, in *QuitSegmentReque
 	return caller(ctx, in)
 }
 
-func (c *dealerJSONClient) callQuitSegment(ctx context.Context, in *QuitSegmentRequest) (*Empty, error) {
-	out := new(Empty)
+func (c *dealerJSONClient) callFindFreeTask(ctx context.Context, in *FindFreeTaskRequest) (*Task, error) {
+	out := new(Task)
 	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[3], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
@@ -658,110 +558,18 @@ func (c *dealerJSONClient) callQuitSegment(ctx context.Context, in *QuitSegmentR
 	return out, nil
 }
 
-func (c *dealerJSONClient) FailSegment(ctx context.Context, in *FailSegmentRequest) (*Empty, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "FailSegment")
-	caller := c.callFailSegment
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FailSegmentRequest) (*Empty, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FailSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FailSegmentRequest) when calling interceptor")
-					}
-					return c.callFailSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Empty)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerJSONClient) callFailSegment(ctx context.Context, in *FailSegmentRequest) (*Empty, error) {
-	out := new(Empty)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerJSONClient) FindFreeSegment(ctx context.Context, in *FindFreeSegmentRequest) (*Segment, error) {
-	ctx = ctxsetters.WithPackageName(ctx, "")
-	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
-	ctx = ctxsetters.WithMethodName(ctx, "FindFreeSegment")
-	caller := c.callFindFreeSegment
-	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *FindFreeSegmentRequest) (*Segment, error) {
-			resp, err := c.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FindFreeSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FindFreeSegmentRequest) when calling interceptor")
-					}
-					return c.callFindFreeSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Segment)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Segment) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-	return caller(ctx, in)
-}
-
-func (c *dealerJSONClient) callFindFreeSegment(ctx context.Context, in *FindFreeSegmentRequest) (*Segment, error) {
-	out := new(Segment)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[5], in, out)
-	if err != nil {
-		twerr, ok := err.(twirp.Error)
-		if !ok {
-			twerr = twirp.InternalErrorWith(err)
-		}
-		callClientError(ctx, c.opts.Hooks, twerr)
-		return nil, err
-	}
-
-	callClientResponseReceived(ctx, c.opts.Hooks)
-
-	return out, nil
-}
-
-func (c *dealerJSONClient) Notify(ctx context.Context, in *ProgressNotification) (*Empty, error) {
+func (c *dealerJSONClient) Notify(ctx context.Context, in *NotifyRequest) (*Empty, error) {
 	ctx = ctxsetters.WithPackageName(ctx, "")
 	ctx = ctxsetters.WithServiceName(ctx, "Dealer")
 	ctx = ctxsetters.WithMethodName(ctx, "Notify")
 	caller := c.callNotify
 	if c.interceptor != nil {
-		caller = func(ctx context.Context, req *ProgressNotification) (*Empty, error) {
+		caller = func(ctx context.Context, req *NotifyRequest) (*Empty, error) {
 			resp, err := c.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*ProgressNotification)
+					typedReq, ok := req.(*NotifyRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*ProgressNotification) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*NotifyRequest) when calling interceptor")
 					}
 					return c.callNotify(ctx, typedReq)
 				},
@@ -779,9 +587,9 @@ func (c *dealerJSONClient) Notify(ctx context.Context, in *ProgressNotification)
 	return caller(ctx, in)
 }
 
-func (c *dealerJSONClient) callNotify(ctx context.Context, in *ProgressNotification) (*Empty, error) {
+func (c *dealerJSONClient) callNotify(ctx context.Context, in *NotifyRequest) (*Empty, error) {
 	out := new(Empty)
-	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[6], in, out)
+	ctx, err := doJSONRequest(ctx, c.client, c.opts.Hooks, c.urls[4], in, out)
 	if err != nil {
 		twerr, ok := err.(twirp.Error)
 		if !ok {
@@ -893,23 +701,17 @@ func (s *dealerServer) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	switch method {
-	case "GetAllInputStorageClaims":
-		s.serveGetAllInputStorageClaims(ctx, resp, req)
+	case "FinishTask":
+		s.serveFinishTask(ctx, resp, req)
 		return
-	case "AllocateOutputStorageClaim":
-		s.serveAllocateOutputStorageClaim(ctx, resp, req)
+	case "QuitTask":
+		s.serveQuitTask(ctx, resp, req)
 		return
-	case "FinishSegment":
-		s.serveFinishSegment(ctx, resp, req)
+	case "FailTask":
+		s.serveFailTask(ctx, resp, req)
 		return
-	case "QuitSegment":
-		s.serveQuitSegment(ctx, resp, req)
-		return
-	case "FailSegment":
-		s.serveFailSegment(ctx, resp, req)
-		return
-	case "FindFreeSegment":
-		s.serveFindFreeSegment(ctx, resp, req)
+	case "FindFreeTask":
+		s.serveFindFreeTask(ctx, resp, req)
 		return
 	case "Notify":
 		s.serveNotify(ctx, resp, req)
@@ -921,7 +723,7 @@ func (s *dealerServer) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *dealerServer) serveGetAllInputStorageClaims(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFinishTask(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	header := req.Header.Get("Content-Type")
 	i := strings.Index(header, ";")
 	if i == -1 {
@@ -929,9 +731,9 @@ func (s *dealerServer) serveGetAllInputStorageClaims(ctx context.Context, resp h
 	}
 	switch strings.TrimSpace(strings.ToLower(header[:i])) {
 	case "application/json":
-		s.serveGetAllInputStorageClaimsJSON(ctx, resp, req)
+		s.serveFinishTaskJSON(ctx, resp, req)
 	case "application/protobuf":
-		s.serveGetAllInputStorageClaimsProtobuf(ctx, resp, req)
+		s.serveFinishTaskProtobuf(ctx, resp, req)
 	default:
 		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
 		twerr := badRouteError(msg, req.Method, req.URL.Path)
@@ -939,9 +741,9 @@ func (s *dealerServer) serveGetAllInputStorageClaims(ctx context.Context, resp h
 	}
 }
 
-func (s *dealerServer) serveGetAllInputStorageClaimsJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFinishTaskJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "GetAllInputStorageClaims")
+	ctx = ctxsetters.WithMethodName(ctx, "FinishTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -954,29 +756,29 @@ func (s *dealerServer) serveGetAllInputStorageClaimsJSON(ctx context.Context, re
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
-	reqContent := new(StorageClaimRequest)
+	reqContent := new(FinishTaskRequest)
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
 
-	handler := s.Dealer.GetAllInputStorageClaims
+	handler := s.Dealer.FinishTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaimList, error) {
+		handler = func(ctx context.Context, req *FinishTaskRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
+					typedReq, ok := req.(*FinishTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FinishTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.GetAllInputStorageClaims(ctx, typedReq)
+					return s.Dealer.FinishTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*StorageClaimList)
+				typedResp, ok := resp.(*Empty)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaimList) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -985,7 +787,7 @@ func (s *dealerServer) serveGetAllInputStorageClaimsJSON(ctx context.Context, re
 	}
 
 	// Call service method
-	var respContent *StorageClaimList
+	var respContent *Empty
 	func() {
 		defer ensurePanicResponses(ctx, resp, s.hooks)
 		respContent, err = handler(ctx, reqContent)
@@ -996,7 +798,7 @@ func (s *dealerServer) serveGetAllInputStorageClaimsJSON(ctx context.Context, re
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *StorageClaimList and nil error while calling GetAllInputStorageClaims. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FinishTask. nil responses are not supported"))
 		return
 	}
 
@@ -1022,9 +824,9 @@ func (s *dealerServer) serveGetAllInputStorageClaimsJSON(ctx context.Context, re
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *dealerServer) serveGetAllInputStorageClaimsProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFinishTaskProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "GetAllInputStorageClaims")
+	ctx = ctxsetters.WithMethodName(ctx, "FinishTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -1036,28 +838,28 @@ func (s *dealerServer) serveGetAllInputStorageClaimsProtobuf(ctx context.Context
 		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
 		return
 	}
-	reqContent := new(StorageClaimRequest)
+	reqContent := new(FinishTaskRequest)
 	if err = proto.Unmarshal(buf, reqContent); err != nil {
 		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
 		return
 	}
 
-	handler := s.Dealer.GetAllInputStorageClaims
+	handler := s.Dealer.FinishTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaimList, error) {
+		handler = func(ctx context.Context, req *FinishTaskRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
+					typedReq, ok := req.(*FinishTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FinishTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.GetAllInputStorageClaims(ctx, typedReq)
+					return s.Dealer.FinishTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*StorageClaimList)
+				typedResp, ok := resp.(*Empty)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaimList) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -1066,7 +868,7 @@ func (s *dealerServer) serveGetAllInputStorageClaimsProtobuf(ctx context.Context
 	}
 
 	// Call service method
-	var respContent *StorageClaimList
+	var respContent *Empty
 	func() {
 		defer ensurePanicResponses(ctx, resp, s.hooks)
 		respContent, err = handler(ctx, reqContent)
@@ -1077,7 +879,7 @@ func (s *dealerServer) serveGetAllInputStorageClaimsProtobuf(ctx context.Context
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *StorageClaimList and nil error while calling GetAllInputStorageClaims. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FinishTask. nil responses are not supported"))
 		return
 	}
 
@@ -1101,7 +903,7 @@ func (s *dealerServer) serveGetAllInputStorageClaimsProtobuf(ctx context.Context
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *dealerServer) serveAllocateOutputStorageClaim(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveQuitTask(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	header := req.Header.Get("Content-Type")
 	i := strings.Index(header, ";")
 	if i == -1 {
@@ -1109,9 +911,9 @@ func (s *dealerServer) serveAllocateOutputStorageClaim(ctx context.Context, resp
 	}
 	switch strings.TrimSpace(strings.ToLower(header[:i])) {
 	case "application/json":
-		s.serveAllocateOutputStorageClaimJSON(ctx, resp, req)
+		s.serveQuitTaskJSON(ctx, resp, req)
 	case "application/protobuf":
-		s.serveAllocateOutputStorageClaimProtobuf(ctx, resp, req)
+		s.serveQuitTaskProtobuf(ctx, resp, req)
 	default:
 		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
 		twerr := badRouteError(msg, req.Method, req.URL.Path)
@@ -1119,9 +921,9 @@ func (s *dealerServer) serveAllocateOutputStorageClaim(ctx context.Context, resp
 	}
 }
 
-func (s *dealerServer) serveAllocateOutputStorageClaimJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveQuitTaskJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "AllocateOutputStorageClaim")
+	ctx = ctxsetters.WithMethodName(ctx, "QuitTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -1134,29 +936,29 @@ func (s *dealerServer) serveAllocateOutputStorageClaimJSON(ctx context.Context, 
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
-	reqContent := new(StorageClaimRequest)
+	reqContent := new(QuitTaskRequest)
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
 
-	handler := s.Dealer.AllocateOutputStorageClaim
+	handler := s.Dealer.QuitTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaim, error) {
+		handler = func(ctx context.Context, req *QuitTaskRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
+					typedReq, ok := req.(*QuitTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*QuitTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.AllocateOutputStorageClaim(ctx, typedReq)
+					return s.Dealer.QuitTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*StorageClaim)
+				typedResp, ok := resp.(*Empty)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaim) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -1165,7 +967,7 @@ func (s *dealerServer) serveAllocateOutputStorageClaimJSON(ctx context.Context, 
 	}
 
 	// Call service method
-	var respContent *StorageClaim
+	var respContent *Empty
 	func() {
 		defer ensurePanicResponses(ctx, resp, s.hooks)
 		respContent, err = handler(ctx, reqContent)
@@ -1176,7 +978,7 @@ func (s *dealerServer) serveAllocateOutputStorageClaimJSON(ctx context.Context, 
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *StorageClaim and nil error while calling AllocateOutputStorageClaim. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling QuitTask. nil responses are not supported"))
 		return
 	}
 
@@ -1202,9 +1004,9 @@ func (s *dealerServer) serveAllocateOutputStorageClaimJSON(ctx context.Context, 
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *dealerServer) serveAllocateOutputStorageClaimProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveQuitTaskProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "AllocateOutputStorageClaim")
+	ctx = ctxsetters.WithMethodName(ctx, "QuitTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -1216,28 +1018,28 @@ func (s *dealerServer) serveAllocateOutputStorageClaimProtobuf(ctx context.Conte
 		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
 		return
 	}
-	reqContent := new(StorageClaimRequest)
+	reqContent := new(QuitTaskRequest)
 	if err = proto.Unmarshal(buf, reqContent); err != nil {
 		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
 		return
 	}
 
-	handler := s.Dealer.AllocateOutputStorageClaim
+	handler := s.Dealer.QuitTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *StorageClaimRequest) (*StorageClaim, error) {
+		handler = func(ctx context.Context, req *QuitTaskRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*StorageClaimRequest)
+					typedReq, ok := req.(*QuitTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*StorageClaimRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*QuitTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.AllocateOutputStorageClaim(ctx, typedReq)
+					return s.Dealer.QuitTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*StorageClaim)
+				typedResp, ok := resp.(*Empty)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*StorageClaim) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -1246,7 +1048,7 @@ func (s *dealerServer) serveAllocateOutputStorageClaimProtobuf(ctx context.Conte
 	}
 
 	// Call service method
-	var respContent *StorageClaim
+	var respContent *Empty
 	func() {
 		defer ensurePanicResponses(ctx, resp, s.hooks)
 		respContent, err = handler(ctx, reqContent)
@@ -1257,7 +1059,7 @@ func (s *dealerServer) serveAllocateOutputStorageClaimProtobuf(ctx context.Conte
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *StorageClaim and nil error while calling AllocateOutputStorageClaim. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling QuitTask. nil responses are not supported"))
 		return
 	}
 
@@ -1281,7 +1083,7 @@ func (s *dealerServer) serveAllocateOutputStorageClaimProtobuf(ctx context.Conte
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *dealerServer) serveFinishSegment(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFailTask(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	header := req.Header.Get("Content-Type")
 	i := strings.Index(header, ";")
 	if i == -1 {
@@ -1289,9 +1091,9 @@ func (s *dealerServer) serveFinishSegment(ctx context.Context, resp http.Respons
 	}
 	switch strings.TrimSpace(strings.ToLower(header[:i])) {
 	case "application/json":
-		s.serveFinishSegmentJSON(ctx, resp, req)
+		s.serveFailTaskJSON(ctx, resp, req)
 	case "application/protobuf":
-		s.serveFinishSegmentProtobuf(ctx, resp, req)
+		s.serveFailTaskProtobuf(ctx, resp, req)
 	default:
 		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
 		twerr := badRouteError(msg, req.Method, req.URL.Path)
@@ -1299,9 +1101,9 @@ func (s *dealerServer) serveFinishSegment(ctx context.Context, resp http.Respons
 	}
 }
 
-func (s *dealerServer) serveFinishSegmentJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFailTaskJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FinishSegment")
+	ctx = ctxsetters.WithMethodName(ctx, "FailTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -1314,23 +1116,23 @@ func (s *dealerServer) serveFinishSegmentJSON(ctx context.Context, resp http.Res
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
-	reqContent := new(FinishSegmentRequest)
+	reqContent := new(FailTaskRequest)
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
 
-	handler := s.Dealer.FinishSegment
+	handler := s.Dealer.FailTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FinishSegmentRequest) (*Empty, error) {
+		handler = func(ctx context.Context, req *FailTaskRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishSegmentRequest)
+					typedReq, ok := req.(*FailTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishSegmentRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FailTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.FinishSegment(ctx, typedReq)
+					return s.Dealer.FailTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -1356,7 +1158,7 @@ func (s *dealerServer) serveFinishSegmentJSON(ctx context.Context, resp http.Res
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FinishSegment. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FailTask. nil responses are not supported"))
 		return
 	}
 
@@ -1382,9 +1184,9 @@ func (s *dealerServer) serveFinishSegmentJSON(ctx context.Context, resp http.Res
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *dealerServer) serveFinishSegmentProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFailTaskProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FinishSegment")
+	ctx = ctxsetters.WithMethodName(ctx, "FailTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -1396,22 +1198,22 @@ func (s *dealerServer) serveFinishSegmentProtobuf(ctx context.Context, resp http
 		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
 		return
 	}
-	reqContent := new(FinishSegmentRequest)
+	reqContent := new(FailTaskRequest)
 	if err = proto.Unmarshal(buf, reqContent); err != nil {
 		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
 		return
 	}
 
-	handler := s.Dealer.FinishSegment
+	handler := s.Dealer.FailTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FinishSegmentRequest) (*Empty, error) {
+		handler = func(ctx context.Context, req *FailTaskRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FinishSegmentRequest)
+					typedReq, ok := req.(*FailTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FinishSegmentRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FailTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.FinishSegment(ctx, typedReq)
+					return s.Dealer.FailTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
@@ -1437,7 +1239,7 @@ func (s *dealerServer) serveFinishSegmentProtobuf(ctx context.Context, resp http
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FinishSegment. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FailTask. nil responses are not supported"))
 		return
 	}
 
@@ -1461,7 +1263,7 @@ func (s *dealerServer) serveFinishSegmentProtobuf(ctx context.Context, resp http
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *dealerServer) serveQuitSegment(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFindFreeTask(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	header := req.Header.Get("Content-Type")
 	i := strings.Index(header, ";")
 	if i == -1 {
@@ -1469,9 +1271,9 @@ func (s *dealerServer) serveQuitSegment(ctx context.Context, resp http.ResponseW
 	}
 	switch strings.TrimSpace(strings.ToLower(header[:i])) {
 	case "application/json":
-		s.serveQuitSegmentJSON(ctx, resp, req)
+		s.serveFindFreeTaskJSON(ctx, resp, req)
 	case "application/protobuf":
-		s.serveQuitSegmentProtobuf(ctx, resp, req)
+		s.serveFindFreeTaskProtobuf(ctx, resp, req)
 	default:
 		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
 		twerr := badRouteError(msg, req.Method, req.URL.Path)
@@ -1479,9 +1281,9 @@ func (s *dealerServer) serveQuitSegment(ctx context.Context, resp http.ResponseW
 	}
 }
 
-func (s *dealerServer) serveQuitSegmentJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFindFreeTaskJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "QuitSegment")
+	ctx = ctxsetters.WithMethodName(ctx, "FindFreeTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -1494,29 +1296,29 @@ func (s *dealerServer) serveQuitSegmentJSON(ctx context.Context, resp http.Respo
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
-	reqContent := new(QuitSegmentRequest)
+	reqContent := new(FindFreeTaskRequest)
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
 
-	handler := s.Dealer.QuitSegment
+	handler := s.Dealer.FindFreeTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *QuitSegmentRequest) (*Empty, error) {
+		handler = func(ctx context.Context, req *FindFreeTaskRequest) (*Task, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*QuitSegmentRequest)
+					typedReq, ok := req.(*FindFreeTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*QuitSegmentRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FindFreeTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.QuitSegment(ctx, typedReq)
+					return s.Dealer.FindFreeTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*Empty)
+				typedResp, ok := resp.(*Task)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Task) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -1525,7 +1327,7 @@ func (s *dealerServer) serveQuitSegmentJSON(ctx context.Context, resp http.Respo
 	}
 
 	// Call service method
-	var respContent *Empty
+	var respContent *Task
 	func() {
 		defer ensurePanicResponses(ctx, resp, s.hooks)
 		respContent, err = handler(ctx, reqContent)
@@ -1536,7 +1338,7 @@ func (s *dealerServer) serveQuitSegmentJSON(ctx context.Context, resp http.Respo
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling QuitSegment. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Task and nil error while calling FindFreeTask. nil responses are not supported"))
 		return
 	}
 
@@ -1562,9 +1364,9 @@ func (s *dealerServer) serveQuitSegmentJSON(ctx context.Context, resp http.Respo
 	callResponseSent(ctx, s.hooks)
 }
 
-func (s *dealerServer) serveQuitSegmentProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+func (s *dealerServer) serveFindFreeTaskProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "QuitSegment")
+	ctx = ctxsetters.WithMethodName(ctx, "FindFreeTask")
 	ctx, err = callRequestRouted(ctx, s.hooks)
 	if err != nil {
 		s.writeError(ctx, resp, err)
@@ -1576,28 +1378,28 @@ func (s *dealerServer) serveQuitSegmentProtobuf(ctx context.Context, resp http.R
 		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
 		return
 	}
-	reqContent := new(QuitSegmentRequest)
+	reqContent := new(FindFreeTaskRequest)
 	if err = proto.Unmarshal(buf, reqContent); err != nil {
 		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
 		return
 	}
 
-	handler := s.Dealer.QuitSegment
+	handler := s.Dealer.FindFreeTask
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *QuitSegmentRequest) (*Empty, error) {
+		handler = func(ctx context.Context, req *FindFreeTaskRequest) (*Task, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*QuitSegmentRequest)
+					typedReq, ok := req.(*FindFreeTaskRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*QuitSegmentRequest) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*FindFreeTaskRequest) when calling interceptor")
 					}
-					return s.Dealer.QuitSegment(ctx, typedReq)
+					return s.Dealer.FindFreeTask(ctx, typedReq)
 				},
 			)(ctx, req)
 			if resp != nil {
-				typedResp, ok := resp.(*Empty)
+				typedResp, ok := resp.(*Task)
 				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
+					return nil, twirp.InternalError("failed type assertion resp.(*Task) when calling interceptor")
 				}
 				return typedResp, err
 			}
@@ -1606,7 +1408,7 @@ func (s *dealerServer) serveQuitSegmentProtobuf(ctx context.Context, resp http.R
 	}
 
 	// Call service method
-	var respContent *Empty
+	var respContent *Task
 	func() {
 		defer ensurePanicResponses(ctx, resp, s.hooks)
 		respContent, err = handler(ctx, reqContent)
@@ -1617,367 +1419,7 @@ func (s *dealerServer) serveQuitSegmentProtobuf(ctx context.Context, resp http.R
 		return
 	}
 	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling QuitSegment. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	respBytes, err := proto.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/protobuf")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *dealerServer) serveFailSegment(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	header := req.Header.Get("Content-Type")
-	i := strings.Index(header, ";")
-	if i == -1 {
-		i = len(header)
-	}
-	switch strings.TrimSpace(strings.ToLower(header[:i])) {
-	case "application/json":
-		s.serveFailSegmentJSON(ctx, resp, req)
-	case "application/protobuf":
-		s.serveFailSegmentProtobuf(ctx, resp, req)
-	default:
-		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
-		twerr := badRouteError(msg, req.Method, req.URL.Path)
-		s.writeError(ctx, resp, twerr)
-	}
-}
-
-func (s *dealerServer) serveFailSegmentJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FailSegment")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	d := json.NewDecoder(req.Body)
-	rawReqBody := json.RawMessage{}
-	if err := d.Decode(&rawReqBody); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-	reqContent := new(FailSegmentRequest)
-	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-
-	handler := s.Dealer.FailSegment
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FailSegmentRequest) (*Empty, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FailSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FailSegmentRequest) when calling interceptor")
-					}
-					return s.Dealer.FailSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Empty)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *Empty
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FailSegment. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
-	respBytes, err := marshaler.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/json")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *dealerServer) serveFailSegmentProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FailSegment")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	buf, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
-		return
-	}
-	reqContent := new(FailSegmentRequest)
-	if err = proto.Unmarshal(buf, reqContent); err != nil {
-		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
-		return
-	}
-
-	handler := s.Dealer.FailSegment
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FailSegmentRequest) (*Empty, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FailSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FailSegmentRequest) when calling interceptor")
-					}
-					return s.Dealer.FailSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Empty)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Empty) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *Empty
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Empty and nil error while calling FailSegment. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	respBytes, err := proto.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal proto response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/protobuf")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *dealerServer) serveFindFreeSegment(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	header := req.Header.Get("Content-Type")
-	i := strings.Index(header, ";")
-	if i == -1 {
-		i = len(header)
-	}
-	switch strings.TrimSpace(strings.ToLower(header[:i])) {
-	case "application/json":
-		s.serveFindFreeSegmentJSON(ctx, resp, req)
-	case "application/protobuf":
-		s.serveFindFreeSegmentProtobuf(ctx, resp, req)
-	default:
-		msg := fmt.Sprintf("unexpected Content-Type: %q", req.Header.Get("Content-Type"))
-		twerr := badRouteError(msg, req.Method, req.URL.Path)
-		s.writeError(ctx, resp, twerr)
-	}
-}
-
-func (s *dealerServer) serveFindFreeSegmentJSON(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FindFreeSegment")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	d := json.NewDecoder(req.Body)
-	rawReqBody := json.RawMessage{}
-	if err := d.Decode(&rawReqBody); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-	reqContent := new(FindFreeSegmentRequest)
-	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
-		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
-		return
-	}
-
-	handler := s.Dealer.FindFreeSegment
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FindFreeSegmentRequest) (*Segment, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FindFreeSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FindFreeSegmentRequest) when calling interceptor")
-					}
-					return s.Dealer.FindFreeSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Segment)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Segment) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *Segment
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Segment and nil error while calling FindFreeSegment. nil responses are not supported"))
-		return
-	}
-
-	ctx = callResponsePrepared(ctx, s.hooks)
-
-	marshaler := &protojson.MarshalOptions{UseProtoNames: !s.jsonCamelCase, EmitUnpopulated: !s.jsonSkipDefaults}
-	respBytes, err := marshaler.Marshal(respContent)
-	if err != nil {
-		s.writeError(ctx, resp, wrapInternal(err, "failed to marshal json response"))
-		return
-	}
-
-	ctx = ctxsetters.WithStatusCode(ctx, http.StatusOK)
-	resp.Header().Set("Content-Type", "application/json")
-	resp.Header().Set("Content-Length", strconv.Itoa(len(respBytes)))
-	resp.WriteHeader(http.StatusOK)
-
-	if n, err := resp.Write(respBytes); err != nil {
-		msg := fmt.Sprintf("failed to write response, %d of %d bytes written: %s", n, len(respBytes), err.Error())
-		twerr := twirp.NewError(twirp.Unknown, msg)
-		ctx = callError(ctx, s.hooks, twerr)
-	}
-	callResponseSent(ctx, s.hooks)
-}
-
-func (s *dealerServer) serveFindFreeSegmentProtobuf(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	var err error
-	ctx = ctxsetters.WithMethodName(ctx, "FindFreeSegment")
-	ctx, err = callRequestRouted(ctx, s.hooks)
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-
-	buf, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
-		return
-	}
-	reqContent := new(FindFreeSegmentRequest)
-	if err = proto.Unmarshal(buf, reqContent); err != nil {
-		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
-		return
-	}
-
-	handler := s.Dealer.FindFreeSegment
-	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *FindFreeSegmentRequest) (*Segment, error) {
-			resp, err := s.interceptor(
-				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*FindFreeSegmentRequest)
-					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*FindFreeSegmentRequest) when calling interceptor")
-					}
-					return s.Dealer.FindFreeSegment(ctx, typedReq)
-				},
-			)(ctx, req)
-			if resp != nil {
-				typedResp, ok := resp.(*Segment)
-				if !ok {
-					return nil, twirp.InternalError("failed type assertion resp.(*Segment) when calling interceptor")
-				}
-				return typedResp, err
-			}
-			return nil, err
-		}
-	}
-
-	// Call service method
-	var respContent *Segment
-	func() {
-		defer ensurePanicResponses(ctx, resp, s.hooks)
-		respContent, err = handler(ctx, reqContent)
-	}()
-
-	if err != nil {
-		s.writeError(ctx, resp, err)
-		return
-	}
-	if respContent == nil {
-		s.writeError(ctx, resp, twirp.InternalError("received a nil *Segment and nil error while calling FindFreeSegment. nil responses are not supported"))
+		s.writeError(ctx, resp, twirp.InternalError("received a nil *Task and nil error while calling FindFreeTask. nil responses are not supported"))
 		return
 	}
 
@@ -2034,7 +1476,7 @@ func (s *dealerServer) serveNotifyJSON(ctx context.Context, resp http.ResponseWr
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
 		return
 	}
-	reqContent := new(ProgressNotification)
+	reqContent := new(NotifyRequest)
 	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err = unmarshaler.Unmarshal(rawReqBody, reqContent); err != nil {
 		s.handleRequestBodyError(ctx, resp, "the json request could not be decoded", err)
@@ -2043,12 +1485,12 @@ func (s *dealerServer) serveNotifyJSON(ctx context.Context, resp http.ResponseWr
 
 	handler := s.Dealer.Notify
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *ProgressNotification) (*Empty, error) {
+		handler = func(ctx context.Context, req *NotifyRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*ProgressNotification)
+					typedReq, ok := req.(*NotifyRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*ProgressNotification) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*NotifyRequest) when calling interceptor")
 					}
 					return s.Dealer.Notify(ctx, typedReq)
 				},
@@ -2116,7 +1558,7 @@ func (s *dealerServer) serveNotifyProtobuf(ctx context.Context, resp http.Respon
 		s.handleRequestBodyError(ctx, resp, "failed to read request body", err)
 		return
 	}
-	reqContent := new(ProgressNotification)
+	reqContent := new(NotifyRequest)
 	if err = proto.Unmarshal(buf, reqContent); err != nil {
 		s.writeError(ctx, resp, malformedRequestError("the protobuf request could not be decoded"))
 		return
@@ -2124,12 +1566,12 @@ func (s *dealerServer) serveNotifyProtobuf(ctx context.Context, resp http.Respon
 
 	handler := s.Dealer.Notify
 	if s.interceptor != nil {
-		handler = func(ctx context.Context, req *ProgressNotification) (*Empty, error) {
+		handler = func(ctx context.Context, req *NotifyRequest) (*Empty, error) {
 			resp, err := s.interceptor(
 				func(ctx context.Context, req interface{}) (interface{}, error) {
-					typedReq, ok := req.(*ProgressNotification)
+					typedReq, ok := req.(*NotifyRequest)
 					if !ok {
-						return nil, twirp.InternalError("failed type assertion req.(*ProgressNotification) when calling interceptor")
+						return nil, twirp.InternalError("failed type assertion req.(*NotifyRequest) when calling interceptor")
 					}
 					return s.Dealer.Notify(ctx, typedReq)
 				},
@@ -2759,57 +2201,46 @@ func callClientError(ctx context.Context, h *twirp.ClientHooks, err twirp.Error)
 }
 
 var twirpFileDescriptor0 = []byte{
-	// 826 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x55, 0x4d, 0x6f, 0x22, 0x47,
-	0x10, 0x85, 0x61, 0x0c, 0x76, 0xd9, 0xb0, 0xb8, 0x8c, 0x9d, 0x11, 0x4a, 0x22, 0x6b, 0xb4, 0x07,
-	0xc7, 0x5a, 0x0d, 0x09, 0xab, 0xe4, 0xb2, 0x52, 0x24, 0x2f, 0x06, 0x0b, 0x69, 0x05, 0xec, 0x60,
-	0x6f, 0xa2, 0xbd, 0xac, 0x1a, 0x28, 0x70, 0x6b, 0xe7, 0x2b, 0xdd, 0x3d, 0xde, 0x25, 0xf7, 0xfc,
-	0x87, 0x5c, 0x72, 0xcb, 0xaf, 0xcb, 0xaf, 0x88, 0x68, 0x66, 0xec, 0x19, 0x4c, 0x2e, 0x91, 0xf7,
-	0x36, 0xf5, 0xfa, 0xf5, 0xeb, 0xea, 0xaa, 0x9e, 0x57, 0xf0, 0x3c, 0xfa, 0xb8, 0x68, 0xcd, 0xb8,
-	0x54, 0x82, 0x4f, 0x62, 0x45, 0xb3, 0x96, 0x20, 0x3f, 0x54, 0xd4, 0x8a, 0x26, 0xad, 0xf9, 0x5c,
-	0x4d, 0x9c, 0x48, 0x84, 0x2a, 0xb4, 0xff, 0x2a, 0xc2, 0xd1, 0x58, 0x85, 0x82, 0x2d, 0xa8, 0xe3,
-	0x31, 0xee, 0xbb, 0xf4, 0x5b, 0x4c, 0x52, 0xe1, 0x73, 0xa8, 0xb2, 0x58, 0xdd, 0x86, 0x82, 0xff,
-	0xce, 0x14, 0x0f, 0x03, 0xab, 0x78, 0x5a, 0x3c, 0xdb, 0x73, 0xf3, 0x20, 0x7e, 0x0d, 0x7b, 0x92,
-	0x16, 0x3e, 0x05, 0xaa, 0x3f, 0xb3, 0x0c, 0xcd, 0x78, 0x00, 0xd0, 0x81, 0x4a, 0x14, 0x8b, 0x28,
-	0x94, 0x64, 0x95, 0x4e, 0x8b, 0x67, 0xb5, 0x76, 0xc3, 0xc9, 0x1e, 0x35, 0x5a, 0xaf, 0xb9, 0x29,
-	0x09, 0x11, 0xcc, 0x80, 0xf9, 0x64, 0x99, 0x5a, 0x48, 0x7f, 0xdb, 0x7f, 0x1a, 0xd0, 0x18, 0x89,
-	0x70, 0x21, 0x48, 0xca, 0x41, 0xa8, 0xf8, 0x9c, 0x4f, 0xd7, 0x47, 0x3b, 0x60, 0x4a, 0x45, 0x91,
-	0xce, 0xab, 0xd6, 0x6e, 0x3a, 0xdb, 0x48, 0xce, 0x58, 0x51, 0xe4, 0x6a, 0xde, 0xe3, 0x0b, 0x19,
-	0xdb, 0x2e, 0xd4, 0x84, 0xdd, 0x28, 0x11, 0xd2, 0x39, 0x17, 0xdd, 0xfb, 0x38, 0x7f, 0x59, 0x73,
-	0xe3, 0xb2, 0x76, 0x04, 0xe6, 0xea, 0x34, 0x3c, 0x82, 0x67, 0x37, 0xa3, 0x37, 0xc3, 0x8b, 0xcb,
-	0xfe, 0xe0, 0xea, 0x43, 0x7f, 0x30, 0xba, 0xb9, 0xae, 0x17, 0xf0, 0x18, 0x0e, 0x2f, 0x87, 0xbf,
-	0x0c, 0xf2, 0x70, 0x11, 0x6b, 0x00, 0x23, 0x77, 0xd8, 0xe9, 0x8e, 0xc7, 0xfd, 0xc1, 0x55, 0xdd,
-	0xc0, 0x06, 0xd4, 0x1f, 0xf6, 0x0e, 0x6f, 0xae, 0x57, 0xac, 0x12, 0x9e, 0x00, 0x66, 0x37, 0x27,
-	0xb8, 0x69, 0xbf, 0x87, 0x46, 0x8f, 0x07, 0x5c, 0xde, 0x8e, 0xd7, 0x49, 0x3c, 0x61, 0xeb, 0xec,
-	0x5f, 0x01, 0xdf, 0xc6, 0x5c, 0x7d, 0x01, 0x65, 0x01, 0xd8, 0x63, 0xdc, 0x7b, 0x7a, 0x65, 0xb4,
-	0xa0, 0x32, 0x67, 0xdc, 0x8b, 0xc5, 0xfa, 0xb9, 0xed, 0xb9, 0x69, 0x68, 0xff, 0x0c, 0x27, 0x3d,
-	0x1e, 0xcc, 0x7a, 0x82, 0xe8, 0xff, 0x9c, 0x6b, 0x7f, 0x86, 0x4a, 0xb2, 0x0f, 0x4f, 0xc1, 0x54,
-	0xcb, 0x88, 0x92, 0x67, 0x77, 0xe0, 0x24, 0xf8, 0xf5, 0x32, 0x22, 0x57, 0xaf, 0x60, 0x0d, 0x0c,
-	0x9e, 0x66, 0x67, 0xf0, 0x19, 0xbe, 0x82, 0xea, 0x34, 0x0c, 0xee, 0x48, 0xa8, 0x11, 0x13, 0xcc,
-	0x97, 0xfa, 0xe9, 0xec, 0xb7, 0x8f, 0x9d, 0xce, 0x1a, 0x4d, 0x14, 0xd6, 0x8b, 0x6e, 0x9e, 0x6b,
-	0xff, 0x6d, 0x40, 0x63, 0x1b, 0x0f, 0xbf, 0x05, 0xb8, 0xe3, 0x33, 0x0a, 0x3b, 0xe1, 0x8c, 0xa6,
-	0x49, 0xd6, 0x19, 0x64, 0x55, 0x8c, 0xdb, 0x4f, 0x17, 0xd3, 0x29, 0x79, 0x49, 0x2a, 0x69, 0x88,
-	0x36, 0x1c, 0x68, 0xde, 0x6b, 0xae, 0x5c, 0xa6, 0xd2, 0x5a, 0xe5, 0xb0, 0x7b, 0xce, 0xdb, 0x98,
-	0x79, 0x5c, 0x2d, 0x75, 0xca, 0x3b, 0x6e, 0x0e, 0xc3, 0x13, 0x28, 0x47, 0x82, 0x24, 0x29, 0x6b,
-	0x47, 0x2b, 0x24, 0x11, 0x36, 0x60, 0x47, 0x4e, 0x99, 0x47, 0x56, 0x59, 0xc3, 0xeb, 0x00, 0xcf,
-	0xa1, 0xfe, 0x91, 0x96, 0x73, 0xc1, 0x7c, 0xea, 0x07, 0x8a, 0xc4, 0x1d, 0xf3, 0xac, 0x8a, 0x56,
-	0x7d, 0x84, 0xaf, 0x14, 0xfc, 0xf8, 0x33, 0x09, 0x6b, 0x77, 0xad, 0xa0, 0x03, 0xfd, 0x6b, 0x86,
-	0x92, 0xeb, 0x2e, 0xed, 0xe9, 0x9d, 0xf7, 0xb1, 0x7d, 0x05, 0xf5, 0xac, 0xb3, 0xbc, 0xe1, 0x52,
-	0xe1, 0x4b, 0xa8, 0xca, 0x0c, 0x26, 0xad, 0xe2, 0x69, 0xe9, 0x6c, 0xbf, 0x5d, 0xcd, 0x79, 0x90,
-	0x9b, 0xe7, 0xd8, 0x0a, 0x0e, 0xb2, 0xcb, 0x49, 0x33, 0x8b, 0xf7, 0xcd, 0xac, 0x43, 0x29, 0x16,
-	0x69, 0x49, 0x57, 0x9f, 0x4f, 0x62, 0x72, 0x15, 0xd8, 0xe9, 0xfa, 0x91, 0x5a, 0x9e, 0x7f, 0x03,
-	0xfb, 0x99, 0x07, 0xb5, 0xf2, 0x87, 0xce, 0x70, 0xf0, 0xae, 0xeb, 0x5e, 0x7f, 0x78, 0xf7, 0x43,
-	0xbd, 0x70, 0xde, 0xcb, 0x7b, 0x75, 0xa2, 0x8d, 0xbb, 0x60, 0x0e, 0x86, 0x83, 0x6e, 0xbd, 0x80,
-	0x87, 0x50, 0x4d, 0x37, 0xa4, 0x1e, 0x83, 0x50, 0x4b, 0xa1, 0xc4, 0x39, 0x8c, 0xf6, 0x1f, 0x25,
-	0x28, 0x5f, 0x12, 0xf3, 0x48, 0x60, 0x17, 0xac, 0x2b, 0x52, 0x17, 0x9e, 0xd7, 0x0f, 0xa2, 0x58,
-	0x65, 0xd5, 0x25, 0xe6, 0x6f, 0x92, 0xfc, 0x32, 0xcd, 0x43, 0x67, 0xb3, 0xd4, 0x76, 0x01, 0x3b,
-	0xd0, 0xbc, 0xf0, 0xbc, 0x70, 0xca, 0x14, 0x0d, 0x63, 0xb5, 0xa1, 0xf4, 0x1f, 0x42, 0xf9, 0x4e,
-	0xd8, 0x05, 0xfc, 0x1e, 0xaa, 0x39, 0x43, 0xc3, 0x63, 0x67, 0x9b, 0xc1, 0x35, 0xcb, 0x8e, 0xae,
-	0x96, 0x5d, 0xc0, 0x17, 0xb0, 0x9f, 0xb1, 0x29, 0x3c, 0x72, 0x1e, 0x9b, 0x56, 0x9e, 0x9d, 0xb1,
-	0x1e, 0x3c, 0x72, 0x1e, 0x1b, 0x51, 0x86, 0xfd, 0x13, 0x3c, 0xdb, 0x30, 0x0d, 0xfc, 0xca, 0xd9,
-	0x6e, 0x23, 0xcd, 0xdd, 0xd4, 0x07, 0xec, 0x02, 0x7e, 0x07, 0x65, 0x3d, 0x83, 0x96, 0x78, 0xbc,
-	0x75, 0x28, 0x3d, 0x1c, 0xf1, 0xfa, 0xc7, 0xf7, 0x2f, 0x16, 0x5c, 0xdd, 0xc6, 0x13, 0x67, 0x1a,
-	0xfa, 0xad, 0x4f, 0x8c, 0x7b, 0xa1, 0xf0, 0x59, 0xa0, 0xe7, 0x73, 0x6b, 0x63, 0x7c, 0xbf, 0x8a,
-	0x26, 0xff, 0x18, 0x66, 0x6f, 0xae, 0x26, 0x93, 0xb2, 0x1e, 0xdd, 0x2f, 0xff, 0x0d, 0x00, 0x00,
-	0xff, 0xff, 0xfd, 0x7c, 0xb1, 0xf7, 0xe2, 0x07, 0x00, 0x00,
+	// 648 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0xed, 0x6a, 0xdb, 0x4a,
+	0x10, 0x8d, 0xfc, 0x95, 0x64, 0x72, 0x63, 0x2b, 0x13, 0xdf, 0x8b, 0x09, 0x5c, 0x30, 0x22, 0xdc,
+	0x98, 0x70, 0x2b, 0x53, 0x97, 0x42, 0x21, 0x50, 0x68, 0x93, 0x38, 0x98, 0x16, 0xd9, 0xd9, 0xd8,
+	0x09, 0xf4, 0x4f, 0x58, 0xc5, 0xab, 0x78, 0xb1, 0xa5, 0xdd, 0xae, 0x56, 0x2d, 0x2e, 0xf4, 0x47,
+	0xdf, 0xa5, 0xef, 0xd4, 0x77, 0xe8, 0x53, 0x14, 0x49, 0x56, 0x12, 0xd9, 0xa1, 0x50, 0xc8, 0xbf,
+	0x9d, 0x33, 0x47, 0x33, 0xc3, 0xd1, 0x99, 0x81, 0x7d, 0x39, 0xbd, 0x6d, 0x8f, 0x79, 0xa8, 0x15,
+	0x77, 0x23, 0xcd, 0xc6, 0x6d, 0xc5, 0x7c, 0xa1, 0x59, 0x5b, 0xba, 0x6d, 0xcf, 0xd3, 0xae, 0x2d,
+	0x95, 0xd0, 0xc2, 0xfa, 0x5e, 0x80, 0x6d, 0x47, 0x68, 0xee, 0xcd, 0x09, 0xfb, 0x18, 0xb1, 0x50,
+	0xe3, 0x01, 0x94, 0x42, 0xcd, 0x64, 0xc3, 0x68, 0x1a, 0xad, 0x6a, 0x67, 0xd7, 0xce, 0x65, 0xed,
+	0x0b, 0xcd, 0x24, 0x49, 0x08, 0xb8, 0x0f, 0xdb, 0x34, 0xd2, 0x13, 0xa1, 0xf8, 0x17, 0xaa, 0xb9,
+	0x08, 0x1a, 0x85, 0xa6, 0xd1, 0xda, 0x24, 0x79, 0x10, 0xff, 0x81, 0x8a, 0xa6, 0xe1, 0xb4, 0x37,
+	0x6e, 0x14, 0x93, 0xf4, 0x22, 0xc2, 0x3d, 0xd8, 0x90, 0x4a, 0xdc, 0x2a, 0x16, 0x86, 0x8d, 0x52,
+	0xd3, 0x68, 0x19, 0xe4, 0x2e, 0xc6, 0xd7, 0x50, 0xbb, 0x11, 0xc1, 0x27, 0xa6, 0xf4, 0x20, 0xa3,
+	0x94, 0x9b, 0x46, 0x6b, 0xab, 0x53, 0xb7, 0x8f, 0x53, 0x7c, 0x48, 0xc3, 0x69, 0x96, 0x23, 0xcb,
+	0x64, 0x6b, 0x00, 0xa5, 0x78, 0x4e, 0xdc, 0x82, 0xf5, 0x91, 0xf3, 0xce, 0xe9, 0x5f, 0x39, 0xe6,
+	0x1a, 0xfe, 0x0d, 0x3b, 0x27, 0xfd, 0x2b, 0xe7, 0x7d, 0xff, 0xcd, 0x49, 0xcf, 0x39, 0xbb, 0xee,
+	0x39, 0x83, 0xd1, 0xd0, 0x34, 0xb0, 0x0a, 0x30, 0x20, 0xfd, 0xe3, 0xd3, 0x8b, 0x8b, 0x9e, 0x73,
+	0x66, 0x16, 0xb0, 0x0e, 0xe6, 0x68, 0x90, 0x91, 0xfa, 0xa3, 0x61, 0xcc, 0x2a, 0x5a, 0xe7, 0xb0,
+	0xd3, 0xe5, 0x01, 0x0f, 0x27, 0x71, 0xe3, 0x4c, 0xa9, 0x15, 0x01, 0x8c, 0xdf, 0x0b, 0x50, 0x78,
+	0x28, 0x80, 0xd5, 0x87, 0xda, 0x79, 0xc4, 0xf5, 0xd3, 0x15, 0x9c, 0x42, 0xad, 0x4b, 0xf9, 0xec,
+	0xc9, 0x0a, 0xc6, 0xbf, 0xc8, 0xa3, 0x7c, 0x16, 0x29, 0x16, 0x36, 0x8a, 0xcd, 0x62, 0x6b, 0x93,
+	0xdc, 0xc5, 0xd6, 0x11, 0xec, 0x76, 0x79, 0x30, 0xee, 0x2a, 0xc6, 0xfe, 0xb8, 0xa1, 0x25, 0xa0,
+	0x14, 0x7f, 0x84, 0xff, 0x42, 0x49, 0xcf, 0x25, 0x5b, 0x58, 0x6d, 0xd3, 0x8e, 0xc1, 0xe1, 0x5c,
+	0x32, 0x92, 0xc0, 0x58, 0x85, 0x02, 0xcf, 0x66, 0x2a, 0xf0, 0x31, 0xbe, 0x82, 0xed, 0xec, 0x4f,
+	0x53, 0x45, 0xfd, 0xd4, 0x37, 0x5b, 0x1d, 0xcc, 0x99, 0x22, 0xc9, 0x90, 0x3c, 0xd1, 0xfa, 0x0a,
+	0x3b, 0x2b, 0x1c, 0x6c, 0x41, 0x8d, 0x07, 0x32, 0xd2, 0xe4, 0x66, 0x26, 0x02, 0x36, 0xa0, 0x7a,
+	0xb2, 0x98, 0x76, 0x19, 0xc6, 0x43, 0x30, 0x45, 0xa4, 0xf3, 0xd4, 0x74, 0xac, 0x15, 0x1c, 0x11,
+	0x4a, 0x42, 0xea, 0x4c, 0xb0, 0xe4, 0x6d, 0x7d, 0x33, 0x60, 0xf7, 0x11, 0xe3, 0xa2, 0x09, 0x45,
+	0x4f, 0x86, 0x49, 0x57, 0x83, 0xc4, 0x4f, 0xac, 0x43, 0xd9, 0x53, 0xd4, 0x67, 0x49, 0xf9, 0x22,
+	0x49, 0x83, 0x18, 0x0d, 0x25, 0x63, 0xe9, 0x0a, 0x19, 0x24, 0x0d, 0xb0, 0x01, 0xeb, 0x2e, 0xd7,
+	0x8a, 0x6a, 0xb6, 0x58, 0xa0, 0x2c, 0x8c, 0x67, 0xd0, 0xdc, 0x67, 0xc9, 0xd2, 0x14, 0x49, 0xf2,
+	0xb6, 0xd6, 0xa1, 0x7c, 0xea, 0x4b, 0x3d, 0x3f, 0x3c, 0x80, 0x8d, 0x4c, 0xe7, 0xfc, 0x82, 0x54,
+	0x01, 0x8e, 0xfb, 0xce, 0xe5, 0x29, 0x19, 0x5e, 0x5f, 0x3e, 0x37, 0x8d, 0xce, 0x0f, 0x03, 0x2a,
+	0x27, 0x8c, 0xce, 0x98, 0xc2, 0x43, 0x80, 0x7b, 0xfb, 0x23, 0xda, 0x2b, 0xbb, 0xb0, 0x57, 0xb1,
+	0x93, 0xea, 0xd6, 0x1a, 0xfe, 0x07, 0x1b, 0x99, 0xaf, 0xd1, 0xb4, 0x97, 0x2c, 0x9e, 0xe7, 0x65,
+	0x76, 0x45, 0xd3, 0x5e, 0x72, 0xee, 0x03, 0xde, 0x33, 0xf8, 0xeb, 0xa1, 0xd3, 0xb0, 0x6e, 0x3f,
+	0x62, 0xbc, 0xbd, 0x72, 0x62, 0x1e, 0x6b, 0x0d, 0x2d, 0xa8, 0xa4, 0x17, 0x0b, 0xab, 0xf9, 0xd3,
+	0x75, 0x5f, 0xf2, 0xed, 0xcb, 0x0f, 0xff, 0xdf, 0x72, 0x3d, 0x89, 0x5c, 0xfb, 0x46, 0xf8, 0xed,
+	0xcf, 0x94, 0xcf, 0x84, 0xf2, 0x69, 0x90, 0xdc, 0xc5, 0xf6, 0xd2, 0xd9, 0x3c, 0x92, 0xee, 0xcf,
+	0x42, 0xa9, 0xeb, 0x69, 0xd7, 0xad, 0x24, 0x27, 0xf3, 0xc5, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0x12, 0xa8, 0x7e, 0x71, 0x5a, 0x05, 0x00, 0x00,
 }

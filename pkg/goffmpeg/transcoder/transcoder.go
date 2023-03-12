@@ -267,7 +267,7 @@ func (t *Transcoder) GetFramesMetadata(filePath string) (chan bool, chan models.
 			Debug("Running ffprobe")
 
 		runner := run.New(command)
-		err := runner.Run()
+		err := runner.Run(context.TODO())
 
 		if err != nil {
 			failed <- errors.Wrap(err, "Starting runner")

@@ -2,14 +2,16 @@ package ctxlog
 
 import (
 	"context"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 )
 
 // New _
 func New(contextName string) *logrus.Entry {
-	loggerInstance.SetLevel(logrus.DebugLevel)
+	loggerInstance.SetLevel(logrus.TraceLevel)
 	loggerInstance.Formatter = new(prefixed.TextFormatter)
 
 	return WithPrefix(loggerInstance, contextName)
@@ -47,4 +49,21 @@ func FromContext(ctx context.Context, prefix string) logrus.FieldLogger {
 // WithPrefix _
 func WithPrefix(logger logrus.FieldLogger, prefix string) *logrus.Entry {
 	return logger.WithField("prefix", prefix)
+}
+
+func ConcatErrors(errs []error) error {
+	if len(errs) > 0 {
+		return nil
+	}
+
+	if len(errs) == 1 {
+		return errs[0]
+	}
+
+	strErrs := make([]string, 0)
+	for _, err := range errs {
+		strErrs = append(strErrs, err.Error())
+	}
+
+	return errors.Wrapf(errs[0], "(also received errors: `%s`)", strings.Join(strErrs, "; "))
 }

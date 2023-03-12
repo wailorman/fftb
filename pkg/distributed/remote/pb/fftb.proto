@@ -10,121 +10,86 @@ option ruby_package = "Fftb";
 
 
 service Dealer {
-  // rpc GetOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
-  // rpc AllocateInputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+  rpc FinishTask(FinishTaskRequest) returns (Empty) {}
+  rpc QuitTask(QuitTaskRequest) returns (Empty) {}
+  rpc FailTask(FailTaskRequest) returns (Empty) {}
 
-  rpc GetAllInputStorageClaims (StorageClaimRequest) returns (StorageClaimList) {}
-  rpc AllocateOutputStorageClaim (StorageClaimRequest) returns (StorageClaim) {}
+  rpc FindFreeTask(FindFreeTaskRequest) returns (Task) {}
 
-  rpc FinishSegment(FinishSegmentRequest) returns (Empty) {}
-  rpc QuitSegment(QuitSegmentRequest) returns (Empty) {}
-  rpc FailSegment(FailSegmentRequest) returns (Empty) {}
-
-  rpc FindFreeSegment(FindFreeSegmentRequest) returns (Segment) {}
-
-  rpc Notify(ProgressNotification) returns (Empty) {}
+  rpc Notify(NotifyRequest) returns (Empty) {}
 }
 
-message StorageClaimRequest {
-  string authorization = 1;
-  string segmentId = 2;
-  StorageClaimPurpose purpose = 3;
-  string name = 4;
-}
-
-message ProgressNotification {
+message NotifyRequest {
   enum Step {
-    UPLOADING_INPUT = 0;
+    UNKNOWN = 0;
     DOWNLOADING_INPUT = 1;
     PROCESSING = 2;
     UPLOADING_OUTPUT = 3;
-    DOWNLOADING_OUTPUT = 4;
   }
 
   Step step = 1;
   string authorization = 2;
-  double progress = 3;
-  string segmentId = 4;
+  string taskId = 3;
+
+  // value from 0 to 1
+  double progress = 4;
+
+  ConvertTaskProgress convertProgress = 5;
 }
 
-message FinishSegmentRequest {
+message FinishTaskRequest {
   string authorization = 1;
-  string segmentId = 2;
+  string taskId = 2;
 }
 
-message QuitSegmentRequest {
+message QuitTaskRequest {
   string authorization = 1;
-  string segmentId = 2;
+  string taskId = 2;
 }
 
-message FailSegmentRequest {
+message FailTaskRequest {
   string authorization = 1;
-  string segmentId = 2;
-  string failure = 3;
+  string taskId = 2;
+  repeated string failures = 3;
 }
 
-message FindFreeSegmentRequest {
+message FindFreeTaskRequest {
   string authorization = 1;
 }
 
 
 // ----------------------------------------------------------------
 
-enum SegmentType {
-  CONVERT_V1 = 0;
+enum TaskType {
+  UNKNOWN = 0;
+  CONVERT_V1 = 1;
 }
 
-message Segment {
-  SegmentType type = 1;
+message Task {
+  TaskType type = 1;
   string id = 2;
-  // string orderId = 3;
-  ConvertSegmentParams convertParams = 4;
+  ConvertTaskParams convertParams = 4;
 }
 
-message ConvertSegmentParams {
-  string videoCodec = 1;
-  string hwAccel = 2;
-  string videoBitRate = 3;
-  int32 videoQuality = 4;
-  string preset = 5;
-  string scale = 6;
-  int32 keyframeInterval = 7;
+message ConvertTaskParams {
+  string inputRclonePath = 1;
+  string outputRclonePath = 2;
 
-  string muxer = 8;
-  int32 position = 9; // TODO: Deprecated
+  repeated string opts = 3;
 }
 
-// message YtdlSegmentParams {
-//   string url = 1;
-//   string videoFormat = 2;
-//   string audioFormat = 3;
-//   bool downloadFullVideo = 4;
-//   bool downloadVideo = 5;
-//   bool downloadAudio = 6;
-//   bool downloadMetadata = 7;
-//   bool downloadCaptions = 8;
-// }
+message ConvertTaskProgress {
+  double fps = 1;
+  int64 frame = 2;
 
-enum StorageClaimPurpose {
-  NONE = 0; // default
-  CONVERT_INPUT = 1;
-  CONVERT_OUTPUT = 2;
-  // YTDL_FULL_VIDEO = 2;
-  // YTDL_AUDIO = 3;
-  // YTDL_VIDEO = 4;
-  // YTDL_METADATA = 5;
-  // YTDL_CAPTIONS = 6;
-}
+  // example: 0.5 is half speed from input file realtime
+  double speed = 3;
 
-message StorageClaimList {
-  repeated StorageClaim storageClaims = 1;
-}
+  // in bits per second
+  double bitrate = 4;
 
-message StorageClaim {
-  string id = 1;
-  string url = 2;
-  StorageClaimPurpose purpose = 3;
-  string name = 4;
+  // in milliseconds
+  int64 time = 5;
 }
 
 message Empty {
