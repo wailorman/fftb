@@ -59,6 +59,7 @@ gem 'sidekiq-cron', require: false
 gem 'sidekiq-grouping'
 gem 'twirp-rails'
 gem 'with_advisory_lock'
+gem 'enumerize'
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem

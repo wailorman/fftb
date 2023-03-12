@@ -1,10 +1,9 @@
-class Dealer::FailSegmentHandler < ApplicationHandler
+class Dealer::FailTaskHandler < ApplicationHandler
   include ::Dealer::SetTask
   include ::Dealer::AuthorizePerformer
 
   def execute
-    task.state = :failed
-    task.failure = req.failure
+    task.task_failures.build(performer: current_performer, reason: req.failures.join(', '))
 
     return Twirp::Error.unknown(task.full_messages.join(', ')) unless task.save
 

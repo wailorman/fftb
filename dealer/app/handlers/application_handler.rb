@@ -9,6 +9,8 @@ class ApplicationHandler
   end
 
   def call
+    Rails.logger.debug "RPC request [#{req.class.name}] #{req.to_json}"
+
     callbacks.each do |method_name|
       callback_result = send(method_name.to_sym)
 

@@ -1,2 +1,0 @@
-class OutputStorageClaim < StorageClaim
-end

@@ -1,25 +1,19 @@
 namespace :tasks do
   task generate: :environment do
-    input_storage_claim =
-      InputStorageClaim.new(kind: :s3,
-                            provider: :yandex,
-                            purpose: :convert_input,
-                            path: 'aerial_shot_of_a_lighthouse.mp4')
-
     task =
-      Task.create!(kind: :convert_v1,
-                   state: :published,
-                   input_storage_claims: [input_storage_claim],
-                   convert_params: ConvertParams.new(
-                     video_codec: :h264,
-                     hw_accel: nil,
-                     video_bit_rate: nil,
-                     video_quality: 28,
-                     preset: 'fast',
-                     scale: nil,
-                     keyframe_interval: nil,
-                     muxer: 'mp4'
-                   ))
+      Tasks::Convert.create!(
+        convert_task_payload: ConvertTaskPayload.new(
+          opts: %w[
+            -i input/RE7-1_.mp4
+            -c:v h264
+            -b:v 5M
+            -c:a aac
+            output/RE7-1_out.mp4
+          ],
+          input_rclone_path: 'novus_smb:/r/records/movies/RE7-1_.mp4',
+          output_rclone_path: "novus_smb:/r/records/fftb_test/output/#{SecureRandom.hex(2)}/"
+        )
+      )
 
     puts "Created task #{task.id}"
   end

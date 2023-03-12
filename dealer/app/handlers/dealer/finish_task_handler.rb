@@ -1,10 +1,9 @@
-class Dealer::QuitSegmentHandler < ApplicationHandler
+class Dealer::FinishTaskHandler < ApplicationHandler
   include ::Dealer::SetTask
   include ::Dealer::AuthorizePerformer
 
   def execute
-    task.state = :published
-    task.deoccupy
+    task.state = :finished
 
     return Twirp::Error.unknown(task.full_messages.join(', ')) unless task.save
 

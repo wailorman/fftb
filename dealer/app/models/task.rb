@@ -1,21 +1,15 @@
 class Task < ApplicationRecord
+  extend Enumerize
+
   OCCUPATION_TTL = 2.minutes
 
-  enum state: { published: 'published',
-                finished: 'finished',
-                failed: 'failed' }
+  enumerize :state, in: %i[published finished failed], scope: true
 
-  enum kind: { convert_v1: Fftb::SegmentType::CONVERT_V1 }
-
+  has_many :task_failures
   belongs_to :occupied_by, class_name: 'Performer', optional: true
-  belongs_to :convert_params, optional: true
-  has_many :input_storage_claims, inverse_of: :task
-  has_many :output_storage_claims, inverse_of: :task
 
   validates :current_progress, comparison: { greater_than_or_equal_to: 0, less_than_or_equal_to: 1 }
-  validates :current_step, inclusion: { in: %w[uploading_input downloading_input processing
-                                               uploading_output downloading_output] }, if: :current_step
-  validates :convert_params, presence: true, if: :convert_v1?
+  validates :current_step, inclusion: { in: %w[downloading_input processing uploading_output] }, if: :current_step
 
   scope :not_occupied, -> { where('occupied_at < ? OR occupied_at IS NULL', Time.current - OCCUPATION_TTL) }
   scope :not_occupied_for, -> (performer) {
@@ -24,6 +18,14 @@ class Task < ApplicationRecord
       current_timestamp: Time.current - OCCUPATION_TTL,
       performer_id: performer.id
     )
+  }
+  scope :not_failed_by, -> (performer) {
+    where <<~SQL.squish
+      NOT EXISTS (
+        SELECT 1 FROM task_failures
+        WHERE task_failures.task_id = tasks.id AND task_failures.performer_id = '#{performer.id}'
+      )
+    SQL
   }
 
   def deoccupy

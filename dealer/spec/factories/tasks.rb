@@ -1,11 +1,8 @@
 FactoryBot.define do
-  factory :task do
+  factory :convert_task, class: 'Tasks::Convert' do
     state { :published }
 
-    trait :convert do
-      kind { :convert_v1 }
-      association :convert_params, factory: :convert_params
-    end
+    convert_task_payload { build(:convert_task_payload) }
 
     trait :occupied do
       occupied_at { Time.current }

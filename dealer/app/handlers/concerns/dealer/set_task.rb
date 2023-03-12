@@ -11,7 +11,7 @@ module Dealer
     private
 
     def set_task
-      self.task = Task.find(req.segmentId)
+      self.task = Task.find(req.taskId)
     end
   end
 end

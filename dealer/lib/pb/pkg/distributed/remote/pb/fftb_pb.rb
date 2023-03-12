@@ -5,92 +5,71 @@ require 'google/protobuf'
 
 Google::Protobuf::DescriptorPool.generated_pool.build do
   add_file("pkg/distributed/remote/pb/fftb.proto", :syntax => :proto3) do
-    add_message "StorageClaimRequest" do
-      optional :authorization, :string, 1
-      optional :segmentId, :string, 2
-      optional :purpose, :enum, 3, "StorageClaimPurpose"
-      optional :name, :string, 4
-    end
-    add_message "ProgressNotification" do
-      optional :step, :enum, 1, "ProgressNotification.Step"
+    add_message "NotifyRequest" do
+      optional :step, :enum, 1, "NotifyRequest.Step"
       optional :authorization, :string, 2
-      optional :progress, :double, 3
-      optional :segmentId, :string, 4
+      optional :taskId, :string, 3
+      optional :progress, :double, 4
+      optional :convertProgress, :message, 5, "ConvertTaskProgress"
     end
-    add_enum "ProgressNotification.Step" do
-      value :UPLOADING_INPUT, 0
+    add_enum "NotifyRequest.Step" do
+      value :UNKNOWN, 0
       value :DOWNLOADING_INPUT, 1
       value :PROCESSING, 2
       value :UPLOADING_OUTPUT, 3
-      value :DOWNLOADING_OUTPUT, 4
     end
-    add_message "FinishSegmentRequest" do
+    add_message "FinishTaskRequest" do
       optional :authorization, :string, 1
-      optional :segmentId, :string, 2
+      optional :taskId, :string, 2
     end
-    add_message "QuitSegmentRequest" do
+    add_message "QuitTaskRequest" do
       optional :authorization, :string, 1
-      optional :segmentId, :string, 2
+      optional :taskId, :string, 2
     end
-    add_message "FailSegmentRequest" do
+    add_message "FailTaskRequest" do
       optional :authorization, :string, 1
-      optional :segmentId, :string, 2
-      optional :failure, :string, 3
+      optional :taskId, :string, 2
+      repeated :failures, :string, 3
     end
-    add_message "FindFreeSegmentRequest" do
+    add_message "FindFreeTaskRequest" do
       optional :authorization, :string, 1
     end
-    add_message "Segment" do
-      optional :type, :enum, 1, "SegmentType"
+    add_message "Task" do
+      optional :type, :enum, 1, "TaskType"
       optional :id, :string, 2
-      optional :convertParams, :message, 4, "ConvertSegmentParams"
+      optional :convertParams, :message, 4, "ConvertTaskParams"
     end
-    add_message "ConvertSegmentParams" do
-      optional :videoCodec, :string, 1
-      optional :hwAccel, :string, 2
-      optional :videoBitRate, :string, 3
-      optional :videoQuality, :int32, 4
-      optional :preset, :string, 5
-      optional :scale, :string, 6
-      optional :keyframeInterval, :int32, 7
-      optional :muxer, :string, 8
-      optional :position, :int32, 9
+    add_message "ConvertTaskParams" do
+      optional :inputRclonePath, :string, 1
+      optional :outputRclonePath, :string, 2
+      repeated :opts, :string, 3
     end
-    add_message "StorageClaimList" do
-      repeated :storageClaims, :message, 1, "StorageClaim"
-    end
-    add_message "StorageClaim" do
-      optional :id, :string, 1
-      optional :url, :string, 2
-      optional :purpose, :enum, 3, "StorageClaimPurpose"
-      optional :name, :string, 4
+    add_message "ConvertTaskProgress" do
+      optional :fps, :double, 1
+      optional :frame, :int64, 2
+      optional :speed, :double, 3
+      optional :bitrate, :double, 4
+      optional :time, :int64, 5
     end
     add_message "Empty" do
     end
-    add_enum "SegmentType" do
-      value :CONVERT_V1, 0
-    end
-    add_enum "StorageClaimPurpose" do
-      value :NONE, 0
-      value :CONVERT_INPUT, 1
-      value :CONVERT_OUTPUT, 2
+    add_enum "TaskType" do
+      value :UNKNOWN, 0
+      value :CONVERT_V1, 1
     end
   end
 end
 
 module Fftb
-  StorageClaimRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("StorageClaimRequest").msgclass
-  ProgressNotification = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ProgressNotification").msgclass
-  ProgressNotification::Step = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ProgressNotification.Step").enummodule
-  FinishSegmentRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FinishSegmentRequest").msgclass
-  QuitSegmentRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("QuitSegmentRequest").msgclass
-  FailSegmentRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FailSegmentRequest").msgclass
-  FindFreeSegmentRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FindFreeSegmentRequest").msgclass
-  Segment = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Segment").msgclass
-  ConvertSegmentParams = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ConvertSegmentParams").msgclass
-  StorageClaimList = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("StorageClaimList").msgclass
-  StorageClaim = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("StorageClaim").msgclass
+  NotifyRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("NotifyRequest").msgclass
+  NotifyRequest::Step = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("NotifyRequest.Step").enummodule
+  FinishTaskRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FinishTaskRequest").msgclass
+  QuitTaskRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("QuitTaskRequest").msgclass
+  FailTaskRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FailTaskRequest").msgclass
+  FindFreeTaskRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FindFreeTaskRequest").msgclass
+  Task = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Task").msgclass
+  ConvertTaskParams = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ConvertTaskParams").msgclass
+  ConvertTaskProgress = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ConvertTaskProgress").msgclass
   Empty = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Empty").msgclass
-  SegmentType = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("SegmentType").enummodule
-  StorageClaimPurpose = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("StorageClaimPurpose").enummodule
+  TaskType = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("TaskType").enummodule
 end

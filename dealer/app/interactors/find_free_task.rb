@@ -4,7 +4,11 @@ class FindFreeTask < ApplicationInteractor
   def execute
     Task.transaction do
       Task.with_advisory_lock('find_free_task', transaction: true) do
-        found = Task.published.not_occupied.first
+        found = Task
+                .with_state(:published)
+                .not_occupied_for(performer)
+                .not_failed_by(performer)
+                .first
 
         return nil unless found
 
@@ -12,7 +16,6 @@ class FindFreeTask < ApplicationInteractor
         found.occupied_by = performer
         found.current_step = nil
         found.current_progress = 0
-        found.output_storage_claims.destroy_all
 
         unless found.save
           errors.merge!(found.errors)

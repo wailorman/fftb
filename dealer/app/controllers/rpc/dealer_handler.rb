@@ -3,28 +3,20 @@ class DealerHandler
 
   bind Fftb::DealerService
 
-  def get_all_input_storage_claims(req, env)
-    Dealer::GetAllInputStorageClaimsHandler.new(req, env).call
+  def finish_task(req, env)
+    Dealer::FinishTaskHandler.new(req, env).call
   end
 
-  def allocate_output_storage_claim(req, env)
-    Dealer::AllocateOutputStorageClaimHandler.new(req, env).call
+  def quit_task(req, env)
+    Dealer::QuitTaskHandler.new(req, env).call
   end
 
-  def finish_segment(req, env)
-    Dealer::FinishSegmentHandler.new(req, env).call
+  def fail_task(req, env)
+    Dealer::FailTaskHandler.new(req, env).call
   end
 
-  def quit_segment(req, env)
-    Dealer::QuitSegmentHandler.new(req, env).call
-  end
-
-  def fail_segment(req, env)
-    Dealer::FailSegmentHandler.new(req, env).call
-  end
-
-  def find_free_segment(req, env)
-    Dealer::FindFreeSegmentHandler.new(req, env).call
+  def find_free_task(req, env)
+    Dealer::FindFreeTaskHandler.new(req, env).call
   end
 
   def notify(req, env)
