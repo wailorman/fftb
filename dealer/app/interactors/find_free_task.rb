@@ -6,7 +6,7 @@ class FindFreeTask < ApplicationInteractor
       Task.with_advisory_lock('find_free_task', transaction: true) do
         found = Task
                 .with_state(:published)
-                .not_occupied_for(performer)
+                .not_occupied
                 .not_failed_by(performer)
                 .first
 
