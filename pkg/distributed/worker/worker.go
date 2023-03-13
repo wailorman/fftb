@@ -34,6 +34,7 @@ type Instance struct {
 	rclonePath       string
 	ffmpegPath       string
 	ffprobePath      string
+	localRemotesMap  map[string]string
 }
 
 type WorkerParams struct {
@@ -48,6 +49,7 @@ type WorkerParams struct {
 	RclonePath       string
 	FFmpegPath       string
 	FFprobePath      string
+	LocalRemotesMap  map[string]string
 }
 
 // NewWorker _
@@ -64,6 +66,7 @@ func NewWorker(params WorkerParams) *Instance {
 		rclonePath:       params.RclonePath,
 		ffmpegPath:       params.FFmpegPath,
 		ffprobePath:      params.FFprobePath,
+		localRemotesMap:  params.LocalRemotesMap,
 	}
 }
 
@@ -132,6 +135,7 @@ func (w *Instance) Start() {
 					RclonePath:       w.rclonePath,
 					FFmpegPath:       w.ffmpegPath,
 					FFprobePath:      w.ffprobePath,
+					LocalRemotesMap:  w.localRemotesMap,
 				})
 
 				w.wg.Add(1)
@@ -143,7 +147,7 @@ func (w *Instance) Start() {
 
 				if err = tmpMgr.Destroy(freeTask.Id); err != nil {
 					logger.WithError(err).
-						Warn("Failed to destroy temporary directory")
+						Fatal("Failed to destroy temporary directory")
 
 					return
 				}

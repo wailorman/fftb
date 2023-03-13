@@ -28,6 +28,9 @@ const KeyTaskID = "task_id"
 const KeyRunID = "run_id"
 const KeyPath = "path"
 
+const KeyRemoteDir = "remote_dir"
+const KeyLocalPath = "local_path"
+
 const StdLevelStdout = "stdout"
 const StdLevelStderr = "stderr"
 

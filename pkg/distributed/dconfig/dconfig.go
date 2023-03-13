@@ -40,6 +40,7 @@ func New() (*Instance, error) {
 	i.viper.SetDefault("ffprobe_path", "ffprobe")
 	i.viper.SetDefault("rclone_path", "rclone")
 	i.viper.SetDefault("tmp_path", "tmp/")
+	i.viper.SetDefault("local_remotes_map", map[string]string{})
 
 	i.viper.SetDefault("dealer.url", "http://localhost:3000")
 	i.viper.SetDefault("dealer.secret", nil)
@@ -97,6 +98,7 @@ func (i *Instance) ThreadConfig(params *ThreadConfigParams) worker.WorkerParams 
 		RclonePath:       i.viper.GetString("rclone_path"),
 		FFmpegPath:       i.viper.GetString("ffmpeg_path"),
 		FFprobePath:      i.viper.GetString("ffprobe_path"),
+		LocalRemotesMap:  i.viper.GetStringMapString("local_remotes_map"),
 	}
 }
 

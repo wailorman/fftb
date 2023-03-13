@@ -3,6 +3,9 @@ package rclone
 import (
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -18,15 +21,21 @@ var defaultRcloneParams = []string{
 }
 
 type RcloneClient struct {
-	logger     *logrus.Entry
-	path       string
-	configPath string
+	logger          *logrus.Entry
+	path            string
+	configPath      string
+	localRemotesMap map[string]string
 }
 
-func NewRcloneClient() *RcloneClient {
+type RcloneClientParams struct {
+	LocalRemotesMap map[string]string
+}
+
+func NewRcloneClient(params RcloneClientParams) *RcloneClient {
 	return &RcloneClient{
-		logger: ctxlog.New(dlog.PrefixRclone),
-		path:   "rclone",
+		logger:          ctxlog.New(dlog.PrefixRclone),
+		path:            "rclone",
+		localRemotesMap: params.LocalRemotesMap,
 	}
 }
 
@@ -40,6 +49,44 @@ func (rc *RcloneClient) SetConfigPath(path string) {
 
 func (rc *RcloneClient) SetPath(path string) {
 	rc.path = path
+}
+
+func (rc *RcloneClient) Touch(remotePath, localPath string) (isLocal bool, err error) {
+	remoteDir := filepath.Dir(remotePath)
+	remoteDir = strings.Replace(remoteDir, string(os.PathSeparator), "/", -1)
+
+	log := rc.logger.WithFields(logrus.Fields{
+		dlog.KeyRemoteDir: remoteDir,
+		dlog.KeyLocalPath: localPath,
+	})
+
+	for remoteP, localP := range rc.localRemotesMap {
+		if strings.Index(remoteDir, remoteP) == 0 {
+			localRemotePath := strings.Replace(remoteDir, remoteP, localP, 1)
+
+			if _, statErr := os.Stat(localRemotePath); os.IsNotExist(statErr) {
+				if err = os.MkdirAll(localRemotePath, 0755); err != nil {
+					return false, errors.Wrap(err, "Creating symlink target directory")
+				}
+			}
+
+			if err = os.Symlink(localRemotePath, localPath); err != nil {
+				return false, errors.Wrap(err, "Creating symlink to remote path")
+			}
+
+			log.Debug("Using local symlink to remote path")
+
+			return true, nil
+		}
+	}
+
+	log.Debug("Local symlink to remote path can not be used")
+
+	if err = os.MkdirAll(localPath, 0755); err != nil {
+		return false, errors.Wrap(err, "Creating local path")
+	}
+
+	return false, nil
 }
 
 func (rc *RcloneClient) Pull(ctx context.Context, remotePath, localPath string, progress chan ProgressMessage) error {

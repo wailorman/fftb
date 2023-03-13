@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"context"
-	"errors"
-	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
@@ -44,6 +43,7 @@ type ConvertTaskHandlerParams struct {
 	RclonePath       string
 	FFmpegPath       string
 	FFprobePath      string
+	LocalRemotesMap  map[string]string
 }
 
 func NewConvertTaskHandler(params ConvertTaskHandlerParams) *ConvertTaskHandler {
@@ -62,7 +62,9 @@ func NewConvertTaskHandler(params ConvertTaskHandlerParams) *ConvertTaskHandler 
 		authorization: params.Authorization,
 	}
 
-	h.rclone = rclone.NewRcloneClient()
+	h.rclone = rclone.NewRcloneClient(rclone.RcloneClientParams{
+		LocalRemotesMap: params.LocalRemotesMap,
+	})
 	h.rclone.SetLogger(params.Logger)
 
 	if params.RcloneConfigPath != "" {
@@ -94,9 +96,24 @@ func (h *ConvertTaskHandler) Run() error {
 		return errors.New("Unexpected task type: `" + h.task.Type.String() + "`")
 	}
 
-	if err := h.pull(); err != nil {
-		h.exit(err)
+	var err error
+	var isInputLocal, isOutputLocal bool
+
+	if isInputLocal, err = h.rclone.Touch(h.task.ConvertParams.InputRclonePath, h.inputPath); err != nil {
+		h.exit(errors.Wrap(err, "Touching input path"))
 		return nil
+	}
+
+	if isOutputLocal, err = h.rclone.Touch(h.task.ConvertParams.OutputRclonePath, h.outputPath); err != nil {
+		h.exit(errors.Wrap(err, "Touching output path"))
+		return nil
+	}
+
+	if !isInputLocal {
+		if err := h.pull(); err != nil {
+			h.exit(err)
+			return nil
+		}
 	}
 
 	if err := h.convert(); err != nil {
@@ -104,9 +121,11 @@ func (h *ConvertTaskHandler) Run() error {
 		return nil
 	}
 
-	if err := h.push(); err != nil {
-		h.exit(err)
-		return nil
+	if !isOutputLocal {
+		if err := h.push(); err != nil {
+			h.exit(err)
+			return nil
+		}
 	}
 
 	h.exit(nil)
@@ -184,11 +203,6 @@ func (h *ConvertTaskHandler) convert() error {
 		}
 	}()
 
-	if err := os.MkdirAll((h.outputPath), os.ModePerm); err != nil {
-		h.logger.WithError(err).Fatal("Failed to create output directory")
-		return err
-	}
-
 	err := h.ffmpegClient.Transcode(h.ctx, h.task.ConvertParams.Opts, progress)
 
 	if err != nil && !errors.Is(err, context.Canceled) {
@@ -240,15 +254,13 @@ func (h *ConvertTaskHandler) push() error {
 }
 
 func (h *ConvertTaskHandler) exit(err error) {
-	h.logger.Trace("exiting")
+	if errors.Is(h.ctx.Err(), context.Canceled) || errors.Is(err, context.Canceled) {
+		h.quit()
+		return
+	}
 
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			h.quit()
-		} else {
-			h.fail(err)
-		}
-
+		h.fail(err)
 		return
 	}
 
@@ -256,9 +268,7 @@ func (h *ConvertTaskHandler) exit(err error) {
 }
 
 func (h *ConvertTaskHandler) finish() {
-	h.logger.Trace("finishing")
-
-	_, err := h.dealer.FinishTask(h.ctx, &pb.FinishTaskRequest{
+	_, err := h.dealer.FinishTask(context.TODO(), &pb.FinishTaskRequest{
 		Authorization: h.authorization,
 		TaskId:        h.task.Id,
 	})
@@ -269,9 +279,7 @@ func (h *ConvertTaskHandler) finish() {
 }
 
 func (h *ConvertTaskHandler) quit() {
-	h.logger.Trace("quitting")
-
-	_, err := h.dealer.QuitTask(context.Background(), &pb.QuitTaskRequest{
+	_, err := h.dealer.QuitTask(context.TODO(), &pb.QuitTaskRequest{
 		Authorization: h.authorization,
 		TaskId:        h.task.Id,
 	})
@@ -282,8 +290,6 @@ func (h *ConvertTaskHandler) quit() {
 }
 
 func (h *ConvertTaskHandler) fail(failure error) {
-	h.logger.Trace("failing")
-
 	_, err := h.dealer.FailTask(h.ctx, failTaskRequest(h.authorization, h.task.Id, failure))
 
 	if err != nil {
