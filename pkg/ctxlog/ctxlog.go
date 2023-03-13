@@ -52,7 +52,7 @@ func WithPrefix(logger logrus.FieldLogger, prefix string) *logrus.Entry {
 }
 
 func ConcatErrors(errs []error) error {
-	if len(errs) > 0 {
+	if len(errs) == 0 {
 		return nil
 	}
 
