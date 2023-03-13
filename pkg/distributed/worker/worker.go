@@ -9,6 +9,7 @@ import (
 	"github.com/twitchtv/twirp"
 
 	"github.com/wailorman/fftb/pkg/chwg"
+	"github.com/wailorman/fftb/pkg/ctxlog"
 	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/handlers"
 	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
@@ -104,6 +105,8 @@ func (w *Instance) Start() {
 				logger := w.logger.
 					WithField(dlog.KeyTaskID, freeTask.Id).
 					WithField(dlog.KeyRunID, uniuri.New())
+
+				ctx := context.WithValue(w.ctx, ctxlog.LoggerContextKey, logger)
 
 				logger.Info("Found free task")
 

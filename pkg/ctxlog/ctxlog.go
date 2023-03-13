@@ -36,8 +36,8 @@ func SetLevel(lvl logrus.Level) {
 }
 
 // FromContext _
-func FromContext(ctx context.Context, prefix string) logrus.FieldLogger {
-	logger, ok := ctx.Value(LoggerContextKey).(logrus.FieldLogger)
+func FromContext(ctx context.Context, prefix string) *logrus.Entry {
+	logger, ok := ctx.Value(LoggerContextKey).(*logrus.Entry)
 
 	if !ok {
 		return nil

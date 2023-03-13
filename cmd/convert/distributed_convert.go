@@ -40,7 +40,7 @@ func DistributedCliConfig() *cli.Command {
 					}
 
 					ctx := ctxinterrupt.ContextWithInterruptHandling(c.Context)
-					dealer := config.BuildDealer()
+					dealer := config.BuildDealer(logger)
 
 					for i := 1; i <= config.ThreadsCount(); i++ {
 						wg.Add(1)

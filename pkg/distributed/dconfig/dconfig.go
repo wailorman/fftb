@@ -6,14 +6,17 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/twitchtv/twirp"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"github.com/yukitsune/lokirus"
 
 	"github.com/wailorman/fftb/pkg/chwg"
 	"github.com/wailorman/fftb/pkg/ctxlog"
+	"github.com/wailorman/fftb/pkg/distributed/dlog"
 	"github.com/wailorman/fftb/pkg/distributed/remote/pb"
 	"github.com/wailorman/fftb/pkg/distributed/worker"
 	"github.com/wailorman/fftb/pkg/stdouthook"
@@ -46,6 +49,10 @@ func New() (*Instance, error) {
 	i.viper.SetDefault("log_level", "info")
 	i.viper.SetDefault("log_disable_colors", false)
 
+	i.viper.SetDefault("loki.url", nil)
+	i.viper.SetDefault("loki.user", nil)
+	i.viper.SetDefault("loki.password", nil)
+
 	if err := i.viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			i.viper.SafeWriteConfigAs("./fftbd_config.yml")
@@ -64,7 +71,7 @@ func (i *Instance) ThreadsCount() int {
 type ThreadConfigParams struct {
 	Ctx    context.Context
 	Dealer pb.Dealer
-	Logger logrus.FieldLogger
+	Logger *logrus.Entry
 	Wg     *chwg.ChannelledWaitGroup
 
 	ThreadNumber  int
@@ -93,8 +100,12 @@ func (i *Instance) ThreadConfig(params *ThreadConfigParams) worker.WorkerParams 
 	}
 }
 
-func (i *Instance) BuildDealer() pb.Dealer {
-	return pb.NewDealerProtobufClient(i.viper.GetString("dealer.url"), &http.Client{})
+func (i *Instance) BuildDealer(logger *logrus.Entry) pb.Dealer {
+	return pb.NewDealerProtobufClient(
+		i.viper.GetString("dealer.url"),
+		&http.Client{},
+		twirp.WithClientInterceptors(dlog.TwirpLogInterceptor(logger)),
+	)
 }
 
 func (i *Instance) BuildLogger() (*logrus.Entry, error) {
