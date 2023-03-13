@@ -39,6 +39,7 @@ func New() (*Instance, error) {
 	i.viper.SetDefault("tmp_path", "tmp/")
 
 	i.viper.SetDefault("dealer.url", "http://localhost:3000")
+	i.viper.SetDefault("dealer.secret", nil)
 
 	i.viper.SetDefault("threads_count", 1)
 
@@ -66,7 +67,8 @@ type ThreadConfigParams struct {
 	Logger logrus.FieldLogger
 	Wg     *chwg.ChannelledWaitGroup
 
-	ThreadNumber int
+	ThreadNumber  int
+	Authorization string
 }
 
 func (i *Instance) ThreadConfig(params *ThreadConfigParams) worker.WorkerParams {
@@ -77,10 +79,11 @@ func (i *Instance) ThreadConfig(params *ThreadConfigParams) worker.WorkerParams 
 	}
 
 	return worker.WorkerParams{
-		Ctx:    params.Ctx,
-		Dealer: params.Dealer,
-		Logger: params.Logger,
-		Wg:     params.Wg,
+		Ctx:           params.Ctx,
+		Dealer:        params.Dealer,
+		Logger:        params.Logger,
+		Wg:            params.Wg,
+		Authorization: params.Authorization,
 
 		TmpPath:          tmpPath,
 		RcloneConfigPath: i.viper.GetString("rclone_config_path"),
@@ -126,6 +129,14 @@ func (i *Instance) BuildLogger() (*logrus.Entry, error) {
 	}
 
 	return ctxlog.WithPrefix(logger, "fftb"), nil
+}
+
+func (i *Instance) BuildAccessToken() (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"worker_name": i.viper.GetString("worker_name"),
+	})
+
+	return token.SignedString([]byte(i.viper.GetString("dealer.secret")))
 }
 
 type lokiParams struct {

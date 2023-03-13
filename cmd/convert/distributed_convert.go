@@ -34,6 +34,11 @@ func DistributedCliConfig() *cli.Command {
 						panic(errors.Wrap(err, "Initializing logger"))
 					}
 
+					var accessToken string
+					if accessToken, err = config.BuildAccessToken(); err != nil {
+						logger.WithError(err).Fatal("Building access token")
+					}
+
 					ctx := ctxinterrupt.ContextWithInterruptHandling(c.Context)
 					dealer := config.BuildDealer()
 
@@ -55,7 +60,8 @@ func DistributedCliConfig() *cli.Command {
 									Logger: workerLogger,
 									Wg:     wg,
 
-									ThreadNumber: threadNum,
+									ThreadNumber:  threadNum,
+									Authorization: accessToken,
 								}),
 							)
 

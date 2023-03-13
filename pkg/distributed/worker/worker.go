@@ -22,11 +22,12 @@ const freeTaskDelay = time.Duration(3) * time.Second
 
 // Instance _
 type Instance struct {
-	ctx     context.Context
-	tmpPath string
-	logger  logrus.FieldLogger
-	dealer  pb.Dealer
-	wg      *chwg.ChannelledWaitGroup
+	ctx           context.Context
+	tmpPath       string
+	logger        *logrus.Entry
+	dealer        pb.Dealer
+	wg            *chwg.ChannelledWaitGroup
+	authorization string
 
 	rcloneConfigPath string
 	rclonePath       string
@@ -35,10 +36,11 @@ type Instance struct {
 }
 
 type WorkerParams struct {
-	Ctx    context.Context
-	Dealer pb.Dealer
-	Logger logrus.FieldLogger
-	Wg     *chwg.ChannelledWaitGroup
+	Ctx           context.Context
+	Dealer        pb.Dealer
+	Logger        *logrus.Entry
+	Wg            *chwg.ChannelledWaitGroup
+	Authorization string
 
 	TmpPath          string
 	RcloneConfigPath string
@@ -50,11 +52,12 @@ type WorkerParams struct {
 // NewWorker _
 func NewWorker(params WorkerParams) *Instance {
 	return &Instance{
-		ctx:     params.Ctx,
-		tmpPath: params.TmpPath,
-		logger:  params.Logger,
-		dealer:  params.Dealer,
-		wg:      params.Wg,
+		ctx:           params.Ctx,
+		tmpPath:       params.TmpPath,
+		logger:        params.Logger,
+		dealer:        params.Dealer,
+		wg:            params.Wg,
+		authorization: params.Authorization,
 
 		rcloneConfigPath: params.RcloneConfigPath,
 		rclonePath:       params.RclonePath,
@@ -82,7 +85,7 @@ func (w *Instance) Start() {
 
 			default:
 				freeTask, err := w.dealer.FindFreeTask(w.ctx, &pb.FindFreeTaskRequest{
-					Authorization: "TODO:",
+					Authorization: w.authorization,
 				})
 
 				if err != nil {
@@ -115,11 +118,12 @@ func (w *Instance) Start() {
 				}
 
 				convertHandler := handlers.NewConvertTaskHandler(handlers.ConvertTaskHandlerParams{
-					Ctx:        w.ctx,
-					Logger:     logger,
-					WorkingDir: tmpPath,
-					Task:       freeTask,
-					Dealer:     w.dealer,
+					Ctx:           ctx,
+					Logger:        logger,
+					WorkingDir:    tmpPath,
+					Task:          freeTask,
+					Dealer:        w.dealer,
+					Authorization: w.authorization,
 
 					RcloneConfigPath: w.rcloneConfigPath,
 					RclonePath:       w.rclonePath,

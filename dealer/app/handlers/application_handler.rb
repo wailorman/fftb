@@ -44,10 +44,6 @@ class ApplicationHandler
     Fftb::Empty.new
   end
 
-  def current_performer
-    @current_performer ||= Performer.local
-  end
-
   def log_exception(e)
     filtered_backtrace = e.backtrace.select { |line| Rails.root.to_s.in?(line) }
     Rails.logger.error "#{e}\n#{filtered_backtrace.join("\n")}"

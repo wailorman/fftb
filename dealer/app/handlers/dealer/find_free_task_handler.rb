@@ -1,4 +1,8 @@
 class Dealer::FindFreeTaskHandler < ApplicationHandler
+  include ::Dealer::AuthorizePerformer
+
+  before_execute :authorize_performer
+
   def execute
     run = FindFreeTask.run(performer: current_performer)
 

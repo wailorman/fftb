@@ -2,6 +2,9 @@ class Dealer::QuitTaskHandler < ApplicationHandler
   include ::Dealer::SetTask
   include ::Dealer::AuthorizePerformer
 
+  before_execute :authorize_performer
+  before_execute :authorize_performer_task
+
   def execute
     task.state = :published
     task.deoccupy

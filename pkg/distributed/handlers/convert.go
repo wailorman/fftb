@@ -18,24 +18,27 @@ import (
 
 // ConvertTaskHandler _
 type ConvertTaskHandler struct {
-	ctx          context.Context
-	task         *pb.Task
-	dealer       pb.Dealer
-	logger       *logrus.Entry
-	workingDir   string
-	rclone       *rclone.RcloneClient
-	ffmpegClient *ffmpeg.FFmpegClient
-	inputPath    string
-	outputPath   string
-	throttled    throttle.Throttler
+	ctx           context.Context
+	cancel        func()
+	task          *pb.Task
+	dealer        pb.Dealer
+	logger        *logrus.Entry
+	workingDir    string
+	rclone        *rclone.RcloneClient
+	ffmpegClient  *ffmpeg.FFmpegClient
+	inputPath     string
+	outputPath    string
+	throttled     throttle.Throttler
+	authorization string
 }
 
 type ConvertTaskHandlerParams struct {
-	Ctx        context.Context
-	Logger     *logrus.Entry
-	WorkingDir string
-	Task       *pb.Task
-	Dealer     pb.Dealer
+	Ctx           context.Context
+	Logger        *logrus.Entry
+	WorkingDir    string
+	Task          *pb.Task
+	Dealer        pb.Dealer
+	Authorization string
 
 	RcloneConfigPath string
 	RclonePath       string
@@ -44,15 +47,19 @@ type ConvertTaskHandlerParams struct {
 }
 
 func NewConvertTaskHandler(params ConvertTaskHandlerParams) *ConvertTaskHandler {
+	ctx, cancel := context.WithCancel(params.Ctx)
+
 	h := &ConvertTaskHandler{
-		ctx:        params.Ctx,
-		task:       params.Task,
-		dealer:     params.Dealer,
-		logger:     ctxlog.WithPrefix(params.Logger, "handlers/convert"),
-		workingDir: params.WorkingDir,
-		inputPath:  filepath.Join(params.WorkingDir, "input"),
-		outputPath: filepath.Join(params.WorkingDir, "output"),
-		throttled:  throttle.New(5 * time.Second),
+		ctx:           ctx,
+		cancel:        cancel,
+		task:          params.Task,
+		dealer:        params.Dealer,
+		logger:        ctxlog.WithPrefix(params.Logger, "handlers/convert"),
+		workingDir:    params.WorkingDir,
+		inputPath:     filepath.Join(params.WorkingDir, "input"),
+		outputPath:    filepath.Join(params.WorkingDir, "output"),
+		throttled:     throttle.New(5 * time.Second),
+		authorization: params.Authorization,
 	}
 
 	h.rclone = rclone.NewRcloneClient()
@@ -113,12 +120,21 @@ func (h *ConvertTaskHandler) pull() error {
 		for progressMessage := range progressCh {
 			if progressMessage.IsValid() {
 				h.throttled(func() {
-					h.dealer.Notify(h.ctx, &pb.NotifyRequest{
+					_, err := h.dealer.Notify(h.ctx, &pb.NotifyRequest{
 						Step:          pb.NotifyRequest_DOWNLOADING_INPUT,
-						Authorization: "TODO:",
+						Authorization: h.authorization,
 						TaskId:        h.task.Id,
 						Progress:      progressMessage.Progress(),
 					})
+
+					if err != nil && !errors.Is(err, context.Canceled) {
+						h.logger.
+							WithError(err).
+							Warn("Failed to notify pull")
+
+						h.cancel()
+						return
+					}
 
 					h.logger.
 						WithField(dlog.KeyProgress, progressMessage.Progress()).
@@ -144,13 +160,22 @@ func (h *ConvertTaskHandler) convert() error {
 	go func() {
 		for progressMessage := range progress {
 			h.throttled(func() {
-				h.dealer.Notify(h.ctx, &pb.NotifyRequest{
+				_, err := h.dealer.Notify(h.ctx, &pb.NotifyRequest{
 					Step:            pb.NotifyRequest_PROCESSING,
-					Authorization:   "TODO:",
+					Authorization:   h.authorization,
 					TaskId:          h.task.Id,
 					Progress:        0,
 					ConvertProgress: progressMessage,
 				})
+
+				if err != nil && !errors.Is(err, context.Canceled) {
+					h.logger.
+						WithError(err).
+						Warn("Failed to notify convert")
+
+					h.cancel()
+					return
+				}
 
 				h.logger.
 					WithField(dlog.KeyFPS, progressMessage.Fps).
@@ -180,12 +205,21 @@ func (h *ConvertTaskHandler) push() error {
 		for progressMessage := range progressCh {
 			if progressMessage.IsValid() {
 				h.throttled(func() {
-					h.dealer.Notify(h.ctx, &pb.NotifyRequest{
+					_, err := h.dealer.Notify(h.ctx, &pb.NotifyRequest{
 						Step:          pb.NotifyRequest_UPLOADING_OUTPUT,
-						Authorization: "TODO:",
+						Authorization: h.authorization,
 						TaskId:        h.task.Id,
 						Progress:      progressMessage.Progress(),
 					})
+
+					if err != nil && !errors.Is(err, context.Canceled) {
+						h.logger.
+							WithError(err).
+							Warn("Failed to notify push")
+
+						h.cancel()
+						return
+					}
 
 					h.logger.
 						WithField(dlog.KeyProgress, progressMessage.Progress()).
@@ -225,7 +259,7 @@ func (h *ConvertTaskHandler) finish() {
 	h.logger.Trace("finishing")
 
 	_, err := h.dealer.FinishTask(h.ctx, &pb.FinishTaskRequest{
-		Authorization: "TODO:",
+		Authorization: h.authorization,
 		TaskId:        h.task.Id,
 	})
 
@@ -238,7 +272,7 @@ func (h *ConvertTaskHandler) quit() {
 	h.logger.Trace("quitting")
 
 	_, err := h.dealer.QuitTask(context.Background(), &pb.QuitTaskRequest{
-		Authorization: "TODO:",
+		Authorization: h.authorization,
 		TaskId:        h.task.Id,
 	})
 
@@ -250,16 +284,16 @@ func (h *ConvertTaskHandler) quit() {
 func (h *ConvertTaskHandler) fail(failure error) {
 	h.logger.Trace("failing")
 
-	_, err := h.dealer.FailTask(h.ctx, failTaskRequest(h.task.Id, failure))
+	_, err := h.dealer.FailTask(h.ctx, failTaskRequest(h.authorization, h.task.Id, failure))
 
 	if err != nil {
 		h.logger.WithError(err).Warn("Failed to report failure")
 	}
 }
 
-func failTaskRequest(taskId string, err error) *pb.FailTaskRequest {
+func failTaskRequest(authorization string, taskId string, err error) *pb.FailTaskRequest {
 	return &pb.FailTaskRequest{
-		Authorization: "TODO:",
+		Authorization: authorization,
 		TaskId:        taskId,
 		Failures:      []string{err.Error()},
 	}

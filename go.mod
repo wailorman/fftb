@@ -7,6 +7,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/dchest/uniuri v1.2.0
 	github.com/dustin/go-humanize v1.0.1
+	github.com/golang-jwt/jwt/v5 v5.0.0-rc.1
 	github.com/google/uuid v1.3.0
 	github.com/labstack/echo/v4 v4.2.1
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
