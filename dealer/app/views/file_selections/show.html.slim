@@ -1,0 +1,42 @@
+- content_for :header do
+  .d-inline.ms-3
+    = button_to media_meta_reports_path(file_selection_id: @file_selection.id), class: 'btn btn-secondary', form: { class: 'd-inline' }
+      | Collect metadata
+  .d-inline.ms-3
+    = button_to choose_type_orders_path, method: :get, class: 'btn btn-warning', form: { class: 'd-inline' }
+      | Create order
+
+div
+  = render 'shared/remote_path', path: @file_selection.root_rclone_path
+
+table.table.table-striped
+  thead
+    tr
+      th(style="width: 2rem;") = check_box_tag(name: :all)
+      th(style="width: 2rem;")
+      th Name
+      th Size
+      th Meta
+      th
+  tbody
+    - @items.each do |item|
+      tr(style="line-height: 1.9rem;", class="#{'text-secondary' if item.removed?}")
+        td
+          - if item.removed?
+            = button_to reveal_file_selection_item_path(file_selection_id: @file_selection.id, id: item.id), method: :post, class: 'btn btn-sm btn-success fs-6', form: { class: 'd-inline' }
+              i.bi.bi-arrow-counterclockwise
+          - else
+            = button_to hide_file_selection_item_path(file_selection_id: @file_selection.id, id: item.id), method: :post, class: 'btn btn-sm btn-light fs-6', form: { class: 'd-inline' }
+              i.bi.bi-x
+
+        td(style="width: 2rem;")
+          i(class=mime_type_icon(item[:mime_type]))
+        td = item.rclone_path
+        td
+          - unless item.size.negative?
+            = number_to_human_size(item.size)
+        td
+          - if media_meta_for_item(item)
+            = link_to media_meta_for_item(item)
+              i.bi.bi-check-lg
+        td

@@ -60,6 +60,7 @@ func (rc *RcloneClient) Touch(remotePath, localPath string) (isLocal bool, err e
 		dlog.KeyLocalPath: localPath,
 	})
 
+	// TODO: check local symlink content matches with remote
 	for remoteP, localP := range rc.localRemotesMap {
 		if strings.Index(remoteDir, remoteP) == 0 {
 			localRemotePath := strings.Replace(remoteDir, remoteP, localP, 1)

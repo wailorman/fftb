@@ -1,0 +1,76 @@
+= render 'shared/remote_path', path: @media_meta_report.rclone_path
+
+h2 Media meta
+
+table.table
+  tbody
+      tr
+        td video_codec
+        td
+          = @media_meta_report.video_codec_long
+          |  (
+          code
+            = @media_meta_report.video_codec
+          | )
+
+      tr
+        td video_bitrate
+        td
+          - if @media_meta_report.video_bitrate.positive?
+            = number_to_human(@media_meta_report.video_bitrate, units: :bits)
+      tr
+        td audio_codec
+        td
+          - if @media_meta_report.audio_codec
+            = @media_meta_report.audio_codec_long
+            |  (
+            code
+              = @media_meta_report.audio_codec
+            | )
+      tr
+        td audio_bitrate
+        td
+          - if @media_meta_report.audio_bitrate.positive?
+            = number_to_human(@media_meta_report.audio_bitrate, units: :bits)
+      tr
+        td bitrate
+        td
+          - if @media_meta_report.bitrate.positive?
+            = number_to_human(@media_meta_report.bitrate, units: :bits)
+      tr
+        td duration
+        td
+          - if @media_meta_report.duration.positive?
+            = l(Time.at(@media_meta_report.duration).utc, format: :duration)
+      tr
+        td size
+        td
+          - if @media_meta_report.size
+            = number_to_human_size(@media_meta_report.size)
+      tr
+        td resolution
+        td
+          = @media_meta_report.resolution_w
+          | x
+          = @media_meta_report.resolution_h
+      tr
+        td pix_fmt
+        td = @media_meta_report.pix_fmt
+      - if @media_meta_report.created_at_by_meta
+        tr
+          td created_at_by_meta
+          td
+            = l(@media_meta_report.created_at_by_meta, format: :mod_time_with_seconds)
+      - if @media_meta_report.created_at_by_name
+        tr
+          td created_at_by_name
+          td
+            = l(@media_meta_report.created_at_by_name, format: :mod_time_with_seconds)
+      - if @media_meta_report.created_at_by_mtime
+        tr
+          td created_at_by_mtime
+          td
+            = l(@media_meta_report.created_at_by_mtime, format: :mod_time_with_seconds)
+
+pre
+  = JSON.pretty_generate(@media_meta_report.data)

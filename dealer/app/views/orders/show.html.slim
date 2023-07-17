@@ -1,0 +1,82 @@
+- content_for :header do
+  - unless @order.state.cancelled?
+    .d-inline.ms-3
+      = button_to cancel_order_path(@order), class: 'btn btn-danger', form: { class: 'd-inline' }
+        | Cancel
+
+nav.my-3.breadcrumb
+  ol.breadcrumb
+    li.breadcrumb-item
+      = link_to "Home", root_path
+    li.breadcrumb-item
+      = link_to "Orders", orders_path
+    li.breadcrumb-item
+      samp
+        = link_to @order.id, order_path(@order)
+
+h2
+  | Order
+
+table.table
+  tbody
+    tr
+      th ID
+      td
+        code = @order.id
+    tr
+      th State
+      td
+        code = @order.state
+    - if @order.short_type.convert?
+      - if @order.payload.video_opts.present?
+        tr
+          th Video opts
+          td
+            code == @order.payload.video_opts.gsub("\n", '<br/>')
+      - if @order.payload.audio_opts.present?
+        tr
+          th Audio opts
+          td
+            code == @order.payload.audio_opts.gsub("\n", '<br/>')
+      - if @order.file_selection_id.present?
+        tr
+          th File selection
+          td
+            = link_to 'Open', file_selection_path(@order.file_selection_id)
+      - if @order.payload.output_rclone_path.present?
+        tr
+          th Output
+          td
+            = link_to_path @order.payload.output_rclone_path
+              code = @order.payload.output_rclone_path
+
+h2.mt-5 Tasks
+
+table.table
+  thead
+    tr
+      th ID
+      th State
+      th Type
+      th Step
+      th Progress
+  tbody
+    - @order.tasks.decorate.each do |task|
+      tr.bg-light.fw-bold
+        td(style="width: 23rem;")
+          code = task.id
+        td = task.state
+        td = task.short_type
+        td = task.human_step
+        td = task.human_progress
+      - if task.short_type.convert?
+        tr
+          td.ps-5 input
+          td(colspan=4)
+            = link_to_path task.payload.input_rclone_path
+              code = task.payload.input_rclone_path
+        tr
+          td.ps-5 output
+          td(colspan=4)
+            = link_to_path task.payload.output_rclone_path
+              code = task.payload.output_rclone_path

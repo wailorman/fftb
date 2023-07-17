@@ -57,18 +57,19 @@ message FindFreeTaskRequest {
   string authorization = 1;
 }
 
-
 // ----------------------------------------------------------------
 
-enum TaskType {
-  UNKNOWN = 0;
-  CONVERT_V1 = 1;
-}
-
 message Task {
+  enum TaskType {
+    UNKNOWN = 0;
+    CONVERT_V1 = 1;
+    MEDIA_META_V1 = 2;
+  }
+
   TaskType type = 1;
   string id = 2;
   ConvertTaskParams convertParams = 4;
+  MediaMetaTaskParams mediaMetaParams = 5;
 }
 
 message ConvertTaskParams {
@@ -76,6 +77,11 @@ message ConvertTaskParams {
   string outputRclonePath = 2;
 
   repeated string opts = 3;
+}
+
+message MediaMetaTaskParams {
+  string inputRclonePath = 1;
+  string outputRclonePath = 2;
 }
 
 message ConvertTaskProgress {

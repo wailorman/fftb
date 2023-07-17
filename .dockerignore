@@ -1,0 +1,9 @@
+dealer/
+.DS_Store
+.vscode
+.idea
+.fftb
+.history
+tmp
+fftbd_config.yml
+rclone.cfg

@@ -52,7 +52,10 @@ type WorkerParams struct {
 	LocalRemotesMap  map[string]string
 }
 
-// NewWorker _
+type Handler interface {
+	Run() error
+}
+
 func NewWorker(params WorkerParams) *Instance {
 	return &Instance{
 		ctx:           params.Ctx,
@@ -70,7 +73,6 @@ func NewWorker(params WorkerParams) *Instance {
 	}
 }
 
-// Start _
 func (w *Instance) Start() {
 	w.wg.Add(1)
 
@@ -123,26 +125,57 @@ func (w *Instance) Start() {
 						Debug("Created temporary directory")
 				}
 
-				convertHandler := handlers.NewConvertTaskHandler(handlers.ConvertTaskHandlerParams{
-					Ctx:           ctx,
-					Logger:        logger,
-					WorkingDir:    tmpPath,
-					Task:          freeTask,
-					Dealer:        w.dealer,
-					Authorization: w.authorization,
+				var handler Handler
 
-					RcloneConfigPath: w.rcloneConfigPath,
-					RclonePath:       w.rclonePath,
-					FFmpegPath:       w.ffmpegPath,
-					FFprobePath:      w.ffprobePath,
-					LocalRemotesMap:  w.localRemotesMap,
-				})
+				switch freeTask.Type {
+				case pb.Task_CONVERT_V1:
+					handler = handlers.NewConvertTaskHandler(handlers.ConvertTaskHandlerParams{
+						Ctx:           ctx,
+						Logger:        logger,
+						WorkingDir:    tmpPath,
+						Dealer:        w.dealer,
+						Authorization: w.authorization,
+						Task:          freeTask,
+
+						RcloneConfigPath: w.rcloneConfigPath,
+						RclonePath:       w.rclonePath,
+						FFmpegPath:       w.ffmpegPath,
+						FFprobePath:      w.ffprobePath,
+						LocalRemotesMap:  w.localRemotesMap,
+					})
+
+				case pb.Task_MEDIA_META_V1:
+					handler = handlers.NewMediaMetaHandler(handlers.MediaMetaHandlerParams{
+						Ctx:           ctx,
+						Logger:        logger,
+						WorkingDir:    tmpPath,
+						Dealer:        w.dealer,
+						Authorization: w.authorization,
+						Task:          freeTask,
+
+						RcloneConfigPath: w.rcloneConfigPath,
+						RclonePath:       w.rclonePath,
+						FFprobePath:      w.ffprobePath,
+						LocalRemotesMap:  w.localRemotesMap,
+					})
+
+				default:
+					w.dealer.QuitTask(context.TODO(), &pb.QuitTaskRequest{
+						Authorization: w.authorization,
+						TaskId:        freeTask.Id,
+					})
+
+					logger.WithField(dlog.KeyType, freeTask.Type).
+						Warn("Unknown task type")
+
+					continue
+				}
 
 				w.wg.Add(1)
 
-				if err = convertHandler.Run(); err != nil {
+				if err = handler.Run(); err != nil {
 					logger.WithError(err).
-						Warn("Failed to run convert handler")
+						Warn("Failed to run handler")
 				}
 
 				if err = tmpMgr.Destroy(freeTask.Id); err != nil {

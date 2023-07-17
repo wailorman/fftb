@@ -27,6 +27,7 @@ const KeyThread = "thread"
 const KeyTaskID = "task_id"
 const KeyRunID = "run_id"
 const KeyPath = "path"
+const KeyType = "type"
 
 const KeyRemoteDir = "remote_dir"
 const KeyLocalPath = "local_path"

@@ -2,6 +2,7 @@ require_relative 'boot'
 
 require 'rails/all'
 require 'jwt'
+require 'open3'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -17,7 +18,7 @@ module Dealer
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
+    config.time_zone = ENV.fetch('TZ', 'Europe/Moscow')
     # config.eager_load_paths << Rails.root.join("extras")
 
     config.before_initialize do

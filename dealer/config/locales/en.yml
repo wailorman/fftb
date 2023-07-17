@@ -31,3 +31,15 @@
 
 en:
   hello: "Hello world"
+
+  time:
+    formats:
+      mod_time: '%Y-%m-%d %H:%M'
+      mod_time_with_seconds: '%Y-%m-%d %H:%M:%S'
+      duration: '%H:%M:%S.%L'
+
+  bits:
+    unit: "bit/s"
+    thousand: "kbit/s"
+    million: "mbit/s"
+    billion: "gbit/s"

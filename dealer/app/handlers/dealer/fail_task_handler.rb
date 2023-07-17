@@ -6,6 +6,7 @@ class Dealer::FailTaskHandler < ApplicationHandler
   before_execute :authorize_performer_task
 
   def execute
+    task.state = :failed
     task.task_failures.build(performer: current_performer, reason: req.failures.join(', '))
 
     return Twirp::Error.unknown(task.full_messages.join(', ')) unless task.save

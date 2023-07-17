@@ -1,0 +1,33 @@
+ruby:
+  if @order.type.blank?
+    url = new_order_path
+    method = :get
+  elsif !@order.persisted?
+    url = orders_path
+    method = :post
+  else
+    url = order_path(@order)
+    method = :patch
+  end
+
+= simple_form_for @order, url: url, method: method, data: { turbo: false } do |f|
+  = f.error_notification message: f.object.errors.full_messages.join('; ')
+
+  = f.input :type, as: :select, collection: [Orders::Convert].map(&:name), disabled: f.object.type.present?
+
+  - if f.object.type.present?
+    = render "orders/typed_forms/#{f.object.type.split('::').last.underscore}", f: f
+
+  - if f.object.persisted?
+    = f.submit OrdersController::REBUILD_COMMIT, class: 'btn btn-warning ms-2'
+
+  - if f.object.tasks.present?
+    = f.simple_fields_for :tasks do |tf|
+      .bs-emphasis.py-3.mt-5.rounded
+        = render "tasks/typed_forms/#{f.object.type.split('::').last.underscore}", f: tf
+
+  = f.submit f.object.persisted? ? 'Save' : 'Next', class: 'btn btn-primary'
+
+  - if f.object.tasks.present?
+    = f.submit OrdersController::PUBLISH_COMMIT, class: 'btn btn-warning ms-2'
+    = f.submit OrdersController::REBUILD_COMMIT, class: 'btn btn-warning ms-2'

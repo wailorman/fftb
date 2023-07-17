@@ -1,0 +1,11 @@
+.mt-5
+  table.table
+    thead
+      tr
+        th Name
+    tbody
+      - @remotes.each do |remote|
+        tr
+          td
+            = link_to remote_files_path(remote_name: remote, path: '/') do
+              = remote

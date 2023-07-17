@@ -26,6 +26,8 @@ type Instance struct {
 	viper *viper.Viper
 }
 
+// TODO: task selectors
+
 func New() (*Instance, error) {
 	i := &Instance{}
 	i.viper = viper.New()

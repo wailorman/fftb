@@ -1,0 +1,8 @@
+.mx-5
+  h3 = "Task #{f.object.id}"
+  = f.input :type, as: :string, disabled: true
+
+  = f.simple_fields_for :payload do |pf|
+    = pf.input :input_rclone_path, as: :text, input_html: { rows: 1, class: 'font-monospace' }
+    = pf.input :output_rclone_path, as: :text, input_html: { rows: 1, class: 'font-monospace' }
+    = pf.input :string_opts, as: :text, input_html: { rows: 8, class: 'font-monospace' }

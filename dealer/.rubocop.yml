@@ -1,3 +1,6 @@
+require:
+  - rubocop-rails
+
 AllCops:
   TargetRubyVersion: 2.7
   Exclude:
@@ -18,5 +21,53 @@ Metrics/AbcSize:
 
 Style/ClassAndModuleChildren:
   Exclude:
+    - 'app/models/**/*'
     - 'app/handlers/**/*'
     - 'app/controllers/**/*'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+
+Style/GuardClause:
+  Enabled: false
+
+Style/RegexpLiteral:
+  Enabled: false
+
+Style/EmptyMethod:
+  Enabled: false
+
+Style/AccessModifierDeclarations:
+  EnforcedStyle: inline
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+Style/ClassCheck:
+  Enabled: false
+
+Style/FormatStringToken:
+  Enabled: false
+
+Style/Lambda:
+  Enabled: false
+
+Lint/AmbiguousBlockAssociation:
+  Enabled: false
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented_relative_to_receiver
+
+Style/HashAsLastArrayItem:
+  Exclude:
+    - 'app/controllers/**/*'
+
+Style/IfUnlessModifier:
+  Enabled: false
+
+Bundler/OrderedGems:
+  Enabled: false
+
+Rails/InverseOf:
+  Enabled: true

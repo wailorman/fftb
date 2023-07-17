@@ -16,25 +16,23 @@ class S3UrlSignService < ApplicationService
     object.presigned_url(:get, expires_in: expires_in&.to_i)
   end
 
-  private
-
-  def s3_config
+  private def s3_config
     @s3_config ||= Rails.application.config.application_options[:s3][provider.to_sym]
   end
 
-  def aws_client
+  private def aws_client
     @aws_client ||= Aws::S3::Client.new(s3_config.except(:bucket))
   end
 
-  def s3
+  private def s3
     @s3 ||= Aws::S3::Resource.new(client: aws_client)
   end
 
-  def bucket
+  private def bucket
     @bucket ||= s3.bucket(s3_config[:bucket])
   end
 
-  def object
+  private def object
     @object ||= bucket.object(path)
   end
 end

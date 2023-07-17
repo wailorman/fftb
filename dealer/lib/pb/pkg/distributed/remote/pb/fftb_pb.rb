@@ -35,14 +35,24 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
       optional :authorization, :string, 1
     end
     add_message "Task" do
-      optional :type, :enum, 1, "TaskType"
+      optional :type, :enum, 1, "Task.TaskType"
       optional :id, :string, 2
       optional :convertParams, :message, 4, "ConvertTaskParams"
+      optional :mediaMetaParams, :message, 5, "MediaMetaTaskParams"
+    end
+    add_enum "Task.TaskType" do
+      value :UNKNOWN, 0
+      value :CONVERT_V1, 1
+      value :MEDIA_META_V1, 2
     end
     add_message "ConvertTaskParams" do
       optional :inputRclonePath, :string, 1
       optional :outputRclonePath, :string, 2
       repeated :opts, :string, 3
+    end
+    add_message "MediaMetaTaskParams" do
+      optional :inputRclonePath, :string, 1
+      optional :outputRclonePath, :string, 2
     end
     add_message "ConvertTaskProgress" do
       optional :fps, :double, 1
@@ -52,10 +62,6 @@ Google::Protobuf::DescriptorPool.generated_pool.build do
       optional :time, :int64, 5
     end
     add_message "Empty" do
-    end
-    add_enum "TaskType" do
-      value :UNKNOWN, 0
-      value :CONVERT_V1, 1
     end
   end
 end
@@ -68,8 +74,9 @@ module Fftb
   FailTaskRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FailTaskRequest").msgclass
   FindFreeTaskRequest = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("FindFreeTaskRequest").msgclass
   Task = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Task").msgclass
+  Task::TaskType = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Task.TaskType").enummodule
   ConvertTaskParams = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ConvertTaskParams").msgclass
+  MediaMetaTaskParams = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("MediaMetaTaskParams").msgclass
   ConvertTaskProgress = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("ConvertTaskProgress").msgclass
   Empty = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("Empty").msgclass
-  TaskType = ::Google::Protobuf::DescriptorPool.generated_pool.lookup("TaskType").enummodule
 end

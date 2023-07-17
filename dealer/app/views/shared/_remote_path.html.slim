@@ -1,0 +1,17 @@
+ruby:
+  parsed = Rclone.parse(path)
+  remote_name = parsed[:remote] || ''
+  remote_path = parsed[:path]
+
+nav.my-3.breadcrumb
+  ol.breadcrumb
+    li.breadcrumb-item.active.fw-bold
+      = link_to remote_files_path(remote_name: remote_name, path: '/') do
+        = remote_name
+
+    - Pathname.new(remote_path).each_filename.to_a.inject("") do |prev, entry|
+      - prev = "#{prev}#{entry}/"
+      li.breadcrumb-item.active
+        = link_to remote_files_path(remote_name: remote_name, path: prev) do
+          = entry
+      - next prev

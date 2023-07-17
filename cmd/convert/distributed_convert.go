@@ -4,6 +4,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// TODO: windows prometheus monitoring https://linuxhint.com/install-monitor-windows-os-prometheus/
+
 // DistributedCliConfig _
 func DistributedCliConfig() *cli.Command {
 	return &cli.Command{

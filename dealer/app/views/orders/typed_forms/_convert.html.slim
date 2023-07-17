@@ -1,0 +1,12 @@
+= f.simple_fields_for :payload do |pf|
+  = pf.input :output_rclone_path, as: :text, input_html: { rows: 1, class: 'font-monospace' }
+
+  - if @order.file_selection.video_items?
+    h3.mt-5 For video files
+    = pf.input :video_muxer, as: :string, input_html: { class: 'font-monospace' }
+    = pf.input :video_opts, as: :text, input_html: { rows: 8, class: 'font-monospace' }
+
+  - if @order.file_selection.audio_items?
+    h3.mt-5 For audio files
+    = pf.input :audio_muxer, as: :string, input_html: { class: 'font-monospace' }
+    = pf.input :audio_opts, as: :text, input_html: { rows: 8, class: 'font-monospace' }

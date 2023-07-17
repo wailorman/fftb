@@ -1,0 +1,19 @@
+ruby:
+  active_selection ||= defined?(@file_selection) && @file_selection == current_file_selection
+
+div.my-3
+  = link_to remotes_path do
+      button.btn.btn-info
+        i.bi.bi-house-door
+
+  - if current_file_selection
+    .btn-group.ms-3
+      = button_to file_selection_path(id: current_file_selection.id), method: :get, class: "btn btn-#{active_selection ? 'primary' : 'secondary'} btn_group_beginning" do
+        = format(\
+            'File selection: %{not_removed_count} (%{total_count})',\
+            not_removed_count: current_file_selection.items.unscoped.not_removed.count,\
+            total_count: current_file_selection.items_count)
+      = button_to file_selection_path(id: current_file_selection.id), method: :delete, class: "btn btn-#{active_selection ? 'primary' : 'secondary'} btn_group_end" do
+        i.bi.bi-x-lg
+
+  = yield :header

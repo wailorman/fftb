@@ -6,6 +6,7 @@ module Dealer
 
     def authorize_performer_task
       Twirp::Error.permission_denied('performer mismatch') if task.occupied_by != current_performer
+      Twirp::Error.unknown('task cancelled') if task.state.cancelled?
     end
 
     def current_performer

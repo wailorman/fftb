@@ -1,0 +1,40 @@
+- if params[:path].presence
+  = render 'shared/remote_path', path: "#{@remote}:#{params[:path]}"
+
+table.table
+  thead
+    tr
+      th(style="width: 2rem;") = check_box_tag(name: :all)
+      th(style="width: 2rem;")
+      th Name
+      th Size
+      th Modified at
+      th
+  tbody
+    - @entries.each do |entry|
+      tr(style="line-height: 2.1rem;")
+        td = check_box_tag(name: "paths[#{entry[:full_path]}]")
+        td(style="width: 2rem;")
+          i(class=mime_type_icon(entry[:mime_type]))
+        td
+          - if entry[:is_dir]
+            = link_to remote_files_path(remote_name: @remote, path: File.join(*[params[:path], entry[:path]].compact)) do
+              = entry[:name]
+          - else
+            = entry[:name]
+        td
+          - unless entry[:size].negative?
+            = number_to_human_size(entry[:size])
+        td = l(entry[:mod_time], format: :mod_time)
+        td
+          .btn-group.actions_btns
+            - if media_meta_report_for_entry(entry)
+              = link_to media_meta_report_for_entry(entry), class: 'btn btn-light'
+                  i.bi.bi-clipboard-data-fill
+            - elsif media_mime_type?(entry[:mime_type])
+              = button_to media_meta_reports_path(path: entry[:full_path]), class: 'btn btn-light'
+                i.bi.bi-eyeglasses
+
+            - if entry[:is_dir]
+              = button_to file_selections_path(path: entry[:full_path]), class: 'btn btn-light'
+                i.bi.bi-search

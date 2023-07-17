@@ -10,6 +10,7 @@ proto:
 
 build:
 	GOOS=windows GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o dist/windows_amd64/fftb.exe cmd/main/main.go
+	GOOS=windows GOARCH=arm64 go build -ldflags="-X main.version=`git describe`" -o dist/windows_arm64/fftb.exe cmd/main/main.go
 	GOOS=linux GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o dist/linux_amd64/fftb cmd/main/main.go
 	GOOS=linux GOARCH=arm64 go build -ldflags="-X main.version=`git describe`" -o dist/linux_arm64/fftb cmd/main/main.go
 	GOOS=darwin GOARCH=amd64 go build -ldflags="-X main.version=`git describe`" -o dist/darwin_amd64/fftb cmd/main/main.go

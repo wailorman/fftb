@@ -1,0 +1,20 @@
+table.table.mt-5
+  thead
+    tr
+      th ID
+      th State
+      th Created at
+      th
+  tbody
+    - @orders.each do |order|
+      tr
+        td
+          samp = order.id
+        td = order.state
+        td = l(order.created_at, format: :mod_time)
+        td
+          = link_to order_path(order.id), class: 'btn btn-light float-end'
+            i.bi.bi-eye-fill
+
+.mt-5.center
+  = paginate @orders, theme: 'bootstrap-5'
